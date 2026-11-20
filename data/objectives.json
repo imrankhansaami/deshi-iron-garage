@@ -1,0 +1,14 @@
+[
+  { "id": "open_shutter", "text": "Roll the shutter open", "hint": "The shutter is half down. Look at it and press E.", "trigger": "shutter" },
+  { "id": "restore_power", "text": "Restore workshop power", "hint": "The main switchboard is locked out. Inspect the IPS bank beside it.", "trigger": "power" },
+  { "id": "boot_computer", "text": "Bring the workstation online", "hint": "Press the tower's power switch, then wait for the boot sequence.", "trigger": "computer" },
+  { "id": "read_notebook", "text": "Read the inventor's notebook", "hint": "The notebook lies open on the mechanical bench. Press F to inspect closely.", "trigger": "notebook" },
+  { "id": "find_frame", "text": "Salvage the structural frame", "hint": "A scrapped motorcycle frame is clamped in the jig by the scrap bin.", "trigger": "component:frame_module" },
+  { "id": "find_energy", "text": "Recover the energy module", "hint": "Two dead IPS units sit under the electronics bench.", "trigger": "component:energy_module" },
+  { "id": "find_armour", "text": "Lift out the armour shell", "hint": "Hand-formed plates are stacked in the sheet-metal bin near the stand.", "trigger": "component:armour_shell" },
+  { "id": "use_holo_table", "text": "Open the holographic design table", "hint": "The cyan table in the centre holds the exosuit schematic.", "trigger": "hologram" },
+  { "id": "assemble_prototype", "text": "Install the modules on the stand", "hint": "Use the assembly interface at the circular platform.", "trigger": "assembly" },
+  { "id": "activate_core", "text": "Activate the prototype core", "hint": "Energy is routed. Wake the chest core on the display stand.", "trigger": "core" },
+  { "id": "run_diagnostics", "text": "Run the prototype diagnostic pass", "hint": "The testing corner panel reads the suit's live state.", "trigger": "diagnostics" },
+  { "id": "free_explore", "text": "Garage online — explore freely", "hint": "Press TAB for the workstation, I for modules, F6 for the graphics bench.", "trigger": "none" }
+]

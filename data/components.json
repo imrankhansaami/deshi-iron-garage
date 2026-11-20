@@ -1,0 +1,53 @@
+[
+  {
+    "id": "frame_module",
+    "label": "STRUCTURAL FRAME MODULE",
+    "short": "FRAME",
+    "slot": 0,
+    "accent": "#ff9d3c",
+    "source_area": "mechanical",
+    "source_object": "motorcycle_frame_jig",
+    "story": "A twin-downtube spine cut from a scrapped motorcycle frame and re-welded around a rickshaw axle bracket. Load paths follow the recycled tubing, not the drawing.",
+    "spec": [
+      ["material", "recycled chrome-moly tube"],
+      ["mass", "11.4 kg"],
+      ["spine length", "612 mm"],
+      ["joint tolerance", "0.8 mm"],
+      ["origin", "Badda scrap yard, lot 27"]
+    ]
+  },
+  {
+    "id": "energy_module",
+    "label": "ENERGY MODULE (FICTIONAL)",
+    "short": "CORE",
+    "slot": 1,
+    "accent": "#57e6ff",
+    "source_area": "electronics",
+    "source_object": "ups_battery_rack",
+    "story": "A sealed lead-acid bank rewired into a balanced buffer pack and topped with a resonant coupling coil lifted from a dead monitor flyback. The glowing core on the stand is a display model, not a live cell.",
+    "spec": [
+      ["material", "buffered cell array + ferrite coil"],
+      ["mass", "6.9 kg"],
+      ["nominal output", "48 V (simulated)"],
+      ["thermal envelope", "31 °C steady"],
+      ["origin", "two dead IPS units, one flyback"]
+    ]
+  },
+  {
+    "id": "armour_shell",
+    "label": "ARMOUR SHELL MODULE",
+    "short": "SHELL",
+    "slot": 2,
+    "accent": "#e2453c",
+    "source_area": "assembly",
+    "source_object": "sheet_metal_bin",
+    "story": "Hand-formed plates beaten from a corrugated tin roof sheet, an old petrol can and two motorcycle fairings, then shimmed with bicycle inner-tube rubber at every contact.",
+    "spec": [
+      ["material", "formed steel + alloy fairing"],
+      ["mass", "9.2 kg"],
+      ["plate thickness", "1.2 mm nominal"],
+      ["coating", "two-pack red, hand laid"],
+      ["origin", "roof offcuts, fairing salvage"]
+    ]
+  }
+]

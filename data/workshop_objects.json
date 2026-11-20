@@ -1,0 +1,148 @@
+{
+  "_note": "Bangla strings use standard Bengali orthography and are rendered with Noto Sans Bengali (see assets/fonts). The design brief's sample signage strings contained orthographic typos; they are normalised here so no malformed glyphs appear in-world. See docs/ASSET_LICENSES.md and docs/PROJECT_OVERVIEW.md.",
+  "bangla_labels": {
+    "garage_name": "স্বপ্নের গ্যারেজ",
+    "brand": "দেশি আয়রন গ্যারেজ",
+    "tagline": "নিজের প্রযুক্তি, নিজের শক্তি",
+    "lab": "পরীক্ষামূলক গবেষণাগার",
+    "repair_shop": "মেরামতের দোকান",
+    "tools": "যন্ত্রপাতি",
+    "electricity": "বিদ্যুৎ",
+    "switchboard": "সুইচ বোর্ড",
+    "caution": "সাবধান",
+    "danger_electric": "বিদ্যুৎ সংযোগ — সাবধান",
+    "welding": "ঝালাই কাজ",
+    "battery": "ব্যাটারি",
+    "fan": "পাখা",
+    "light": "বাতি",
+    "prototype": "প্রোটোটাইপ",
+    "frame": "ফ্রেম",
+    "shell": "খোলস",
+    "power": "শক্তি",
+    "test": "পরীক্ষা",
+    "notebook": "খাতা",
+    "first_sketch": "প্রথম নকশা",
+    "dream": "স্বপ্ন",
+    "open": "খোলা",
+    "closed": "বন্ধ",
+    "hours": "সময়",
+    "mobile": "মোবাইল",
+    "months": ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"],
+    "digits": ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"]
+  },
+  "pools": {
+    "mechanical_small": [
+      "spanner", "screwdriver", "pliers", "hammer", "adjustable_wrench", "pipe_wrench",
+      "bolt_cluster", "bearing", "spark_plug", "chain_link", "piston", "camshaft",
+      "brake_drum", "headlamp_bowl", "silencer_can", "tyre_lever", "oil_filter", "gear_set"
+    ],
+    "electronics_small": [
+      "pcb_board", "capacitor", "resistor_pack", "heatsink", "power_adapter", "multimeter",
+      "solder_spool", "dip_switch", "relate_fuse", "ribbon_cable", "cpu_fan", "ram_stick",
+      "transformer_core", "led_cluster", "jack_socket", "fuse_glass"
+    ],
+    "everyday_small": [
+      "tea_glass", "flask", "plastic_chair", "wooden_stool", "newspaper_fold", "muri_tin",
+      "towel_hanging", "cup_brush", "sandals", "water_bucket", "clip_board", "biscuit_tin"
+    ],
+    "scrap_small": [
+      "scrap_plate", "bent_rod", "offcut_tin", "rusty_can", "old_lock", "spring_coil",
+      "cable_reel", "nail_bag", "angle_bracket", "washer_pile", "broken_fan_guard"
+    ]
+  },
+  "layouts": [
+    {
+      "id": "mech_bench_top",
+      "pool": "mechanical_small",
+      "seed": 1337,
+      "count": 11,
+      "region": { "center": [-4.35, 1.03, 3.1], "size": [2.5, 0.0, 1.5] },
+      "surface": "bench",
+      "min_spacing": 0.24,
+      "rotate_y_jitter": 1.57,
+      "scale_range": [0.9, 1.15],
+      "allow_wall_mount": true
+    },
+    {
+      "id": "mech_shelf_upper",
+      "pool": "mechanical_small",
+      "seed": 2024,
+      "count": 14,
+      "region": { "center": [-5.6, 2.05, 1.0], "size": [0.9, 0.0, 5.2] },
+      "surface": "shelf",
+      "min_spacing": 0.2,
+      "rotate_y_jitter": 3.14,
+      "scale_range": [0.85, 1.1]
+    },
+    {
+      "id": "mech_shelf_lower",
+      "pool": "scrap_small",
+      "seed": 90210,
+      "count": 10,
+      "region": { "center": [-5.55, 1.42, 1.2], "size": [0.8, 0.0, 4.6] },
+      "surface": "shelf",
+      "min_spacing": 0.26,
+      "rotate_y_jitter": 3.14,
+      "scale_range": [0.9, 1.2]
+    },
+    {
+      "id": "elec_desk_top",
+      "pool": "electronics_small",
+      "seed": 4242,
+      "count": 13,
+      "region": { "center": [4.5, 0.98, 4.2], "size": [2.4, 0.0, 1.4] },
+      "surface": "bench",
+      "min_spacing": 0.19,
+      "rotate_y_jitter": 1.2,
+      "scale_range": [0.8, 1.05]
+    },
+    {
+      "id": "elec_shelf",
+      "pool": "electronics_small",
+      "seed": 8181,
+      "count": 16,
+      "region": { "center": [5.7, 1.95, 3.4], "size": [0.8, 0.0, 4.4] },
+      "surface": "shelf",
+      "min_spacing": 0.18,
+      "rotate_y_jitter": 3.14,
+      "scale_range": [0.8, 1.0]
+    },
+    {
+      "id": "scrap_floor_cluster",
+      "pool": "scrap_small",
+      "seed": 606,
+      "count": 12,
+      "region": { "center": [-4.6, 0.03, 6.6], "size": [2.6, 0.0, 3.0] },
+      "surface": "floor",
+      "min_spacing": 0.42,
+      "rotate_y_jitter": 3.14,
+      "scale_range": [1.0, 1.4]
+    },
+    {
+      "id": "tea_corner",
+      "pool": "everyday_small",
+      "seed": 777,
+      "count": 7,
+      "region": { "center": [-2.2, 0.72, 7.3], "size": [1.6, 0.0, 1.0] },
+      "surface": "bench",
+      "min_spacing": 0.3,
+      "rotate_y_jitter": 1.0,
+      "scale_range": [0.95, 1.2]
+    },
+    {
+      "id": "store_shelf",
+      "pool": "everyday_small",
+      "seed": 3131,
+      "count": 9,
+      "region": { "center": [5.6, 2.4, 8.2], "size": [0.9, 0.0, 3.4] },
+      "surface": "shelf",
+      "min_spacing": 0.3,
+      "rotate_y_jitter": 3.14,
+      "scale_range": [0.9, 1.15]
+    }
+  ],
+  "wall_tool_racks": [
+    { "id": "rack_a", "origin": [-6.15, 1.75, 2.2], "facing": 1.5708, "tools": ["hammer", "saw", "pipe_wrench", "pliers", "spanner", "screwdriver", "wrench_set", "chisel", "tape_measure", "level"], "spacing": 0.28 },
+    { "id": "rack_b", "origin": [-6.15, 1.28, 5.4], "facing": 1.5708, "tools": ["spanner", "screwdriver", "pliers", "adjustable_wrench", "hammer", "tyre_lever", "hacksaw_frame"], "spacing": 0.3 }
+  ]
+}
