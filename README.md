@@ -78,7 +78,7 @@ the flag file.
 | `Space` | step up / jump |
 | `E` | interact with what the reticle is on |
 | `F` | inspect the focused object in detail |
-| **Left click** | **pick up a small prop / place it down** |
+| **Left click** | **pick up a prop / place it down** |
 | **Wheel** | **rotate the held object** |
 | **Right click** | **put the held object back where it was** |
 | `I` | recovered modules |
@@ -88,8 +88,9 @@ the flag file.
 | `F6` | graphics bench |
 | `F9` | jump the garage to its finished state (demonstration shortcut) |
 
-Anything under about 0.8 m can be picked up: tools, tins, tea glasses, stools, tyres,
-crates, clutter from the benches and the floor. Look at it, the hint line says
+Just about anything loose can be picked up: tools, tins, tea glasses, stools, tyres,
+drums, crates, chairs, shelves, workbenches, the bicycle, even the holographic table —
+whatever you could carry in a real workshop. Look at a thing, the hint line says
 `LEFT CLICK — PICK UP`, and the object floats to your hand. It follows your aim,
 the wheel spins it, left click settles it onto whatever surface is beneath the
 aim (bench top, shelf, platform deck, floor), and right click puts it back exactly
@@ -299,10 +300,12 @@ scripts/
   player/                   # Player
   ui/                       # Hud, BenchmarkPanel, MainMenu
 tests/
-  validate_scripts.gd       # headless compile check for all 38 scripts
+  validate_scripts.gd       # headless compile check for all 41 scripts
   timing_probe.gd           # measures surface synthesis at three resolutions
   introspect.gd             # engine API introspection, used during development
   dump_floor.gd             # headless scene inspector: names what a capture shows
+  bake_preview.gd           # bakes signage recipes to PNGs for proof-reading
+  carry_audit.gd            # sizes every prop and exercises pick/place headlessly
 docs/                       # eight thesis documents
 ```
 

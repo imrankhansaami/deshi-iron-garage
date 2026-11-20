@@ -367,10 +367,11 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 
 | Mechanism | What it covers |
 |---|---|
-| `tests/validate_scripts.gd` | Loads and compiles all 38 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
+| `tests/validate_scripts.gd` | Loads and compiles all 41 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
 | `tests/timing_probe.gd` | Measures one surface at 256/384/512 px. The instrumentation that established the texture budget. |
 | `tests/introspect.gd` | Engine API introspection. Used to pin exact signatures when they were uncertain rather than guessing. |
 | `tests/dump_floor.gd` | Builds the world headless and reports: every node within a radius of a floor point, the dressing's occupancy boxes with their owning stations, per-child bound audits, and a full carry-system exercise — surface heights, a pick-up/place cycle and the put-back path. Written to turn "the screenshot shows something odd" into a named object, and "the carry maths should work" into measured numbers. |
+| `tests/carry_audit.gd` | Builds the world headless and prints every candidate the carry system could hold with its true bounding size and the live cap, checks that the fitted things (the gate, the windows, the flag mast, the prototype suit) are absent from the gathered set, and runs pick/place probes on the largest items — the workbench, the bicycle, the holo table — proving each settles onto a real surface and can be put back. The tool that decided the 3.1 m cap. |
 | Perf harness (`perf.flag`) | Drives the full progression, then samples three fixed viewpoints twice each — shipped settings and the earlier values flipped back at runtime in the same session — and writes a paired A/B table to `user://captures/perf.log`. Its first run is what exposed the shadow-budget bug and the session's 7.5 Hz presentation cap (`docs/EXPERIMENTS.md` §7.5). |
 | `tests/bake_preview.gd` | Renders the lab-wall plate specs (scientists, header, inventions board) to PNGs in `user://captures/`, so Bengali on the wall can be proof-read at full resolution without launching the garage. |
 | Capture harness | Boots the real renderer, drives the full progression, writes 15 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |

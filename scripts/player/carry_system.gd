@@ -1,14 +1,24 @@
 class_name CarrySystem
 extends Node3D
-## Pick up and put down the garage's small things, entirely with the mouse.
+## Pick up and put down just about anything in the garage, entirely with the mouse.
 ##
 ## **Why the selection is a ray against AABBs, not a physics query.** Every prop
 ## in this project builds its collision shapes as bare `CollisionShape3D` children,
 ## which only collide when a `CollisionObject3D` parents them — and for most props
 ## nothing does, because the props were never meant to be solid. A physics ray
 ## would pass straight through a spanner. Scanning the cached world boxes of the
-## ~100 carryable props each frame costs almost nothing and cannot destabilise the
+## ~180 carryable props each frame costs almost nothing and cannot destabilise the
 ## player's own collision.
+##
+## **What can be picked up.** Everything loose, hand-sized up to furniture: tools,
+## tins, tyres, drums, chairs, crates, the workbenches, the shelves, the bicycle,
+## the courtyard drum and tea cart, the holo table. The cap is a single largest
+## dimension (see MAX_CARRY_SIZE) and the short exclusion list below holds the few
+## things that depend on exactly where they are — the gate, the windows, the flag
+## mast, the prototype suit. The building shell is far larger than the cap and
+## filters itself out. A moved prop keeps its inspection station: the two travel
+## together, and the station's trigger is switched off while the object is in
+## mid-air.
 ##
 ## **Why placement finds "surfaces" instead of raycasting down.** The bench's
 ## station box is 0.45 m taller than the bench top (it includes the tool rail), and
@@ -18,12 +28,22 @@ extends Node3D
 ## platform deck, the floor slab, the courtyard — and a drop settles onto the
 ## highest of those under the aim, flatly and predictably.
 ##
+## **Holding.** Large objects are carried by their bounds centre rather than their
+## origin, so a workbench floats in front of the camera like a workbench instead of
+## towering up from a point at eye level.
+##
 ## Controls: left click picks up / places, the wheel spins the held object, right
 ## click puts it back exactly where it was. No dragging, no physics fighting, no
 ## way to lose an object.
 
 const PICK_RANGE: float = 3.6
-const MAX_CARRY_SIZE: float = 0.8        # largest dimension a thing may have
+const MAX_CARRY_SIZE: float = 3.1        # largest dimension a thing may have
+## Fitted things that stay fitted. The shell pieces are far larger than the cap and
+## need no listing; these four are within the cap but depend on where they are: the
+## gate is animated and frames the doorway, the windows sit in wall openings, the
+## flag mast is 5.8 m of pole for a flag at its top, and the prototype suit is
+## mid-animation content whose parts home to the stand.
+const CARRY_EXCLUDE_PREFIXES: Array[String] = ["Shutter", "Window", "FlagPole", "PrototypeExosuit"]
 const HOLD_CLEARANCE: float = 0.22       # how far below the camera's aim it floats
 const FOLLOW_RATE: float = 14.0          # exponential smoothing rate
 const ROTATE_STEP: float = PI / 12.0     # one wheel notch
@@ -42,6 +62,7 @@ var _target_box: AABB = AABB()
 var _highlight: MeshInstance3D
 var _held: Node3D = null
 var _held_offset: Vector3 = Vector3.ZERO
+var _held_center_offset: Vector3 = Vector3.ZERO
 var _held_reach: float = 0.8
 var _home_position: Vector3 = Vector3.ZERO
 var _home_rotation: Vector3 = Vector3.ZERO
@@ -53,7 +74,7 @@ var _freed_station_shapes: Array[CollisionShape3D] = []
 
 func setup(player: Player, dressing: Node3D, structure: GarageStructure) -> void:
 	_player = player
-	_gather_items(dressing)
+	_gather_items(dressing, structure)
 	_gather_surfaces(dressing)
 	_gather_surfaces(structure)
 	_build_highlight()
@@ -99,21 +120,34 @@ func _show_highlight() -> void:
 # gathering
 # ===========================================================================
 
-func _gather_items(dressing: Node3D) -> void:
+func _gather_items(dressing: Node3D, structure: Node3D) -> void:
+	## Everything loose in the room and the yard: every dressing prop plus the yard
+	## pieces the structure builds (the drum, the tea cart, the antenna, the meter
+	## box). The cap and the exclusion list are the only filters — the shell and the
+	## big fitted furniture filter themselves out by size.
 	_items.clear()
-	for child: Node in dressing.get_children():
-		if not (child is Node3D):
-			continue
-		var node: Node3D = child
-		if String(node.name).begins_with("Grime"):
-			continue
-		var box: AABB = ShapeKit.node_bounds(node)
-		if not box.has_volume():
-			continue
-		var s: Vector3 = box.size
-		if maxf(s.x, maxf(s.y, s.z)) > MAX_CARRY_SIZE:
-			continue
-		_items.append({"node": node, "box": box})
+	for host: Node3D in [dressing, structure]:
+		for child: Node in host.get_children():
+			if not (child is Node3D):
+				continue
+			var node: Node3D = child
+			var name: String = String(node.name)
+			if name.begins_with("Grime"):
+				continue
+			var excluded: bool = false
+			for prefix: String in CARRY_EXCLUDE_PREFIXES:
+				if name.begins_with(prefix):
+					excluded = true
+					break
+			if excluded:
+				continue
+			var box: AABB = ShapeKit.node_bounds(node)
+			if not box.has_volume():
+				continue
+			var s: Vector3 = box.size
+			if maxf(s.x, maxf(s.y, s.z)) > MAX_CARRY_SIZE:
+				continue
+			_items.append({"node": node, "box": box})
 
 
 func _gather_surfaces(host: Node) -> void:
@@ -201,7 +235,10 @@ func _update_held(delta: float) -> void:
 	# hold it in front of whatever wall is ahead so it never buries itself
 	var clearance: float = _forward_clearance(cam.global_position, fwd)
 	var dist: float = clampf(minf(_held_reach, clearance - 0.12), 0.30, PICK_RANGE)
-	var want: Vector3 = cam.global_position + fwd * dist - Vector3.UP * HOLD_CLEARANCE
+	# carry big objects by their bounds centre, not their origin: a workbench
+	# should float in front of the camera, not tower up from a point at eye level
+	var center_off: Vector3 = _held_center_offset.rotated(Vector3.UP, _yaw_extra)
+	var want: Vector3 = cam.global_position + fwd * dist - Vector3.UP * HOLD_CLEARANCE - center_off
 	var k: float = 1.0 - exp(-FOLLOW_RATE * delta)
 	_held.global_position = _held.global_position.lerp(want, k)
 	var want_yaw: float = _home_rotation.y + _yaw_extra
@@ -250,6 +287,7 @@ func _pick_up(node: Node3D) -> void:
 	var box: AABB = ShapeKit.node_bounds(node)
 	_held = node
 	_held_offset = box.position - node.global_position
+	_held_center_offset = box.get_center() - node.global_position
 	_held_reach = 0.55 + box.size.length() * 0.35
 	_home_position = node.global_position
 	_home_rotation = node.rotation

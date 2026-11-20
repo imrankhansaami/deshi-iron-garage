@@ -45,7 +45,7 @@ written to `user://captures/build.log`.
 | **Space** | step up / jump |
 | **E** | interact with the object the reticle is on |
 | **F** | inspect the focused object in detail |
-| **Left click** | pick up a small prop / place it down |
+| **Left click** | pick up a prop / place it down |
 | **Wheel** | rotate the held object |
 | **Right click** | put the held object back where it was |
 | **I** | recovered modules |
@@ -148,8 +148,14 @@ main reward for looking closely, and it is where most of the Bangladeshi detail 
 
 ### Picking things up with the mouse
 
-Anything smaller than about 0.8 m can be picked up, carried and set down: tools, tins, tea glasses,
-stools, tyres, crates, the clutter on the benches and the floor. Look at a thing and a translucent
+Just about anything loose can be picked up, carried and set down: tools, tins, tea glasses, stools,
+tyres, drums, crates, chairs, shelves, workbenches, the bicycle, even the holographic table — up to
+3.1 m in any one dimension, and big things are carried by their centre so a workbench floats in front
+of you rather than towering from a point. The few things that stay put are the ones that depend on
+exactly where they are: the gate, the windows, the flag mast, the prototype suit on its stand, the
+building itself and the big fitted pieces (the assembly platform, the cable tray).
+
+Look at a thing and a translucent
 cyan box appears around it with the line `LEFT CLICK — PICK UP`; left click takes it, the wheel spins
 it, left click again settles it onto the surface under your aim — bench top, shelf, crate lid, the
 platform deck, the floor — and right click puts it back exactly where it came from. Nothing can be

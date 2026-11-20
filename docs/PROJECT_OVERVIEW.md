@@ -146,7 +146,7 @@ recorded in `docs/ASSET_LICENSES.md`.
 | Assembly | 3 modules, 14 parts, one Tween chain, deck lift, arm choreography, core ignition |
 | Diagnostics | 7-stage pass with live log output to the console panel and the portrait screen |
 | Salvage | 3 collectable modules with world-space crates, baked tags and inventory tracking |
-| Mouse carrying | Every prop under ~0.8 m can be picked up, rotated and set down with the mouse; placement settles onto the surface under the aim (bench tops, shelves, the platform deck, the floor) and right click returns a thing to where it came from |
+| Mouse carrying | Just about any loose prop can be picked up, rotated and set down with the mouse — up to 3.1 m in one dimension (workbenches, shelves, the bicycle, the holo table); placement settles onto the surface under the aim (bench tops, shelves, the platform deck, the floor) and right click returns a thing to where it came from. The gate, the windows, the flag mast, the prototype suit and the fitted platform stay put |
 | Lab wall | Six honour plaques for Bangladeshi/Bengali scientists and one inventions board, engraved in Bangla from `data/scientists.json` and `data/inventions.json` through the same sign baker as every other sign, plus `F` inspection text for each |
 | National corner | The national flag on a courtyard pole — the official construction (2:3, disc at 9/20 length, radius L/5) with a cloth shader that waves it — and a big brass ৫ টাকা display coin leaning on its plinth; both are inspectable, neither is real currency |
 | Auto-opening gate | The shutter's presence sensor rolls the curtain up as anyone approaches the courtyard — it starts most of the way down and the room wakes up as it lifts. It can no longer be lowered |
