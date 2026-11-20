@@ -49,7 +49,7 @@ to catch the first.
     ├── Runtime                  (Node)     GarageRuntime: power, shutter, fans, screens, core, assembly
     ├── Garage                   (Node3D)   GarageStructure: floor, walls, columns, roof, shutter frame
     ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 30 lights, dust, rain
-    ├── Dressing                 (Node3D)   GarageDressing: 175 props, 34 stations, cables, signage
+    ├── Dressing                 (Node3D)   GarageDressing: 176 props, 35 stations, cables, signage, grime decals
     │
     ├── area volumes ×6          (Area3D)   named rooms; group "garage_areas"
     ├── Player                   (CharacterBody3D)
@@ -161,7 +161,7 @@ per texel into colour/roughness/metallic/occlusion/height, pack to RGB8 byte buf
 tangent-space normal by Sobel gradient on the wrapped height field, upload in one
 `Image::create_from_data` per channel. See `docs/GRAPHICS_ALGORITHMS.md` §2.
 
-**`shape_kit.gd`** — the primitive composition layer, and the reason 175 props is affordable. Two
+**`shape_kit.gd`** — the primitive composition layer, and the reason 176 props is affordable. Two
 ideas: a mesh cache keyed on dimensions so forty spanners share one mesh, and true generators (lathe
 from a profile, gear from tooth count and module, tube sweep, coil, chain, plate) for the shapes that
 are not primitives. Also `shape_aabb_local()`, `area_aabb()` and `node_bounds()`, which exist because
@@ -363,6 +363,7 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 | `tests/timing_probe.gd` | Measures one surface at 256/384/512 px. The instrumentation that established the texture budget. |
 | `tests/introspect.gd` | Engine API introspection. Used to pin exact signatures when they were uncertain rather than guessing. |
 | `tests/dump_floor.gd` | Builds the world headless and lists every node within a radius of a floor point, with generated cables reported by their mesh bounds and material colour. Written to name the unidentified objects in a capture from the scene graph instead of guessing. |
+| Perf harness (`perf.flag`) | Drives the full progression, then samples three fixed viewpoints twice each — shipped settings and the earlier values flipped back at runtime in the same session — and writes a paired A/B table to `user://captures/perf.log`. Its first run is what exposed the shadow-budget bug and the session's 7.5 Hz presentation cap (`docs/EXPERIMENTS.md` §7.5). |
 | Capture harness | Boots the real renderer, drives the full progression, writes 12 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
 | Graphics bench | Self-measurement at runtime, exportable to CSV, with a fixed-camera capture at each configuration. |
 

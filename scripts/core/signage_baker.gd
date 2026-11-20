@@ -165,6 +165,13 @@ func _frames(count: int) -> void:
 # Live screens
 # ===========================================================================
 
+## Live screens redraw at 12 Hz, so their pixel count is a real per-frame cost. The
+## spec canvas is authored at 960 x 600; the viewport renders at LIVE_SCALE of that
+## and the canvas is scaled to match, so the authored layouts are untouched while
+## the pixels redrawn drop to 44%.
+const LIVE_SCALE: float = 0.66
+
+
 ## Creates (or returns an existing) animated screen. The caller redraws by
 ## mutating the returned canvas' spec and calling queue_redraw().
 func live(id: String, spec: Dictionary) -> Dictionary:
@@ -175,7 +182,7 @@ func live(id: String, spec: Dictionary) -> Dictionary:
 		return existing
 	var size: Vector2i = Vector2i(spec.get("size", Vector2i(640, 400)))
 	var vp := SubViewport.new()
-	vp.size = size
+	vp.size = Vector2i(maxi(int(float(size.x) * LIVE_SCALE), 2), maxi(int(float(size.y) * LIVE_SCALE), 2))
 	vp.transparent_bg = bool(spec.get("transparent", true))
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	vp.disable_3d = true
@@ -186,6 +193,7 @@ func live(id: String, spec: Dictionary) -> Dictionary:
 	canvas.theme = _shared_theme
 	vp.add_child(canvas)
 	canvas.setup(spec)
+	canvas.scale = Vector2(LIVE_SCALE, LIVE_SCALE)
 	var entry: Dictionary = {"viewport": vp, "canvas": canvas, "spec": spec, "texture": vp.get_texture()}
 	_live[id] = entry
 	return entry

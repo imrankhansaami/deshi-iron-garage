@@ -380,7 +380,7 @@ performance work.
 | Surface synthesis (first surface) | 272 ms | 2.6% | the per-texel loop |
 | Structure — floor, walls, columns, roof, shutter, windows | 5 807 ms | 55.6% | mesh generation, collision shapes, and the surfaces it requests |
 | Environment — sky, `WorldEnvironment`, 30 lights, dust, rain | 39 ms | 0.4% | negligible |
-| Dressing — 169 placements, 34 stations, 4 layout groups, cables, signage | 4 038 ms | 38.7% | prop construction, station wiring, and its surfaces |
+| Dressing — 170 placements, 35 stations, 4 layout groups, cables, signage, grime decals | 4 180 ms | 39.1% | prop construction, station wiring, and its surfaces |
 | Screens — 5 live `SubViewport`s and their materials | 75 ms | 0.7% | — |
 | Player — camera, ray, reticle, collision | 31 ms | 0.3% | — |
 | Interface — HUD, 10 panels, objective director | 182 ms | 1.7% | — |
@@ -405,8 +405,8 @@ performance work.
 compute shader, not reducing geometry. The earlier build of a 13 × 16.5 m room measured 71%; the
 share rose when the room shrank, because the texture cost is per *surface*, not per cubic metre.
 
-**Finding 7.2 — mesh caching is what makes 175 props affordable.** 1 099 distinct meshes serve 175
-placed props through 1 728 hits. Without the cache every spanner, capacitor and bolt would allocate
+**Finding 7.2 — mesh caching is what makes 176 props affordable.** 1 103 distinct meshes serve 176
+placed props through 1 733 hits. Without the cache every spanner, capacitor and bolt would allocate
 its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
 is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 
@@ -419,6 +419,60 @@ add.
 next optimisation lives.** Structure and dressing together are 94% of the build. Mesh-cache reuse is
 already 1.6:1, and the remaining lever is generating structure meshes as single `ArrayMesh` batches
 instead of hundreds of individual primitives.
+
+### 7.5 Performance retune for the compact room
+
+The compact rebuild was also a performance pass, because the earlier settings had been sized for a
+13 × 16.5 m room and the machine they run on is an Intel UHD 620. Three of the changes are fixes
+rather than tuning:
+
+**A shadow-budget bug, found while measuring.** `GarageEnvironment.apply_quality()` and two sibling
+call sites decided which lights cast shadows with the rule "every light on circuit 0 or 1" — a rule
+that turned **twelve** casters on, switched the core and stand-key shadows **off** (they are on the
+volunteer circuit 4), and made the graphics bench's lighting experiment measure a rig nobody was
+running. Each light now records the shadow intent set where it was designed
+(`GarageRuntime.register_light()`), and the quality path honours it. The budget is the documented
+**seven** — sun, shutter gap, two tube battens, one task spot, core, stand key — after also dropping
+two spot shadows in the dressing pass that doubled an existing caster for no readable gain.
+
+**The knobs, retuned for a 8.5 × 10.5 m room:**
+
+| Knob | Earlier build | Shipped now | Why |
+|---|---|---|---|
+| SDFGI cascades / coverage | 4 cascades, 12 m → 90 m | 3 cascades, 8 m → 40 m | the room is 10.5 m long; the far cascades sampled space the camera cannot see |
+| SSR steps | 24 | 16 | screen-space reflections die before 16 steps on these surfaces |
+| Volumetric fog length | 42 m | 26 m | fog beyond the north wall is invisible |
+| Render scale | 1.0 | 0.85, upscaled by FSR 2.2 | 28% fewer shaded pixels; FSR 2 also replaces MSAA |
+| MSAA | 4× | off while FSR 2 is active | paying for both bought heat, not edges |
+| Shadow atlas (project setting) | 4096 (engine default) | 2048 | halved shadow memory and bandwidth for 7 casters |
+| Default window | maximised (1763 × 900 here) | 1600 × 900 windowed | a maximised window renders whatever the desktop is |
+| Live screen redraw | 960 × 600 per screen | 0.66 scale (≈ 634 × 396) | screens repaint at 12 Hz; their pixels are a real per-frame cost |
+
+**Measurement.** The perf harness (`perf.flag`, `docs/SYSTEM_ARCHITECTURE.md` §9) drives the full
+progression, then samples three fixed viewpoints twice each — once with the shipped knobs, once with
+the earlier values flipped back at runtime, in the same session and at the same camera — so the
+comparison cannot be polluted by machine state drifting between runs:
+
+| View | Shipped, CPU frame time | Earlier knobs | Difference |
+|---|---|---|---|
+| assembly wide | 144.2 ms | 171.4 ms | **−27.2 ms** |
+| overview high | 155.1 ms | 168.5 ms | **−13.4 ms** |
+| entrance | 140.3 ms | 157.2 ms | **−16.9 ms** |
+
+Draw calls and primitives moved with the shadow fixes at the same camera: 7 849 → 7 475 draws and
+793 762 → 750 942 primitives on the assembly wide view.
+
+**What this session could not measure, and why.** The wall-clock frame rate in the automated
+verification session is **flat at 7.5 fps (133.3 ms) in every configuration** — shipped and legacy,
+MSAA 4× and off, full resolution and 0.85 — which is the signature of a pacing limit, not of the
+renderer. The control run settles it: the same build with no window at all (`--headless`, dummy
+renderer, zero draws) runs the loop at **7.9 ms per frame (127 fps)**. The 133.3 ms is this session's
+window-presentation path (an RDP/remote-desktop-style cap on this machine), and it applies to an
+empty frame just as much as to a full one. The `Performance.TIME_PROCESS` figures above are reported
+by the engine's own monitor; because both halves of each A/B pair were taken under the same paced
+loop, their *difference* is meaningful while their absolute values are inflated by the pacing. Real
+frame rates belong to an interactive session: the in-app graphics bench (F6) reports them, which is
+how the 40–55 fps medium / 18–26 fps high figures elsewhere in this document were taken.
 
 ---
 
@@ -450,7 +504,7 @@ instead of hundreds of individual primitives.
 11. The per-texel composition loop is the surface-synthesis bottleneck, not the noise generation;
     moving from 512 px to 256 px halved the load time with no visible loss because tiling hides the
     missing resolution. (§1.1)
-12. Mesh caching at 1.6:1 reuse is what makes 175 props affordable. (§7.2)
+12. Mesh caching at 1.6:1 reuse is what makes 176 props affordable. (§7.2)
 13. Two-thirds of the total build is structure and dressing geometry. (§7.4)
 
 **Process findings**

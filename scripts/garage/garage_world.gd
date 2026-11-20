@@ -158,6 +158,14 @@ func _build() -> void:
 		## machine reuses the same build log the rest of the world already writes.
 		_capturing = true
 		GameState.tour_mode = false
+	# the performance harness, enabled by a perf.flag file. Same progression as
+	## capture mode, but it measures instead of photographing — and unlike capture
+	## mode it measures the shipped quality settings, because a measurement of the
+	## lean capture profile would describe a game nobody runs.
+	if _has_flag("perf"):
+		_log_to_disk("perf flag set, enabling performance measurement mode")
+		_perf_mode = true
+		GameState.tour_mode = false
 
 
 static func _has_flag(flag: String) -> bool:
@@ -264,7 +272,9 @@ func refresh_screens() -> void:
 
 
 func _process(delta: float) -> void:
-	if _capturing:
+	if _perf_mode:
+		_perf_process(delta)
+	elif _capturing:
 		_capture_process(delta)
 	if not build_complete:
 		return
@@ -507,7 +517,8 @@ func _preload_capture_profile() -> void:
 func _apply_capture_profile() -> void:
 	GameState.settings["quality"] = "medium"
 	GameState.settings["rain"] = false
-	GameState.save_settings()
+	# deliberately NOT saved: a verification run must not change what the next
+	# normal launch of the game looks like
 	if environment != null and environment.env != null:
 		environment.env.sdfgi_enabled = false
 		environment.env.ssr_enabled = false
@@ -775,3 +786,221 @@ func _cap_finish() -> void:
 			f.store_line(l)
 		f.flush()
 		f.close()
+
+
+# ===========================================================================
+# Performance measurement mode (perf.flag)
+# ===========================================================================
+## Enabled by a perf.flag file next to the project. It drives the same twelve-step
+## progression as capture mode, then parks the camera at three fixed viewpoints and
+## samples real frame times and renderer counters for each, writing a comparison
+## table to user://captures/perf.log.
+##
+## Unlike capture mode it does NOT apply the lean capture profile: measuring the
+## profile the screenshots use would describe a game nobody runs. It measures the
+## shipped quality settings, which is the number that belongs in the thesis.
+
+const PERF_VIEWS: Array = [
+	{"name": "assembly_wide", "pos": Vector3(0.0, 1.85, 2.4), "look": Vector3(0.0, 1.3, -1.5)},
+	{"name": "overview_high", "pos": Vector3(-3.3, 2.95, 4.4), "look": Vector3(1.5, 0.6, -2.4)},
+	{"name": "entrance", "pos": Vector3(0.0, 1.7, 4.2), "look": Vector3(-2.4, 1.4, 2.6)},
+]
+const PERF_SETTLE: int = 60
+const PERF_SAMPLES: int = 150
+
+var _perf_mode: bool = false
+var _perf_stage: int = 0
+var _perf_frames: int = 0
+var _perf_view: int = 0
+var _perf_samples: int = 0
+var _perf_sum_ms: float = 0.0
+var _perf_sum_gpu: float = 0.0
+var _perf_sum_cpu: float = 0.0
+var _perf_max_gpu: float = 0.0
+var _perf_settle: int = 0
+var _perf_lines: PackedStringArray = PackedStringArray()
+
+
+func _perf_process(delta: float) -> void:
+	_perf_frames += 1
+	match _perf_stage:
+		0:
+			if not build_complete:
+				return
+			_perf_force_shipped_settings()
+			_perf_header()
+			_cap_progression()
+			_perf_log("progression applied, beginning A/B over %d views" % PERF_VIEWS.size())
+			_perf_begin_view()
+		1:
+			# settling before the shipped-config sample
+			if _perf_frames < _perf_settle:
+				return
+			_perf_begin_sample()
+		2:
+			_perf_sample(delta)
+			if _perf_samples < PERF_SAMPLES:
+				return
+			_perf_report_view("shipped")
+			_perf_set_knobs(true)
+			_perf_log("  knobs -> legacy (4 cascades / 12 m, fog 42 m, ssr 24, scale 1.0, msaa 4x)")
+			_perf_stage = 3
+			_perf_settle = _perf_frames + PERF_SETTLE
+		3:
+			# settling before the legacy-config sample
+			if _perf_frames < _perf_settle:
+				return
+			_perf_begin_sample()
+		4:
+			_perf_sample(delta)
+			if _perf_samples < PERF_SAMPLES:
+				return
+			_perf_report_view("legacy")
+			_perf_set_knobs(false)
+			_perf_view += 1
+			if _perf_view >= PERF_VIEWS.size():
+				_perf_finish()
+				get_tree().quit()
+				return
+			_perf_begin_view()
+
+
+func _perf_begin_view() -> void:
+	_perf_place(_perf_view)
+	_perf_log("view %d: %s" % [_perf_view, String(PERF_VIEWS[_perf_view].name)])
+	_perf_stage = 1
+	_perf_settle = _perf_frames + PERF_SETTLE
+
+
+func _perf_begin_sample() -> void:
+	## The first frames after a camera move or a knob change compile shaders and
+	## rebuild the GI structure; the settle before this covers them, so every
+	## sample below is a steady frame.
+	_perf_samples = 0
+	_perf_sum_ms = 0.0
+	_perf_sum_gpu = 0.0
+	_perf_sum_cpu = 0.0
+	_perf_max_gpu = 0.0
+	_perf_stage += 1
+
+
+func _perf_sample(delta: float) -> void:
+	_perf_sum_ms += delta * 1000.0
+	# Godot 4.7 exposes no GPU frame-time readback to GDScript (checked against
+	# ClassDB in this build), so the CPU frame time and the renderer workload
+	# counters are the measurable half of the story; the wall clock is the other.
+	_perf_sum_cpu += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	_perf_samples += 1
+
+
+func _perf_set_knobs(legacy: bool) -> void:
+	## The knobs that are settable at runtime, flipped between the shipped tuning
+	## and the values the earlier build ran with, so the comparison is a controlled
+	## A/B inside one session rather than two runs that differ by machine state.
+	## Two shipped changes are not in this switch — the shadow atlas size and the
+	## screen SubViewport scale are fixed at renderer/build time.
+	var e: Environment = environment.env
+	if legacy:
+		e.sdfgi_cascades = 4
+		e.sdfgi_cascade0_distance = 12.0
+		e.sdfgi_max_distance = 90.0
+		e.ssr_max_steps = 24
+		e.volumetric_fog_length = 42.0
+		var vp: Viewport = get_viewport()
+		vp.scaling_3d_scale = 1.0
+		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+		vp.msaa_3d = Viewport.MSAA_4X
+	else:
+		# applying the preset again restores every knob together
+		environment.apply_quality()
+
+
+func _perf_force_shipped_settings() -> void:
+	## Capture runs leave a lean profile in the persisted settings (rain off, medium
+	## quality). A measurement has to describe what a player actually gets, so the
+	## shipped defaults are asserted here rather than inherited from whatever the
+	## last verification run saved.
+	GameState.settings["quality"] = "high"
+	GameState.settings["rain"] = true
+	GameState.settings["bloom"] = true
+	GameState.settings["ssao"] = true
+	GameState.settings["shadows"] = true
+	environment.apply_quality()
+	if runtime.rain != null:
+		runtime.rain.emitting = true
+	if player != null:
+		player.refresh_settings()
+	# Wall-clock frame time is only meaningful when nothing is pacing the loop. Two
+	# artefacts of a headless-ish verification session sat on top of the first pass
+	# of these measurements: Windows throttles an occluded window, and vsync paces
+	# presentation to whatever rate the display reports. So the window is pushed up
+	# and vsync is switched off FOR THE DURATION OF THE MEASUREMENT ONLY — the
+	# shipped build keeps its project vsync setting.
+	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
+	DisplayServer.window_move_to_foreground()
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	_perf_log("vsync disabled for measurement (shipped build keeps project setting)")
+
+
+func _perf_header() -> void:
+	var viewport: Viewport = get_viewport()
+	_perf_log("=== PERF RUN ===")
+	var q: Dictionary = GameConfig.quality()
+	_perf_log("quality preset   %s  msaa=%d  shadow_size=%d  texture_scale=%.2f  particles=%.2f" % [
+		String(GameState.settings.get("quality", "high")), int(q.get("msaa", 2)),
+		int(q.get("shadow_size", 2048)), float(q.get("texture_scale", 1.0)),
+		float(q.get("particles", 1.0))])
+	_perf_log("viewport         %dx%d  scaling=%.2f" % [
+		viewport.get_visible_rect().size.x, viewport.get_visible_rect().size.y,
+		viewport.scaling_3d_scale])
+	_perf_log("sdfgi=%s cascades=%d cell=%.2f  ssr=%s steps=%d  volfog=%s length=%.0f  glow=%s" % [
+		str(environment.env.sdfgi_enabled), environment.env.sdfgi_cascades,
+		environment.env.sdfgi_min_cell_size, str(environment.env.ssr_enabled),
+		environment.env.ssr_max_steps, str(environment.env.volumetric_fog_enabled),
+		environment.env.volumetric_fog_length, str(environment.env.glow_enabled)])
+	var casting: int = 0
+	for entry: Dictionary in runtime.lights:
+		var light: Light3D = entry["node"] as Light3D
+		if is_instance_valid(light) and light.shadow_enabled:
+			casting += 1
+	_perf_log("lights=%d shadow_casters=%d screens=%d" % [
+		runtime.lights.size(), casting, runtime.screens.size()])
+	var rep: Dictionary = build_report()
+	for k: String in rep:
+		if k == "steps_ms":
+			for s: String in rep[k]:
+				_perf_log("  step %-12s %9.1f ms" % [s, float(rep[k][s])])
+		elif k == "layouts":
+			continue
+		else:
+			_perf_log("  %-16s %s" % [k, str(rep[k])])
+
+
+func _perf_place(index: int) -> void:
+	_cap_place(PERF_VIEWS[index])
+
+
+func _perf_report_view(config_name: String) -> void:
+	var n: float = maxf(float(_perf_samples), 1.0)
+	var avg: float = _perf_sum_ms / n
+	_perf_log("  %-14s %-8s wall %6.2f ms (%5.1f fps)  cpu %6.2f ms  draws %5d  prims %7d" % [
+		String(PERF_VIEWS[_perf_view].name), config_name, avg, 1000.0 / maxf(avg, 0.001),
+		_perf_sum_cpu / n,
+		int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))])
+
+
+func _perf_log(line: String) -> void:
+	print("PERF: ", line)
+	_perf_lines.append(line)
+	var f := FileAccess.open("user://captures/perf.log", FileAccess.WRITE)
+	if f == null:
+		return
+	for l: String in _perf_lines:
+		f.store_line(l)
+	f.flush()
+	f.close()
+
+
+func _perf_finish() -> void:
+	_perf_log("=== DONE ===")

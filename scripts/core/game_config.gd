@@ -221,17 +221,24 @@ func merge_defaults(saved: Dictionary) -> Dictionary:
 
 
 const QUALITY_PRESETS: Dictionary = {
+	## `render_scale` is the number of pixels the 3D viewport renders at, upscaled
+	## by FSR 2 — the single largest lever on integrated graphics. Below 1.0 MSAA is
+	## switched off (see GarageEnvironment.apply_quality): FSR 2 brings its own
+	## temporal antialiasing, and paying for both bought nothing but heat.
 	"low": {
 		"msaa": 0, "shadow_size": 1024, "max_lights": 6, "bloom": true,
 		"ssao": false, "particles": 0.35, "texture_scale": 0.5, "reflections": false,
+		"render_scale": 0.60,
 	},
 	"medium": {
 		"msaa": 1, "shadow_size": 2048, "max_lights": 10, "bloom": true,
 		"ssao": true, "particles": 0.7, "texture_scale": 1.0, "reflections": true,
+		"render_scale": 0.75,
 	},
 	"high": {
-		"msaa": 2, "shadow_size": 4096, "max_lights": 16, "bloom": true,
+		"msaa": 0, "shadow_size": 2048, "max_lights": 16, "bloom": true,
 		"ssao": true, "particles": 1.0, "texture_scale": 1.5, "reflections": true,
+		"render_scale": 0.85,
 	},
 }
 

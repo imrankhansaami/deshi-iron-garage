@@ -260,6 +260,38 @@ func glass_smoky() -> StandardMaterial3D:
 	})
 
 
+func banner_print(path: String) -> StandardMaterial3D:
+	## The one supplied photograph in the project: the workshop banner the author
+	## asked to hang in his own garage. Loaded with Image.load_from_file() rather
+	## than through the editor's import pipeline, so the image needs no .import side
+	## file and a checkout still runs; if the file is missing the material degrades
+	## to a plain dark print with a warning rather than breaking the build.
+	var key: String = "banner|" + path
+	if _materials.has(key):
+		return _materials[key]
+	var m := StandardMaterial3D.new()
+	m.roughness = 0.62
+	m.metallic = 0.0
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	m.resource_name = "banner_print"
+	var img: Image = null
+	if FileAccess.file_exists(path):
+		img = Image.load_from_file(path)
+	if img != null and not img.is_empty():
+		m.albedo_texture = ImageTexture.create_from_image(img)
+		# a whisper of emission keeps the print readable in the workshop's dim
+		# corners without turning it into a light source
+		m.emission_enabled = true
+		m.emission = Color.WHITE
+		m.emission_energy_multiplier = 0.06
+		m.emission_texture = m.albedo_texture
+	else:
+		push_warning("banner_print: could not load %s, using a plain panel" % path)
+		m.albedo_color = Color(0.07, 0.09, 0.13)
+	_materials[key] = m
+	return m
+
+
 func fabric() -> StandardMaterial3D:
 	return surface("fabric")
 

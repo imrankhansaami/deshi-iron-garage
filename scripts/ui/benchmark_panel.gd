@@ -490,7 +490,8 @@ func _set_light_config(cfg: String) -> void:
 		if cfg == "full rig, no shadows":
 			light.shadow_enabled = false
 		elif c > 0:
-			light.shadow_enabled = on and c <= 1
+			# the designed seven, not "circuits 0 and 1"
+			light.shadow_enabled = on and bool(entry.get("wants_shadow", false))
 	_log_line("lighting config -> %s  (%d circuits energised)" % [cfg, on_circuits.size()])
 
 

@@ -29,6 +29,10 @@ const RED: String = "#e2453c"
 const INK: String = "#e8ecef"
 const MUTED: String = "#8a97a2"
 
+## The spec canvas is authored at 960 x 600; live screens render into a SubViewport
+## scaled by LIVE_SCALE and the canvas is scaled to match, so the layouts keep their
+## authored coordinates while the pixels actually redrawn five times a second drop
+## to 44% of what 960 x 600 cost.
 const W: int = 960
 const H: int = 600
 

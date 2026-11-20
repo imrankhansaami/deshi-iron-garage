@@ -140,7 +140,7 @@ func _build_plinth_and_courtyard() -> void:
 	add_child(yard)
 	var yard_col := StaticBody3D.new()
 	yard_col.name = "YardBody"
-	yard_col.add_child(ShapeKit.col_box(Vector3(width + 5.0, 0.1, 4.6)))
+	yard_col.add_child(ShapeKit.col_box(Vector3(width + 5.0, 0.1, 4.6), false))
 	yard_col.position = yard.position
 	add_child(yard_col)
 	# the boundary wall to the south and the neighbour's wall to the east
@@ -234,7 +234,7 @@ func _wall_segment(center: Vector3, size: Vector3, inward: Vector3, outer: Stand
 	root.add_child(inner_skin)
 	var col := StaticBody3D.new()
 	col.name = "Body"
-	col.add_child(ShapeKit.col_box(size))
+	col.add_child(ShapeKit.col_box(size, false))
 	root.add_child(col)
 	add_child(root)
 
@@ -269,7 +269,7 @@ func _build_columns() -> void:
 		add_child(base)
 		var body := StaticBody3D.new()
 		body.name = "ColumnBody%02d" % i
-		body.add_child(ShapeKit.col_box(Vector3(COLUMN_SECTION, height, COLUMN_SECTION)))
+		body.add_child(ShapeKit.col_box(Vector3(COLUMN_SECTION, height, COLUMN_SECTION), false))
 		body.position = col.position
 		add_child(body)
 

@@ -80,7 +80,16 @@ func bind(factory: PropFactory, signage: SignageBaker, shell: GarageStructure, m
 
 func register_light(light: Light3D, circuit: int, zone: StringName, base_energy: float = 0.0) -> void:
 	var e: float = base_energy if base_energy > 0.0 else light.light_energy
-	lights.append({"node": light, "circuit": circuit, "base_energy": e, "zone": zone})
+	# The shadow budget is designed per light — seven casters, chosen for where a
+	# shadow is actually readable — so the flag the creation site set is recorded
+	# here. The quality code used to replace this with "every light on circuit 0 or
+	# 1 casts", which turned twelve casters on, switched the core and stand-key
+	# shadows off, and made the graphics bench's lighting experiment measure a rig
+	# that no one was running.
+	lights.append({
+		"node": light, "circuit": circuit, "base_energy": e, "zone": zone,
+		"wants_shadow": light.shadow_enabled,
+	})
 	light.light_energy = 0.0 if circuit > 0 else e
 
 
@@ -957,7 +966,7 @@ func apply_settings() -> void:
 	for entry: Dictionary in lights:
 		var light: Light3D = entry["node"] as Light3D
 		if is_instance_valid(light):
-			light.shadow_enabled = bool(s.get("shadows", true)) and int(entry.circuit) <= 1
+			light.shadow_enabled = bool(s.get("shadows", true)) and bool(entry.get("wants_shadow", false))
 			light.set_meta("base_energy", float(entry.base_energy))
 
 

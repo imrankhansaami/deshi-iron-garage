@@ -27,6 +27,7 @@ static func register(f: PropFactory) -> void:
 	f.generators["clip_board"] = clip_board
 	f.generators["wall_calendar"] = wall_calendar
 	f.generators["wall_clock"] = wall_clock
+	f.generators["wall_banner"] = wall_banner
 	f.generators["poster"] = poster
 	f.generators["notebook"] = notebook
 	f.generators["pen"] = pen
@@ -738,6 +739,41 @@ static func tool_chest(f: PropFactory, o: Dictionary) -> Node3D:
 	root.add_child(ShapeKit.col_box(Vector3(w, h, d)))
 	root.set_meta("handle_path", "Handle")
 	root.set_meta("drawer_count", 3)
+	return root
+
+
+static func wall_banner(f: PropFactory, o: Dictionary) -> Node3D:
+	## A printed banner mounted on the wall — a backboard, the print and two
+	## batten rollers, the way a flex banner is actually hung. This is the project's
+	## one supplied photograph: the garage's owner asked for his own banner to hang
+	## in the room, and it is loaded at runtime by MaterialLibrary.banner_print().
+	var w: float = float(o.get("width", 2.0))
+	var aspect: float = float(o.get("aspect", 0.558))
+	var h: float = w * aspect
+	var root := Node3D.new()
+	root.name = "WallBanner"
+	# the backboard, so the print never reads as a decal floating on the wall
+	var back: MeshInstance3D = ShapeKit.box(Vector3(w + 0.05, h + 0.05, 0.018), f.ML.plywood(), "Back")
+	back.position = Vector3(0.0, h * 0.5, -0.014)
+	root.add_child(back)
+	# the print itself — ShapeKit.plane faces +Z, which is the wall's outward normal
+	var print_face: MeshInstance3D = ShapeKit.plane(Vector2(w, h), f.ML.banner_print(String(o.get("image", "res://assets/textures/user/imran_banner.jpeg"))), "Print")
+	print_face.position = Vector3(0.0, h * 0.5, -0.004)
+	root.add_child(print_face)
+	# batten rollers top and bottom, with end caps: how these are really hung
+	for i: int in range(2):
+		var batten: MeshInstance3D = ShapeKit.cyl(0.022, w + 0.10, f.ML.steel_dark(), 10, Vector3i(1, 0, 0), "Batten")
+		batten.position = Vector3(0.0, h * float(i), -0.006)
+		root.add_child(batten)
+		for k: int in range(2):
+			var cap: MeshInstance3D = ShapeKit.cyl(0.03, 0.02, f.ML.plastic_black(), 10, Vector3i(1, 0, 0), "Cap")
+			cap.position = batten.position + Vector3((w * 0.5 + 0.05) * (1.0 if k == 0 else -1.0), 0.0, 0.0)
+			root.add_child(cap)
+	# two nails into the wall behind the top batten
+	for i: int in range(2):
+		var nail: MeshInstance3D = ShapeKit.cyl(0.006, 0.03, f.ML.steel(), 6, Vector3i(0, 0, 1), "Nail")
+		nail.position = Vector3((w * 0.35) * (1.0 if i == 0 else -1.0), h + 0.01, -0.012)
+		root.add_child(nail)
 	return root
 
 

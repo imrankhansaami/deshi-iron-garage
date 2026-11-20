@@ -28,6 +28,7 @@ static func _ordinal(p: Dictionary, label: String, fallback: int) -> int:
 		return fallback
 	var want: String = label.strip_edges().to_lower()
 	var parts: PackedStringArray = hint_string.split(",")
+	# exact label first
 	for i: int in range(parts.size()):
 		var entry: String = parts[i].strip_edges()
 		if entry.to_lower() == want:
@@ -36,6 +37,16 @@ static func _ordinal(p: Dictionary, label: String, fallback: int) -> int:
 			var kv: PackedStringArray = entry.split(":")
 			if String(kv[0]).strip_edges().to_lower() == want:
 				return int(kv[1])
+	# then a prefix match, because engine labels carry version suffixes that move
+	# between builds: "FSR 2" has to find "FSR 2.2 (Slow)", and "Bilinear" has to
+	# find "Bilinear (Fastest)". Without this the lookup degrades to the fallback
+	# and the project silently upscales with the wrong filter.
+	for i: int in range(parts.size()):
+		var label_part: String = parts[i].strip_edges().split(":")[0].strip_edges().to_lower()
+		if label_part.begins_with(want):
+			if parts[i].contains(":"):
+				return int(parts[i].strip_edges().split(":")[1])
+			return i
 	push_warning("EnumRef: '%s' not in [%s], using fallback %d" % [label, hint_string, fallback])
 	return fallback
 

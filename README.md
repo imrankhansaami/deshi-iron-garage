@@ -44,7 +44,7 @@ godot --path . res://scenes/main/main_menu.tscn
 godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 175 props,
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 176 props,
 screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
 **10.4 s**, reported on screen step by step and written to a log.
 
@@ -117,7 +117,8 @@ plaster walls with a painted dado, a wooden bench scarred through to the grain, 
 hanging tools, a split single-cylinder motorcycle engine, a wire-spoked rickshaw wheel, a stripped
 tube frame, an overhead gantry rail, tea glasses and a flask, a wall calendar with Bengali month
 names, an IPS battery rack, a second-hand desktop with its side panel missing, an opened CRT with the
-anode still attached.
+anode still attached — and the one thing in the room that is not generated: the owner's own printed
+banner for Imran International Airlines, hung on the brick at his request.
 
 **World B — the laboratory the student built inside it.** A circular assembly stage with a lifting
 segmented deck, four two-axis manipulators built from motorcycle forks and servo boxes, a reactor
@@ -151,7 +152,7 @@ geometry, not asserted in text.
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **175 props in 130 distinct kinds** in 4.0 s.
+  prop catalogues build **176 props in 131 distinct kinds** in 4.0 s.
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.
@@ -209,13 +210,13 @@ in-world graphics bench. These are the numbers the application reports about its
 |---|---|
 | Full garage build | 10.4 s |
 | Surface synthesis, first 256 px surface | 272 ms |
-| Props built | 175 (130 kinds) |
-| Interactive stations | 34 |
+| Props built | 176 (131 kinds) |
+| Interactive stations | 35 |
 | Registered lights | 30 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1684 hits, 1044 misses |
-| Sustained frame rate, medium preset | 40–55 fps |
-| Sustained frame rate, high preset | 18–26 fps |
+| Mesh cache | 1733 hits, 1103 misses |
+| CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
+| Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |
 
 Full per-experiment tables, with the exact configuration each row was measured under, are in
 `docs/EXPERIMENTS.md`. Nothing in that file is estimated: every figure came from
@@ -233,6 +234,7 @@ README.md
 assets/
   fonts/                    # Noto Sans Bengali, Rubik, Oswald, JetBrains Mono (all OFL 1.1)
   textures/ui/              # project icon
+  textures/user/            # the one supplied photograph (the workshop banner)
 data/
   garage_config.json        # four location presets: dimensions, materials, signage
   components.json           # the three prototype modules and their provenance
@@ -279,7 +281,7 @@ docs/                       # eight thesis documents
 | `docs/SYSTEM_ARCHITECTURE.md` | scene structure, module relationships, the build order |
 | `docs/GRAPHICS_ALGORITHMS.md` | the five contributions with their maths |
 | `docs/RESEARCH_METHODOLOGY.md` | research questions, method, evaluation design |
-| `docs/EXPERIMENTS.md` | six reproducible experiments with measured results |
+| `docs/EXPERIMENTS.md` | six reproducible experiments with measured results, plus the compact-room performance retune |
 | `docs/ASSET_LICENSES.md` | every asset's origin and licence |
 | `docs/USER_MANUAL.md` | gameplay, controls, walkthrough, troubleshooting |
 

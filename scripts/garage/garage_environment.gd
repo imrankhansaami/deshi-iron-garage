@@ -115,19 +115,22 @@ func _build_environment() -> void:
 	env.ssao_light_affect = 0.28
 	env.ssao_ao_channel_affect = 0.4
 	# SDFGI gives the interior its bounce light: the cyan core spilling onto the
-	# brick wall is the effect the whole contrast depends on
+	# brick wall is the effect the whole contrast depends on. The coverage is sized
+	# to the 8.5 x 10.5 m room rather than inherited from the earlier 16.5 m plan —
+	# covering 90 m of falloff around a room this size was paying for cascades the
+	# camera can never see.
 	env.sdfgi_enabled = true
-	env.sdfgi_cascades = 4
+	env.sdfgi_cascades = 3
 	env.sdfgi_min_cell_size = 0.28
-	env.sdfgi_cascade0_distance = 12.0
-	env.sdfgi_max_distance = 90.0
+	env.sdfgi_cascade0_distance = 8.0
+	env.sdfgi_max_distance = 40.0
 	env.sdfgi_bounce_feedback = 0.35
 	env.sdfgi_read_sky_light = true
 	env.sdfgi_energy = 1.0
 	env.sdfgi_normal_bias = 0.12
 	env.sdfgi_probe_bias = 0.1
 	env.ssr_enabled = bool(GameConfig.quality().get("reflections", true))
-	env.ssr_max_steps = 24
+	env.ssr_max_steps = 16
 	env.ssr_fade_in = 0.15
 	env.ssr_fade_out = 2.4
 	# volumetric fog, confined to the assembly bay by height and density
@@ -137,7 +140,7 @@ func _build_environment() -> void:
 	env.volumetric_fog_emission = Color("101820")
 	env.volumetric_fog_emission_energy = 0.0
 	env.volumetric_fog_anisotropy = 0.42
-	env.volumetric_fog_length = 42.0
+	env.volumetric_fog_length = 26.0
 	env.volumetric_fog_detail_spread = 1.6
 	env.volumetric_fog_gi_inject = 0.4
 	env.volumetric_fog_ambient_inject = 0.25
@@ -634,17 +637,32 @@ func apply_quality() -> void:
 		dust.amount = int(900.0 * float(q.get("particles", 1.0)))
 	if rain != null:
 		rain.amount = int(1400.0 * float(q.get("particles", 1.0)))
-	var shadow_size: int = int(q.get("shadow_size", 2048))
-	get_viewport().msaa_3d = Viewport.MSAA_DISABLED if int(q.get("msaa", 2)) == 0 else (
-		Viewport.MSAA_2X if int(q.get("msaa", 2)) == 1 else Viewport.MSAA_4X)
+	# --- render scale, the largest single lever on integrated graphics ---------
+	## The preset renders the 3D viewport at a fraction of the window and lets FSR 2
+	## upscale it. FSR 2 includes temporal antialiasing, so MSAA is switched off
+	## while it is active rather than paying for both; at scale 1.0 the preset's
+	## MSAA setting applies as before. The scaling mode is resolved by label through
+	## EnumRef so a renamed engine enum degrades to bilinear upscaling, not to a
+	## silently wrong mode.
+	var vp: Viewport = get_viewport()
+	var scale: float = clampf(float(q.get("render_scale", 1.0)), 0.5, 1.0)
+	vp.scaling_3d_scale = scale
+	if scale < 0.995:
+		vp.scaling_3d_mode = EnumRef.value(vp, "scaling_3d_mode", "FSR 2", 0) as Viewport.Scaling3DMode
+		vp.msaa_3d = Viewport.MSAA_DISABLED
+	else:
+		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+		var msaa: int = int(q.get("msaa", 2))
+		vp.msaa_3d = Viewport.MSAA_DISABLED if msaa == 0 else (
+			Viewport.MSAA_2X if msaa == 1 else Viewport.MSAA_4X)
 	var shadows_on: bool = bool(GameState.settings.get("shadows", true))
 	if sun != null:
 		sun.shadow_enabled = shadows_on
+	# honour each light's designed shadow intent (see GarageRuntime.register_light)
 	for entry: Dictionary in runtime.lights:
 		var light: Light3D = entry["node"] as Light3D
 		if is_instance_valid(light):
-			var wants: bool = shadows_on and int(entry.circuit) <= 1
-			light.shadow_enabled = wants
+			light.shadow_enabled = shadows_on and bool(entry.get("wants_shadow", false))
 
 
 func stats() -> Dictionary:

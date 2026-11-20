@@ -58,6 +58,8 @@ func dress() -> void:
 	_register_component_crates()
 	# signage after everything: it looks up props by name
 	_signage()
+	# grime last of all, so the decals project onto the finished floor and walls
+	_grime_decals()
 
 
 # ===========================================================================
@@ -519,6 +521,17 @@ func _area_assembly() -> void:
 			runtime.register_screen(scr, "diagnostic", "diag%d" % i)
 	# the reactor housing on the north wall, scaled to the headroom
 	_place("reactor_housing", Vector3(1.5, 1.9, -structure.half_l + 0.26), Vector3.ZERO, {"radius": 0.5})
+	# The one supplied photograph in the project: the workshop owner's own banner,
+	# hung on the brick between the store corner and the display panels at his
+	# request. Everything else on these walls is generated; this is not, and
+	# ASSET_LICENSES.md says so.
+	var banner: Node3D = _place("wall_banner", Vector3(-2.35, 1.42, -structure.half_l + 0.175), Vector3.ZERO, {"width": 2.0})
+	_station(banner, Station.Kind.SIGN, Vector3.ZERO, {
+		"area": "assembly", "title": "Founder's banner",
+		"desc": "A print-shop banner for Imran International Airlines, showing the founder and owner, Imran Khan. It has nothing to do with exosuits, which is exactly why it reads as real: workshops hang what they are given.",
+		"spec": [["print", "photograph supplied by the project's author"], ["mount", "batten frame, 2.0 m"], ["subject", "Imran Khan — founder & owner"]],
+		"sfx": "paper", "distance": 3.2,
+	})
 	# two indicator strips resting on the platform's outer ring (ring tube top at
 	# y = 0.23) rather than floating above it
 	for i: int in range(2):
@@ -529,8 +542,11 @@ func _area_assembly() -> void:
 	_place("cable_tray_future", centre + Vector3(0.0, structure.height - 1.0, -2.5), Vector3.ZERO, {"length": 3.2})
 	# the parts tray on the floor beside the stage, where a fitter would leave it
 	_place("part_kit", centre + Vector3(-1.9, 0.0, -0.9), Vector3(0.0, -0.4, 0.0), {"count": 6})
-	# futuristic lighting: one key spot, the core, the hologram pool
-	_spot(platform, Vector3(0.0, 2.65, 0.7), Vector3(0.0, 1.15, 0.0), 4, &"assembly", 5.6, 36.0, true, Color("ffe0b8"))
+	# futuristic lighting: one key spot, the core, the hologram pool. The platform
+	# spot does not cast: the environment's StandKey already throws the readable
+	# shadow, and doubling it cost a shadow pass for no visual gain — the shadow
+	# budget is seven, matched to the documented rig.
+	_spot(platform, Vector3(0.0, 2.65, 0.7), Vector3(0.0, 1.15, 0.0), 4, &"assembly", 5.6, 36.0, false, Color("ffe0b8"))
 	var core_light := OmniLight3D.new()
 	platform.add_child(core_light)
 	core_light.light_color = Color("7cf3ff")
@@ -646,7 +662,9 @@ func _area_testing() -> void:
 	# the status strip runs along the floor at the deck edge, where it can be seen
 	# and where it has something to sit on
 	_place("indicator_strip", centre + Vector3(0.0, 0.02, -0.95), Vector3.ZERO, {"length": 1.4, "count": 10})
-	_spot(deck, Vector3(0.0, 2.55, 0.0), Vector3(0.0, 0.9, 0.22), 4, &"testing", 3.4, 32.0, true, Color("fff0d8"))
+	# no shadow from this spot either: the corner's cast shadow comes from the core
+	# light, and a second caster here cost a shadow pass for a shadow nobody reads
+	_spot(deck, Vector3(0.0, 2.55, 0.0), Vector3(0.0, 0.9, 0.22), 4, &"testing", 3.4, 32.0, false, Color("fff0d8"))
 	_station(panel, Station.Kind.DIAGNOSTICS, Vector3(0.0, 0.8, 0.0), {
 		"area": "testing", "title": "Diagnostic console",
 		"desc": "Analog gauges, a toggle bank, an emergency stop and a small panel. The instruments are World A; the readings are World B.",
@@ -1235,3 +1253,74 @@ func _ambience_props() -> void:
 	_place("impact_driver", Vector3(-3.86, 0.881, -1.42), Vector3(0.0, -0.4, 0.0))
 	# the brush by the bucket at the drain, where the floor gets washed down
 	_place("cup_brush", Vector3(3.45, 0.02, 4.62))
+
+
+# ===========================================================================
+# grime decals
+# ===========================================================================
+
+func _grime_decals() -> void:
+	## Soft grime where the geometry says it belongs: under machinery, beneath the
+	## wall fixtures, at the drain. A `Decal` projects onto whatever is behind it, so
+	## a stain follows the floor's wear and the wall's brick instead of floating as a
+	## painted disc. One generated texture serves every decal; the cost is the decal
+	## passes and nothing else, which the perf harness measures.
+	var oil: ImageTexture = _grime_texture(9127, Color(0.045, 0.04, 0.035, 0.85))
+	var rust: ImageTexture = _grime_texture(4471, Color(0.30, 0.15, 0.07, 0.5))
+	# floor: under the benches and machines, where a real floor is always darkest
+	_decal_floor(Vector3(-3.7, 0.3, 1.7), 2.0, oil)
+	_decal_floor(Vector3(-3.35, 0.3, 4.4), 1.2, oil)
+	_decal_floor(Vector3(3.1, 0.3, 1.3), 1.7, oil)
+	_decal_floor(Vector3(3.25, 0.3, 3.9), 1.2, oil)
+	_decal_floor(Vector3(0.0, 0.3, 4.35), 1.5, rust)
+	_decal_floor(Vector3(2.2, 0.3, 0.2), 1.1, oil)
+	_decal_floor(Vector3(-3.6, 0.3, -4.2), 1.4, oil)
+	# walls: rust runs under the window and the tool wall, down the plaster
+	_decal_wall(Vector3(-4.05, 1.15, 2.3), 1.3, rust, Vector3(0.0, 0.0, PI * 0.5))
+	_decal_wall(Vector3(-4.05, 1.05, 1.7), 1.1, rust, Vector3(0.0, 0.0, PI * 0.5))
+	# and under the window's sill on the electronics side
+	_decal_wall(Vector3(4.05, 1.1, 2.3), 1.2, rust, Vector3(0.0, 0.0, -PI * 0.5))
+
+
+func _decal_floor(pos: Vector3, diameter: float, tex: Texture2D) -> void:
+	var d := Decal.new()
+	d.name = "GrimeFloor"
+	d.texture_albedo = tex
+	d.size = Vector3(diameter, 0.6, diameter)
+	d.position = pos
+	add_child(d)
+
+
+func _decal_wall(pos: Vector3, diameter: float, tex: Texture2D, rot: Vector3) -> void:
+	var d := Decal.new()
+	d.name = "GrimeWall"
+	d.texture_albedo = tex
+	d.size = Vector3(diameter, 1.0, diameter)
+	d.position = pos
+	d.rotation = rot
+	add_child(d)
+
+
+func _grime_texture(seed_value: int, tint: Color) -> ImageTexture:
+	## A soft irregular blot: overlapping radial blobs with a broken interior,
+	## drawn by hand rather than with FastNoiseLite because the noise images come
+	## back empty under the headless renderer and a decal must look the same in
+	## both. Deterministic for a given seed.
+	var size: int = 192
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var rng: RandomNumberGenerator = NoiseTools.rng(seed_value)
+	var blobs: Array[Vector3] = []
+	for i: int in range(10):
+		blobs.append(Vector3(rng.randf_range(0.2, 0.8), rng.randf_range(0.2, 0.8), rng.randf_range(0.12, 0.3)))
+	for y: int in range(size):
+		var py: float = float(y) / float(size)
+		for x: int in range(size):
+			var px: float = float(x) / float(size)
+			var cover: float = 0.0
+			for b: Vector3 in blobs:
+				var dx: float = px - b.x
+				var dy: float = py - b.y
+				cover = maxf(cover, clampf(1.0 - sqrt(dx * dx + dy * dy) / b.z, 0.0, 1.0))
+			var streak: float = lerpf(0.6, 1.0, 0.5 + 0.5 * sin(px * 41.0) * sin(py * 37.0))
+			img.set_pixel(x, y, Color(tint.r, tint.g, tint.b, pow(cover, 1.7) * streak * tint.a))
+	return ImageTexture.create_from_image(img)

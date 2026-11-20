@@ -591,22 +591,31 @@ static func static_body(name: String, shape: CollisionShape3D, pos: Vector3 = Ve
 	return sb
 
 
-static func col_box(size: Vector3) -> CollisionShape3D:
+static func col_box(size: Vector3, on_base: bool = true) -> CollisionShape3D:
+	## Colliders are centred on their own origin, but every prop builds upwards from
+	## y = 0 — so an unpositioned collider sat half-buried in the floor, which also
+	## made each prop's reported bounds reach below the slab. `on_base` rests the
+	## box on the prop's base instead, which is what a prop wants; the structure
+	## passes false where its body already sits at the shape's centre.
 	var cs := CollisionShape3D.new()
 	var sh := BoxShape3D.new()
 	sh.size = size
 	cs.shape = sh
 	cs.name = "Col"
+	if on_base:
+		cs.position = Vector3(0.0, size.y * 0.5, 0.0)
 	return cs
 
 
-static func col_cyl(radius: float, height: float) -> CollisionShape3D:
+static func col_cyl(radius: float, height: float, on_base: bool = true) -> CollisionShape3D:
 	var cs := CollisionShape3D.new()
 	var sh := CylinderShape3D.new()
 	sh.radius = radius
 	sh.height = height
 	cs.shape = sh
 	cs.name = "Col"
+	if on_base:
+		cs.position = Vector3(0.0, height * 0.5, 0.0)
 	return cs
 
 
@@ -616,6 +625,7 @@ static func col_sphere(radius: float) -> CollisionShape3D:
 	sh.radius = radius
 	cs.shape = sh
 	cs.name = "Col"
+	cs.position = Vector3(0.0, radius, 0.0)
 	return cs
 
 
@@ -626,6 +636,7 @@ static func col_capsule(radius: float, height: float) -> CollisionShape3D:
 	sh.height = height
 	cs.shape = sh
 	cs.name = "Col"
+	cs.position = Vector3(0.0, height * 0.5, 0.0)
 	return cs
 
 

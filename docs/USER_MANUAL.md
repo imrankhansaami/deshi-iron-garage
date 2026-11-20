@@ -28,7 +28,7 @@ godot --path . res://scenes/main/garage_world.tscn
 ```
 
 The first launch builds the garage and shows real progress: surface synthesis, then the shell, the
-lighting rig, 175 props, the screens and finally the interface. On a machine with integrated graphics
+lighting rig, 176 props, the screens and finally the interface. On a machine with integrated graphics
 this takes around 10 seconds; on a discrete GPU it will be considerably faster. The build time is also
 written to `user://captures/build.log`.
 
