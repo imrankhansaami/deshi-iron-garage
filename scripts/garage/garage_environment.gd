@@ -8,7 +8,7 @@ extends Node3D
 ##   circuit 0  daylight       always on, the sun through the shutter and windows
 ##   circuit 1  tube lights    the warm fluorescent battlements over World A
 ##   circuit 2  bench lamps    the focused task lights on the benches
-##   circuit 3  desk and bulb  the cool electronics pool and the hanging bulb
+##   circuit 3  desk lamps     the cool electronics pool and the scope glow
 ##   circuit 4  reactor zone   the cyan core, the hologram and the assembly spots
 ##
 ## Design rules that keep it from looking like a game engine default:
@@ -35,7 +35,6 @@ var env: Environment
 var sun: DirectionalLight3D
 var sky: Sky
 var skylight: OmniLight3D
-var always_on: OmniLight3D
 var dust: GPUParticles3D
 var rain: GPUParticles3D
 var rain_sound: AudioStreamPlayer
@@ -210,22 +209,12 @@ func _build_daylight() -> void:
 	skylight.shadow_enabled = false
 	add_child(skylight)
 	runtime.register_light(skylight, 0, &"daylight", 0.85)
-	# the one interior light the switchboard cannot cut: a caged bulb over the walk
-	# lane, wired ahead of the main switch to the incoming supply. It is on circuit
-	# 0 — the daylight circuit that set_power never touches — so the room is never
-	# black, even before the player has found the switchboard. The visible bulb is
-	# placed by GarageDressing._ambience_props() at the same coordinates.
-	always_on = OmniLight3D.new()
-	always_on.name = "AlwaysOnBulb"
-	always_on.position = Vector3(0.0, 2.5, 2.6)
-	always_on.light_color = Color("ffd9a0")
-	always_on.light_energy = 1.5
-	always_on.omni_range = 6.5
-	always_on.omni_attenuation = 1.5
-	always_on.light_indirect_energy = 0.35
-	always_on.shadow_enabled = false
-	add_child(always_on)
-	runtime.register_light(always_on, 0, &"always_on", 1.5)
+	# NOTE: the room's always-on bulbs are NOT built here. They hang on the wall's
+	# own bare-bulb props and are built by GarageDressing._always_on_bulb(), on
+	# circuit 0 — the incoming line — so each one's light is parented to its bulb
+	# and travels with it. Five of them: walk lane, mechanical bench, electronics
+	# bench, testing corner, store. The room is never dark, even before the player
+	# has found the switchboard.
 	# the two window shafts: spots aimed into the room, gated on the shutter so the
 	# shafts strengthen when the curtain goes up. Both windows now sit at z = 2.3,
 	# one over each bench, so both shafts rake in at the same angle.
@@ -279,9 +268,9 @@ func _build_daylight() -> void:
 func _build_world_a_lighting() -> void:
 	var warm: Color = Color(GameConfig.config.get("lighting", {}).get("fluorescent_color", "#ffe6bd"))
 	## Four fixtures, each one over a real wall fixture that the dressing pass also
-	## places, so the light never comes from nowhere. The fifth, a store bulb, is
-	## registered by _build_electronics_lighting() because it is a bare bulb rather
-	## than a batten.
+	## places, so the light never comes from nowhere. The fifth hanging bulb — the
+	## store's — is an always-on circuit-0 bulb and is built by the dressing with
+	## the rest of the always-on set.
 	var fixtures: Array = [
 		{"pos": Vector3(-1.9, structure.height - 0.45, 1.2), "energy": 3.2, "range": 7.0, "zone": &"mech"},
 		{"pos": Vector3(1.9, structure.height - 0.45, 1.6), "energy": 2.8, "range": 7.0, "zone": &"elec"},
@@ -362,18 +351,9 @@ func _build_electronics_lighting() -> void:
 	scope.shadow_enabled = false
 	add_child(scope)
 	runtime.register_light(scope, 3, &"elec", 0.55)
-	# the bare bulb over the north-west stock corner, which used to hang in a
-	## separate store room and now hangs over the same room's shelf
-	var bulb := OmniLight3D.new()
-	bulb.name = "StoreBulb"
-	bulb.position = Vector3(-structure.half_w + 1.3, structure.height - 0.75, -4.2)
-	bulb.light_color = Color("ffe0b0")
-	bulb.light_energy = 1.3
-	bulb.omni_range = 4.5
-	bulb.omni_attenuation = 1.6
-	bulb.shadow_enabled = false
-	add_child(bulb)
-	runtime.register_light(bulb, 3, &"store", 1.3)
+	# the bare bulb over the north-west stock corner is an always-on bulb now —
+	# circuit 0, its light parented to the bulb prop — so the store is never dark.
+	# It is built by GarageDressing._always_on_bulb() with the store's other props.
 
 
 func _build_assembly_lighting() -> void:

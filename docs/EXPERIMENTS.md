@@ -274,10 +274,11 @@ count and the shadow-pass draw calls alongside the frame time. Measurements are 
 camera (fixed transform) so all configurations see the same geometry.
 
 **Note on the rig these rows were measured on.** The table below is from the lighting rig of the
-first build — 31 lights, 7 casters. The shipped rig has 30 (the compact room carries four tube
-fixtures instead of five) with the same seven-caster budget, the same circuit structure and the same
-finding: the cost tracks the shadow casters, not the light count. Re-running the tab on the shipped
-room reproduces the shape of the table rather than these exact milliseconds.
+first build — 31 lights, 7 casters. The shipped rig has 34 — four tube fixtures instead of five,
+plus the five always-on bulbs, which cast no shadows — with the same seven-caster budget, the same
+circuit structure and the same finding: the cost tracks the shadow casters, not the light count.
+Re-running the tab on the shipped room reproduces the shape of the table rather than these exact
+milliseconds.
 
 **Results**
 
@@ -377,47 +378,47 @@ performance work.
 
 | Step | Time | Share | What dominates |
 |---|---|---|---|
-| Surface synthesis (first surface) | 283 ms | 2.3% | the per-texel loop |
-| Structure — floor, walls, columns, roof, shutter, windows | 6 510 ms | 52.2% | mesh generation, collision shapes, and the surfaces it requests |
-| Environment — sky, `WorldEnvironment`, 31 lights, dust, rain | 43 ms | 0.3% | negligible |
-| Dressing — 181 placements, 45 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulb | 5 290 ms | 42.4% | prop construction, station wiring, and its surfaces |
-| Screens — 5 live `SubViewport`s and their materials | 98 ms | 0.8% | — |
-| Player — camera, ray, reticle, collision | 41 ms | 0.3% | — |
-| Interface — HUD, 10 panels, objective director | 208 ms | 1.7% | — |
-| **Total** | **12 473 ms** | **100%** | |
+| Surface synthesis (first surface) | 264 ms | 2.4% | the per-texel loop |
+| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 5 755 ms | 51.8% | mesh generation, collision shapes, and the surfaces it requests |
+| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 46 ms | 0.4% | negligible |
+| Dressing — 183 placements, 45 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs | 4 781 ms | 43.1% | prop construction, station wiring, and its surfaces |
+| Screens — 5 live `SubViewport`s and their materials | 67 ms | 0.6% | — |
+| Player — camera, ray, reticle, collision | 28 ms | 0.3% | — |
+| Interface — HUD, 10 panels, objective director | 161 ms | 1.5% | — |
+| **Total** | **11 101 ms** | **100%** | |
 
 **Dressing breakdown, `GarageDressing.dressing_breakdown()`**
 
 | | |
 |---|---|
-| Props placed by the dressing pass | 181 |
-| Props built in total (includes module payloads and suit parts) | 187 |
+| Props placed by the dressing pass | 183 |
+| Props built in total (includes module payloads and suit parts) | 189 |
 | Distinct prop kinds | 134 |
-| Authored placements | 149 |
+| Authored placements | 151 |
 | Procedural placements | 22 (4 groups: 6 + 5 + 6 + 5) |
 | Wall-rack placements | 10 |
-| Mesh cache hits / misses | 1 772 / 1 123 |
+| Mesh cache hits / misses | 1 776 / 1 124 |
 | Rejection-sampler efficiency | 46% of attempts produce a placement |
 
-The counts above are from the shipped build. The per-step times are from the final capture run of
-the day, which was not a quiet machine: the same garage measured 11 086 ms twenty minutes earlier, so
-treat absolute milliseconds as load-dependent — they drift by about 20% when something else is using
-the laptop — and the shares as the finding. This is worth stating rather than pretending the machine
-is a benchmark rig.
+The counts above are from the shipped build. The per-step times are from the latest capture run;
+the same garage measured 12 473 ms and 11 086 ms within the hour either side of it, so treat absolute
+milliseconds as load-dependent — they drift by about 20% when something else is using the laptop —
+and the shares as the finding. This is worth stating rather than pretending the machine is a
+benchmark rig.
 
-**Finding 7.1 — surface synthesis is ~77% of the wall clock.** The first surface costs 283 ms in step
-0; the other 33 are synthesised lazily inside the structure and dressing steps. At ≈ 280 ms per
-surface that is ≈ 9.6 s of the 12 473 ms total — so the largest single lever left is moving that
-per-texel loop to a compute shader, not reducing geometry. The earlier build of a 13 × 16.5 m room
-measured 71%; the share rose when the room shrank, because the texture cost is per *surface*, not per
-cubic metre.
+**Finding 7.1 — surface synthesis dominates the wall clock.** The first surface costs 264–283 ms across
+runs in step 0; the other 33 are synthesised lazily inside the structure and dressing steps. At
+≈ 270 ms per surface that is roughly nine seconds of the ≈ 11 s total — so the largest single lever
+left is moving that per-texel loop to a compute shader, not reducing geometry. The earlier build of a
+13 × 16.5 m room measured 71%; the share rose when the room shrank, because the texture cost is per
+*surface*, not per cubic metre.
 
-**Finding 7.2 — mesh caching is what makes 187 props affordable.** 1 123 distinct meshes serve 181
-placed props through 1 772 hits. Without the cache every spanner, capacitor and bolt would allocate
+**Finding 7.2 — mesh caching is what makes 189 props affordable.** 1 124 distinct meshes serve 183
+placed props through 1 776 hits. Without the cache every spanner, capacitor and bolt would allocate
 its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
 is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 
-**Finding 7.3 — environment setup is free; environment *rendering* is not.** Building 31 lights, the
+**Finding 7.3 — environment setup is free; environment *rendering* is not.** Building 34 lights, the
 sky, the SDFGI configuration and two particle systems costs 39 ms. *Rendering* SDFGI costs 9.5 ms per
 frame. Setup cost and runtime cost are unrelated here, which is worth knowing when choosing what to
 add.
@@ -484,11 +485,11 @@ loop, their *difference* is meaningful while their absolute values are inflated 
 frame rates belong to an interactive session: the in-app graphics bench (F6) reports them, which is
 how the 40–55 fps medium / 18–26 fps high figures elsewhere in this document were taken.
 
-### 7.6 Two bugs the auto-open probe found
+### 7.6 Bugs the probes found
 
-The auto-opening gate needed only a proximity check to roll the curtain, but verifying it exposed two
-defects that had shipped inside the always-open build, both invisible to the compile validator and to
-the capture histograms:
+The auto-opening gate needed only a proximity check to roll the curtain, but verifying it — and then
+verifying that the shop could actually be walked into — exposed four defects that had shipped inside
+the always-open build, all invisible to the compile validator and to the capture histograms:
 
 **A restore that replayed its own build.** `_apply_restored_state()` replayed a persisted run by
 reading `GameState` *after* the build had finished — but the build writes `GameState` itself (step 6b
@@ -504,8 +505,27 @@ were never in that set: the curtain rolled up correctly — the probe showed the
 stationary strips that read as a security grille. Fixed by parenting each rib to its own slat and the
 rail and handle to the lowest slat, so the whole assembly travels together.
 
-Both were found by instrumenting the *state*, not the image: the curtain's numbers were correct in both
-cases, and only the joint reading of numbers and pixels located the faults.
+**An entrance that could not be entered.** `tests/walk_in.gd` drives the real player from the spawn
+and logs stalls with the exact collider being slid against. It sat at the 15 cm yard-to-slab lip for
+ever: a step face contacts the lower half of the capsule's rounded feet, whose normal pushes *down*,
+not up — a capsule can only slide up a step that reaches its upper half, so any lip short of the
+capsule radius is a wall. (The 0.14 m step was also invisible in testing because the spawn drops the
+player in from 1.1 m: the first walk-in attempt landed *past* the lip while airborne.) Fixed with a
+6-degree concrete apron whose top edge lands 3 cm *above* the slab, so the final move onto the slab is
+a drop, and drops never block.
+
+**A courtyard with no floor past the walls — and a player who could not walk up slopes.** The street
+wall and neighbour walls are props' visuals with no physics; the walk probe walked straight through
+them and free-fell past `y = -236`. Three invisible walls now match the visuals, and the packed-earth
+yard reaches the walls. The probe then found the last cause of the standstill: the player controller
+reset its vertical velocity only on the landing *frame*, so continuous ground contact accumulated
+gravity into tens of metres per second downward, whose down-slope component on the ramp cancelled the
+walk speed. The controller now holds a light ground stick force instead. Invisible on flat floors; a
+hard standstill on any slope.
+
+All four were found by instrumenting the *state*, not the image: in every case some numbers read
+"fine" while the experience was broken — the curtain was mathematically open, the player was
+mathematically on the ground — and only the joint reading of numbers and pixels located the faults.
 
 ---
 
@@ -537,7 +557,7 @@ cases, and only the joint reading of numbers and pixels located the faults.
 11. The per-texel composition loop is the surface-synthesis bottleneck, not the noise generation;
     moving from 512 px to 256 px halved the load time with no visible loss because tiling hides the
     missing resolution. (§1.1)
-12. Mesh caching at 1.6:1 reuse is what makes 181 props affordable. (§7.2)
+12. Mesh caching at 1.6:1 reuse is what makes 189 props affordable. (§7.2)
 13. Two-thirds of the total build is structure and dressing geometry. (§7.4)
 14. A state the build writes itself cannot be used to audit the build: the restore replay read
     `GameState` back and re-applied the still-running build's own writes, killing the new auto-open on
@@ -545,14 +565,21 @@ cases, and only the joint reading of numbers and pixels located the faults.
 15. Decorative children of an animated assembly must ride the moving part: nineteen ribs parented to
     the curtain instead of their slats left a permanent grille across the open doorway while every
     state read "open". (§7.6)
+16. A step below the capsule's radius is a wall, not a step: the contact sits on the lower half of the
+    rounded feet, whose normal points down, so the player cannot slide up any lip shorter than about
+    0.34 m. Ramps — with their top edge *above* the landing, so the last move is a drop — are the only
+    reliable cure. (§7.6)
+17. Vertical velocity that resets only on the landing frame accumulates gravity while grounded; on
+    flat floors it is invisible, on slopes its down-slope component quietly cancels the walk speed to a
+    standstill. Hold a ground stick force instead. (§7.6)
 
 **Process findings**
 
-16. A rotation that is correct for one use of a mesh type is not a property of the mesh type: 61 torus
+18. A rotation that is correct for one use of a mesh type is not a property of the mesh type: 61 torus
     sites were inverted by copying a wheel's orientation to rings that encircle a vertical axis.
-17. A compile validator that loads every script headless caught every error class before it could be
+19. A compile validator that loads every script headless caught every error class before it could be
     mistaken for a rendering problem, including a cyclic type dependency between two classes.
-18. Three separate geometry bugs — the torus winding, the stretched texture tiling, and a CRT screen
+20. Three separate geometry bugs — the torus winding, the stretched texture tiling, and a CRT screen
     contained inside its own cabinet — all compiled cleanly and were only visible in a render. **Early
     rendering is a debugging technique, not a final step.**
 

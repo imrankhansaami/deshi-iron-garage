@@ -226,18 +226,22 @@ func _physics_process(delta: float) -> void:
 		wish = wish.normalized()
 	velocity.x = wish.x * speed
 	velocity.z = wish.z * speed
-	# gravity and jump
+	# gravity and jump. While grounded the vertical velocity is held at a light
+	# stick force rather than left to accumulate: the old code reset `_velocity_y`
+	# only on the landing frame, so a few seconds of continuous ground contact built
+	# tens of m/s of downward velocity whose down-slope component cancelled the walk
+	# speed — invisible on flat floors, a hard standstill on the entrance ramp.
 	var g: float = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)) * gravity_scale
-	_velocity_y -= g * delta
-	velocity.y = _velocity_y
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	if is_on_floor() and Input.is_action_just_pressed("jump"):
 		_velocity_y = sqrt(2.0 * g * jump_height)
-		velocity.y = _velocity_y
 		AudioBank.play_at("tool_place", global_position + Vector3(0.0, 0.05, 0.0), -12.0, 0.8)
+	elif is_on_floor():
+		_velocity_y = -0.6
+	else:
+		_velocity_y -= g * delta
+	velocity.y = _velocity_y
 	move_and_slide()
 	var landed: bool = is_on_floor()
-	if landed and not _was_grounded:
-		_velocity_y = 0.0
 	_was_grounded = landed
 	_track_step(delta, wish.length())
 	_head_bob(delta, wish.length(), landed)

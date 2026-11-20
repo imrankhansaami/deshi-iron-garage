@@ -133,16 +133,39 @@ func _build_plinth_and_courtyard() -> void:
 	var plinth: MeshInstance3D = ShapeKit.box(Vector3(width + 1.3, plinth_h, length + 3.2), ML.surface("concrete_block", {"uv_scale": Vector3(3.0, 3.0, 3.0)}), "Plinth")
 	plinth.position = Vector3(0.0, -plinth_h * 0.5 - 0.02, 0.7)
 	add_child(plinth)
-	# courtyard ground outside the shutter, packed earth
-	var yard: MeshInstance3D = ShapeKit.box(Vector3(width + 5.0, 0.1, 4.6), ML.surface("packed_earth", {"uv_scale": Vector3(4.0, 4.0, 4.0)}), "Courtyard")
-	yard.position = Vector3(0.0, -0.19, half_l + 2.8)
+	# courtyard ground outside the shutter, packed earth. Widened from width + 5.0
+	# to width + 5.6 and deepened to start beneath the slab edge (z = 5.25) so the
+	# earth actually reaches the neighbour walls: at the old extent there was a
+	# strip of void between the ground's edge and the walls, and the player walking
+	# sideways fell through it and out of the world.
+	var yard: MeshInstance3D = ShapeKit.box(Vector3(width + 5.6, 0.1, 5.2), ML.surface("packed_earth", {"uv_scale": Vector3(4.0, 4.0, 4.0)}), "Courtyard")
+	yard.position = Vector3(0.0, -0.19, half_l + 2.6)
 	yard.set_meta("floor_kind", "earth")
 	add_child(yard)
 	var yard_col := StaticBody3D.new()
 	yard_col.name = "YardBody"
-	yard_col.add_child(ShapeKit.col_box(Vector3(width + 5.0, 0.1, 4.6), false))
+	yard_col.add_child(ShapeKit.col_box(Vector3(width + 5.6, 0.1, 5.2), false))
 	yard_col.position = yard.position
 	add_child(yard_col)
+	# the courtyard's bounds. The street wall and the neighbour walls are props'
+	# visuals — meshes with no physics — so walking past them left the ordinary
+	# walkable ground behind and dropped the player into the void (measured: free
+	# fall past y = -236). Three invisible walls now match those visuals exactly:
+	# the street wall to the south, the two neighbour walls to the sides.
+	var bounds := StaticBody3D.new()
+	bounds.name = "YardBounds"
+	for spec: Array in [
+		[Vector3(0.0, 1.0, half_l + 4.35), Vector3(width + 5.6, 2.2, 0.3)],
+		[Vector3(half_w + 2.9, 1.0, half_l + 2.38), Vector3(0.3, 2.2, 4.8)],
+		[Vector3(-half_w - 2.9, 1.0, half_l + 2.38), Vector3(0.3, 2.2, 4.8)],
+	]:
+		var b_cs := CollisionShape3D.new()
+		var b_box := BoxShape3D.new()
+		b_box.size = spec[1]
+		b_cs.shape = b_box
+		b_cs.position = spec[0]
+		bounds.add_child(b_cs)
+	add_child(bounds)
 	# the boundary wall to the south and the neighbour's wall to the east
 	var boundary: Node3D = props.build("exterior_facade", {"width": 6.5})
 	boundary.position = Vector3(0.0, 0.0, half_l + 4.4)
@@ -412,6 +435,37 @@ func _build_shutter_frame() -> void:
 	sill.position = Vector3(0.0, 0.03, half_l - 0.18)
 	sill.set_meta("floor_kind", "concrete")
 	add_child(sill)
+	# the entrance apron: a concrete ramp from the packed earth up to the slab lip
+	# outside the gate. The slab edge is a 15 cm step, and a step that height is a
+	# wall to the player capsule — the face contacts the lower half of the rounded
+	# feet, whose normal pushes down, not up, so walking into the workshop from the
+	# yard stalled dead at the lip (measured: the walk probe sat at z = 7.73 for
+	# ever, and a 7 mm step stalled it just as hard). So the ramp's top edge lands
+	# ABOVE the slab — the last move onto the slab is a 3 cm drop, and drops never
+	# block.
+	var apron_run: float = 1.55
+	var apron_rise: float = 0.172
+	var apron_len: float = sqrt(apron_run * apron_run + apron_rise * apron_rise)
+	var apron_tilt: float = atan2(apron_rise, apron_run)
+	var apron_span: Vector3 = Vector3(shutter_width + 1.6, 0.07, apron_len)
+	var apron_mesh: MeshInstance3D = ShapeKit.box(apron_span, ML.surface("concrete_block"), "EntranceApron")
+	apron_mesh.rotation.x = apron_tilt
+	# the top surface runs from above the slab lip (z = half_l + 2.0, y = +0.030)
+	# down to the yard's own surface (z = half_l + 3.55, y = -0.142); its underside
+	# meets the earth around half-way, so no void shows beneath it
+	apron_mesh.position = Vector3(0.0, -0.091, half_l + 2.77)
+	apron_mesh.set_meta("floor_kind", "concrete")
+	add_child(apron_mesh)
+	var apron_body := StaticBody3D.new()
+	apron_body.name = "EntranceApronBody"
+	var apron_shape := CollisionShape3D.new()
+	var apron_box := BoxShape3D.new()
+	apron_box.size = apron_span
+	apron_shape.shape = apron_box
+	apron_body.add_child(apron_shape)
+	apron_body.rotation.x = apron_tilt
+	apron_body.position = apron_mesh.position
+	add_child(apron_body)
 
 
 func _build_window_openings() -> void:

@@ -48,7 +48,7 @@ godot --path . res://scenes/main/main_menu.tscn
 godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 187 props,
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 189 props,
 screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
 **≈ 11–12 s** — it moves with machine load — reported on screen step by step and written to a log.
 
@@ -160,11 +160,12 @@ geometry, not asserted in text.
   radial spokes, thresholded arc filaments, fresnel shell); holographic floor projection; CRT/LCD
   display glass with chroma split, scanlines and a refresh band; machined metal with emissive seams
   and edge wear; cable sleeve with weave ribs and a dust ramp.
-- **A lighting rig in four switchable circuits** over one shadow-casting daylight source, plus one
-  **always-on bulb over the walk lane** wired ahead of the switchboard on the incoming line — the
-  room is never black, even before power is restored. The shutter position continuously drives the
-  daylight shafts and the volumetric fog density — the gate opens by itself as anyone approaches the
-  courtyard, and the room visibly wakes up as it lifts. The
+- **A lighting rig in four switchable circuits** over one shadow-casting daylight source, plus **five
+  always-on bulbs** wired ahead of the switchboard on the incoming line — walk lane, both benches,
+  the testing corner and the store — so the room is never dark, even before power is restored. Each
+  bulb carries its own light, so picking one up and moving it moves its glow with it. The shutter
+  position continuously drives the daylight shafts and the volumetric fog density — the gate opens by
+  itself as anyone approaches the courtyard, and the room visibly wakes up as it lifts. The
   expensive features are preset tiers — SDFGI and the fog are off below the high preset, and the
   shadow budget drops from seven casters to five or three — while an **adaptive-resolution
   controller** moves the render scale inside 0.55–0.85 to hold a comfortable frame rate on whatever
@@ -176,7 +177,7 @@ geometry, not asserted in text.
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **187 props in 134 distinct kinds** in 4.1 s.
+  prop catalogues build **189 props in 134 distinct kinds** in 4.1 s.
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.
@@ -240,13 +241,13 @@ in-world graphics bench. These are the numbers the application reports about its
 
 | Measurement | Value |
 |---|---|
-| Full garage build | ≈ 11–12 s (12.5 s in the final capture run, 11.1 s the run before) |
+| Full garage build | ≈ 11–12 s (11.1 s in the latest capture run; it moves with machine load) |
 | Surface synthesis, first 256 px surface | ≈ 280 ms |
-| Props placed | 181 (187 built, 134 kinds) |
+| Props placed | 183 (189 built, 134 kinds) |
 | Interactive stations | 45 |
-| Registered lights | 31 (of which shadow casters: 7) |
+| Registered lights | 34 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1772 hits, 1123 misses |
+| Mesh cache | 1776 hits, 1124 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Adaptive resolution | on by default: render scale 0.55–0.85, ±0.05 per second, holding worst-case frames under 24 ms |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |
@@ -300,12 +301,13 @@ scripts/
   player/                   # Player
   ui/                       # Hud, BenchmarkPanel, MainMenu
 tests/
-  validate_scripts.gd       # headless compile check for all 41 scripts
+  validate_scripts.gd       # headless compile check for all 42 scripts
   timing_probe.gd           # measures surface synthesis at three resolutions
   introspect.gd             # engine API introspection, used during development
   dump_floor.gd             # headless scene inspector: names what a capture shows
   bake_preview.gd           # bakes signage recipes to PNGs for proof-reading
   carry_audit.gd            # sizes every prop and exercises pick/place headlessly
+  walk_in.gd                # drives the real player in, out and across the yard
 docs/                       # eight thesis documents
 ```
 

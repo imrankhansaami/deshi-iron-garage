@@ -28,7 +28,7 @@ godot --path . res://scenes/main/garage_world.tscn
 ```
 
 The first launch builds the garage and shows real progress: surface synthesis, then the shell, the
-lighting rig, 187 props, the screens and finally the interface. On a machine with integrated graphics
+lighting rig, 189 props, the screens and finally the interface. On a machine with integrated graphics
 this takes around 10 seconds; on a discrete GPU it will be considerably faster. The build time is also
 written to `user://captures/build.log`.
 
@@ -95,7 +95,7 @@ progress. If you are stuck for 35 seconds, a hint appears once in the bottom-lef
 | # | Objective | Where | How |
 |---|---|---|---|
 | 1 | ~~Roll the shutter open~~ | — | satisfied at start: the gate rolls itself up as you arrive — its presence sensor lifts the curtain, and it can no longer be lowered |
-| 2 | Restore workshop power | entrance, west wall | `E` on the switchboard. **Inspect it first with `F`** - the IPS bank beside it tells you what state the supply is in. One bulb over the walk lane already burns — it is wired ahead of the switchboard to the incoming line, so the room is never quite dark |
+| 2 | Restore workshop power | entrance, west wall | `E` on the switchboard. **Inspect it first with `F`** - the IPS bank beside it tells you what state the supply is in. A chain of bulbs — the walk lane, both benches, the testing corner, the store — already burns: they are wired ahead of the switchboard to the incoming line, so the room is never dark whatever you do to the switches |
 | 3 | Bring the workstation online | electronics bench, east | `E` on the desktop tower. It runs a POST sequence, then a login, then the console |
 | 4 | Read the inventor's notebook | mechanical bench, west | `E` on the notebook lying open on the bench |
 | 5 | Salvage the structural frame module | mechanical area | `E` on the crate tagged **FRAME** |
@@ -228,7 +228,10 @@ three gauges, six toggle levers and a mushroom emergency stop, a portrait diagno
 
 **Outside.** Step back out through the gate — it has rolled itself up, and it does that for anyone who
 walks up: the presence sensor over the lintel lifts the curtain as you approach (there is nothing to
-press; the shutter station only tells you about it). There is a courtyard with a tea
+press; the shutter station only tells you about it). The way in and out is a concrete apron that
+ramps the doorway down to the yard, so you walk in without breaking stride whichever way you come.
+The courtyard itself is walled in — the street wall and the neighbour walls are solid, and the packed
+earth runs right up to them. There is a courtyard with a tea
 stall cart, a bicycle, a rickshaw wheel, a roof antenna, and a neighbour's wall. Puddles on the
 packed earth, a gold-on-navy street banner over the left pier reading **IMRAN'S GARAGE** with the
 shop's Bangla name underneath, and by the gate the national corner: the **flag of Bangladesh** on

@@ -49,8 +49,8 @@ to catch the first.
     ├── Runtime                  (Node)     GarageRuntime: power, shutter, fans, screens, core, assembly
     ├── Carry                    (Node)     CarrySystem: mouse pick-up / place / rotate / put back
     ├── Garage                   (Node3D)   GarageStructure: floor, walls, columns, roof, shutter frame
-    ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 31 lights, dust, rain
-    ├── Dressing                 (Node3D)   GarageDressing: 181 props, 45 stations, cables, signage, decals
+    ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 34 lights, dust, rain
+    ├── Dressing                 (Node3D)   GarageDressing: 183 props, 45 stations, cables, signage, decals
     │
     ├── area volumes ×6          (Area3D)   named rooms; group "garage_areas"
     ├── Player                   (CharacterBody3D)
@@ -82,16 +82,16 @@ progress.
 
 | Step | What it does | Measured (UHD 620) |
 |---|---|---|
-| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 283 ms for one 256 px surface |
-| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, windows | 5 807 ms |
-| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 31 lights in 4 circuits, dust, rain | 39 ms |
-| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage | 4 038 ms |
+| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 264 ms for one 256 px surface (264–283 across runs) |
+| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 5 755 ms |
+| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs are registered by the dressing, each attached to its own bulb) | 46 ms |
+| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs | 4 781 ms |
 | 4 | Area volumes | — |
-| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 75 ms |
-| 6 | Player, camera, ray, reticle, collision, capsule sizing | 26 ms |
-| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 178 ms |
+| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 67 ms |
+| 6 | Player, camera, ray, reticle, collision, capsule sizing | 28 ms |
+| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 161 ms |
 | 8 | `_apply_restored_state()` — replays a saved run with `instant = true` | — |
-| | **total** | **10 622 ms** |
+| | **total** | **11 101 ms** |
 
 Surfaces are synthesised **lazily**, on first request. Loading every recipe up front would cost
 roughly 9.5 s for all 34 at 256 px; the garage actually touches 34 of them, so the saving is in the
@@ -169,7 +169,7 @@ per texel into colour/roughness/metallic/occlusion/height, pack to RGB8 byte buf
 tangent-space normal by Sobel gradient on the wrapped height field, upload in one
 `Image::create_from_data` per channel. See `docs/GRAPHICS_ALGORITHMS.md` §2.
 
-**`shape_kit.gd`** — the primitive composition layer, and the reason 181 props is affordable. Two
+**`shape_kit.gd`** — the primitive composition layer, and the reason 189 props is affordable. Two
 ideas: a mesh cache keyed on dimensions so forty spanners share one mesh, and true generators (lathe
 from a profile, gear from tooth count and module, tube sweep, coil, chain, plate) for the shapes that
 are not primitives. Also `shape_aabb_local()`, `area_aabb()` and `node_bounds()`, which exist because
@@ -367,11 +367,12 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 
 | Mechanism | What it covers |
 |---|---|
-| `tests/validate_scripts.gd` | Loads and compiles all 41 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
+| `tests/validate_scripts.gd` | Loads and compiles all 42 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
 | `tests/timing_probe.gd` | Measures one surface at 256/384/512 px. The instrumentation that established the texture budget. |
 | `tests/introspect.gd` | Engine API introspection. Used to pin exact signatures when they were uncertain rather than guessing. |
 | `tests/dump_floor.gd` | Builds the world headless and reports: every node within a radius of a floor point, the dressing's occupancy boxes with their owning stations, per-child bound audits, and a full carry-system exercise — surface heights, a pick-up/place cycle and the put-back path. Written to turn "the screenshot shows something odd" into a named object, and "the carry maths should work" into measured numbers. |
 | `tests/carry_audit.gd` | Builds the world headless and prints every candidate the carry system could hold with its true bounding size and the live cap, checks that the fitted things (the gate, the windows, the flag mast, the prototype suit) are absent from the gathered set, and runs pick/place probes on the largest items — the workbench, the bicycle, the holo table — proving each settles onto a real surface and can be put back. The tool that decided the 3.1 m cap. |
+| `tests/walk_in.gd` | Builds the world headless, takes control of the real player and drives it from the spawn into the shop, back out and sideways across the courtyard, printing position, floor contact, stalls and — when stalled — the exact collider being slid against. This is what proved the entrance lip unclimbable, the courtyard boundless, and the gravity-accumulation pinning on slopes (`docs/EXPERIMENTS.md` §7.6). |
 | Perf harness (`perf.flag`) | Drives the full progression, then samples three fixed viewpoints twice each — shipped settings and the earlier values flipped back at runtime in the same session — and writes a paired A/B table to `user://captures/perf.log`. Its first run is what exposed the shadow-budget bug and the session's 7.5 Hz presentation cap (`docs/EXPERIMENTS.md` §7.5). |
 | `tests/bake_preview.gd` | Renders the lab-wall plate specs (scientists, header, inventions board) to PNGs in `user://captures/`, so Bengali on the wall can be proof-read at full resolution without launching the garage. |
 | Capture harness | Boots the real renderer, drives the full progression, writes 15 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |

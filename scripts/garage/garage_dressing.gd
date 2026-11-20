@@ -166,6 +166,23 @@ func _spot(node: Node3D, pos: Vector3, target: Vector3, circuit: int, zone: Stri
 	return light
 
 
+func _always_on_bulb(pos: Vector3, drop: float = 0.55, energy: float = 1.6, reach: float = 7.0) -> Node3D:
+	## A bare bulb on the incoming line: on circuit 0, so set_power never touches
+	## it and the room is never dark, even before the switchboard. Its warm light is
+	## parented to the bulb itself, so carrying the bulb carries its light; the
+	## glass gets an emissive material of its own because the shared prop ships
+	## unlit. Every always-on light in the room is built here.
+	var bulb: Node3D = _place("bulb_hanging", pos, Vector3.ZERO, {"drop": drop})
+	var glass: MeshInstance3D = bulb.get_node_or_null("Bulb") as MeshInstance3D
+	if glass != null:
+		glass.material_override = ML.bulb_material(Color("ffd9a0"), 6.0)
+	var lamp: OmniLight3D = _register_light(bulb, 0, &"always_on", energy, reach, 1.5, false, Color("ffd9a0"))
+	lamp.name = "AlwaysOnLamp"
+	lamp.position = Vector3(0.0, -drop - 0.05, 0.0)
+	lamp.light_indirect_energy = 0.35
+	return bulb
+
+
 # ===========================================================================
 # AREA 1 — entrance
 # ===========================================================================
@@ -693,7 +710,9 @@ func _area_testing() -> void:
 	_place("wooden_stool", centre + Vector3(-0.8, 0.0, 1.0))
 	_place("tea_glass", centre + Vector3(-0.86, 0.484, 0.86))
 	_place("crate_stack", centre + Vector3(1.1, 0.0, 0.7), Vector3(0.0, 0.4, 0.0), {"count": 2})
-	_place("bulb_hanging", centre + Vector3(0.0, structure.height - 0.2, 0.0), Vector3.ZERO, {"drop": 0.62})
+	# the testing corner's always-on bulb: the area's own circuit spot above the
+	# deck is the shadowed key; this is the one that burns without power
+	_always_on_bulb(centre + Vector3(0.0, structure.height - 0.2, 0.0), 0.62)
 	# the status strip runs along the floor at the deck edge, where it can be seen
 	# and where it has something to sit on
 	_place("indicator_strip", centre + Vector3(0.0, 0.02, -0.95), Vector3.ZERO, {"length": 1.4, "count": 10})
@@ -735,7 +754,7 @@ func _area_store() -> void:
 	# 1.725/2.24, so these y values are measured, not guessed
 	_place("muri_tin", Vector3(sx + 0.02, 0.71, -4.15))
 	_place("storage_box", Vector3(-half_w + 0.58, 0.0, -3.8), Vector3(0.0, 0.9, 0.0), {"w": 0.26, "h": 0.17, "d": 0.19})
-	_place("bulb_hanging", Vector3(-half_w + 1.3, structure.height - 0.15, -4.2), Vector3.ZERO, {"drop": 0.5})
+	_always_on_bulb(Vector3(-half_w + 1.3, structure.height - 0.15, -4.2), 0.5, 1.5, 6.0)
 	_place("shelf_label", Vector3(sx + 0.19, 1.225, -4.2), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.11})
 
 
@@ -1486,15 +1505,13 @@ func _ambience_props() -> void:
 	## and it duplicated objects the areas now place themselves — two wall
 	## calendars, two ceiling fans, three loose tyres, a second bicycle.
 	var x: float = structure.half_w
-	# the always-on bulb over the walk lane: it is wired to the incoming supply, so
-	# it burns whether or not the switchboard is up (its light is registered on the
-	# incoming circuit in GarageEnvironment._build_daylight()). The shared prop
-	# ships its glass unlit, so the bulb mesh is given an emissive material of its
-	# own — otherwise "always on" would be a dark bulb with a lamp-lit floor.
-	var always_on: Node3D = _place("bulb_hanging", Vector3(0.0, structure.height - 0.25, 2.6), Vector3.ZERO, {"drop": 0.55})
-	var always_on_glass: MeshInstance3D = always_on.get_node_or_null("Bulb") as MeshInstance3D
-	if always_on_glass != null:
-		always_on_glass.material_override = ML.bulb_material(Color("ffd9a0"), 6.0)
+	# the always-on bulbs, wired ahead of the switchboard to the incoming line: the
+	# room is never dark, even before the player finds the main switch. Three hang
+	# in this room (walk lane, mechanical bench, electronics bench); the testing
+	# corner's and the store's are built by their own areas. See _always_on_bulb().
+	_always_on_bulb(Vector3(0.0, structure.height - 0.25, 2.6))
+	_always_on_bulb(Vector3(-2.4, structure.height - 0.22, 2.4), 0.55, 1.7, 7.0)
+	_always_on_bulb(Vector3(2.0, structure.height - 0.25, 0.1))
 	# the ceiling fixtures the World A circuit is aimed at. The mechanical bench's
 	# batten is placed by _area_mechanical(); these are the other three zones.
 	var tubes: Array = [
