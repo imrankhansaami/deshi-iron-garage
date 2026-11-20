@@ -137,7 +137,7 @@ recorded in `docs/ASSET_LICENSES.md`.
 |---|---|
 | First-person controller | WASD, mouse look, sprint, crouch-walk, gravity, jump, distance-driven head bob, material-aware footsteps |
 | Interaction | Raycast focus with a bounding-box reticle, contextual prompts, E to operate, F to inspect |
-| Interactable stations | 36 registered, across 20 behaviour kinds |
+| Interactable stations | 43 registered, across 20 behaviour kinds |
 | Power | 4 circuits, sequential energisation, tube strike simulation, live circuit isolation from the MCB row |
 | Workstation | 6-section `Control`-built interface reading live simulation state, with a POST → login → ready boot |
 | In-world screens | 5 screen meshes, 5 live `SubViewport`s, temperature-graded CRT and LCD glass shader |
@@ -147,6 +147,7 @@ recorded in `docs/ASSET_LICENSES.md`.
 | Diagnostics | 7-stage pass with live log output to the console panel and the portrait screen |
 | Salvage | 3 collectable modules with world-space crates, baked tags and inventory tracking |
 | Mouse carrying | Every prop under ~0.8 m can be picked up, rotated and set down with the mouse; placement settles onto the surface under the aim (bench tops, shelves, the platform deck, the floor) and right click returns a thing to where it came from |
+| Lab wall | Six honour plaques for Bangladeshi/Bengali scientists and one inventions board, engraved in Bangla from `data/scientists.json` and `data/inventions.json` through the same sign baker as every other sign, plus `F` inspection text for each |
 | Realism layer | 10 projected grime decals from one generated texture (under machinery, below wall fixtures), the author's supplied workshop banner inside, and a generated "IMRAN'S GARAGE" street banner over the facade |
 | Save / load | Full run state persisted; Continue replays it against a fresh build with no boot animation |
 | Settings | Quality preset, FOV, walk speed, sensitivity, invert, bloom, SSAO, shadows, rain, four volumes |
@@ -164,7 +165,7 @@ Six documents expand this; the short version of what was built and where:
 | Energy-core emissive shader | `shaders/energy_core.gdshader` | Custom |
 | Procedural cable geometry: catenary path, parallel-transport sweep, bundling | `scripts/procedural/cable_generator.gd` | Custom |
 | Interactive lighting as four switchable circuits | `scripts/garage/garage_environment.gd` | Extended |
-| Procedural prop generation: 4 catalogues, 131 kinds | `scripts/procedural/props_*.gd` | Custom |
+| Procedural prop generation: 4 catalogues, 132 kinds | `scripts/procedural/props_*.gd` | Custom |
 | Projected grime: one generated blot texture, ten `Decal` volumes that follow geometry | `garage_dressing.gd` `_grime_decals()` | Custom |
 | Runtime audio synthesis: 22 sounds, no library | `scripts/procedural/audio_synth.gd` | Custom |
 | Display glass, holographic floor, machined metal, cable sleeve | `shaders/*.gdshader` | Custom |

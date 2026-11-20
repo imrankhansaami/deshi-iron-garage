@@ -28,7 +28,7 @@ godot --path . res://scenes/main/garage_world.tscn
 ```
 
 The first launch builds the garage and shows real progress: surface synthesis, then the shell, the
-lighting rig, 177 props, the screens and finally the interface. On a machine with integrated graphics
+lighting rig, 178 props, the screens and finally the interface. On a machine with integrated graphics
 this takes around 10 seconds; on a discrete GPU it will be considerably faster. The build time is also
 written to `user://captures/build.log`.
 
@@ -188,31 +188,39 @@ numbers.
 
 If you have fifteen minutes and want to see everything:
 
-**The mechanical half (west).** The bench with its pegboard of seventeen hanging tools, the toolbox,
-the vice, the grindstone. On the bench: an engine block, cylinder head, piston with its wrist pin,
-camshaft, crankshaft with counterweight and flywheel, carburettor, silencer, sprockets, a bicycle
-chain, bearings, a brake drum, a headlamp bowl, a suspension fork. On the floor: a rickshaw chassis with
-its canopy, a motorcycle frame, a cot with a woven rope bed, a scrap bin, tyres, a cable reel. On the
-walls: a wall calendar with Bengali month names, an inspection clipboard, a mirror, a poster.
+**The mechanical half (west).** The bench with its pegboard and tool rail of hanging tools, the
+toolbox, the vice, the grindstone. On the bench: an engine block, cylinder head, piston with its
+wrist pin, carburettor, a brake drum, bearings, and the inventor's open notebook. On the floor: a
+rickshaw chassis with its canopy, a motorcycle frame, a scrap bin, a tyre, a cable reel, a steel
+drum. On the walls: a wall calendar with Bengali month names, an inspection clipboard, a poster.
 
-**The electronics half (east).** The bench with a CRT whose tube face is visible and an LCD beside it.
-A gutted laptop with ribbon cables. Stacks of circuit board fragments, heatsinks, capacitors, RAM
+**The electronics half (east).** The bench with a CRT whose tube face is visible and an LCD beside
+it. A gutted laptop with ribbon cables. Stacks of circuit board fragments, heatsinks, capacitors, RAM
 sticks. A multimeter with its leads coiled. A solder station with the iron in its holder. An
-oscilloscope, a variac, a voltage stabiliser, a printer, a router, a speaker. On the floor below: a
-battery rack with two tubular cells and a ferrite coupling coil, a UPS unit, an IPS cell.
+oscilloscope, a variac, a voltage stabiliser, a printer, a speaker. On the floor below: a battery
+rack with two tubular cells and a ferrite coupling coil, a UPS unit, a parts cabinet. Above the
+instrument bench, the **scientists' corner** — six honour plaques and the inventions board.
 
 **The futuristic half (north).** The circular assembly stage with its eight lifting deck plates and
 four arm mounts. Four manipulators built from motorcycle forks and servo boxes. The reactor cradle at
 the centre, its bezel a brake drum. The overhead gantry with its trolley and hoist. A wall array of
-three salvaged panels in welded steel bezels. Conduit runs with glowing seams at the joints. The
-exosuit on its stand.
+two salvaged panels in welded steel bezels, the owner's airline banner on the brick beside them.
+Conduit runs with glowing seams at the joints. The exosuit on its stand.
 
 **The testing corner (north-east).** A raised deck inside a hazard rail, an instrument console with
-three gauges and six toggle levers and a mushroom emergency stop, a portrait diagnostic screen, and a
-tether rig of four posts with chains.
+three gauges, six toggle levers and a mushroom emergency stop, a portrait diagnostic screen.
 
-**Outside.** Step back out through the shutter. There is a courtyard with a tea stall cart, a bicycle,
-a rickshaw wheel, a roof antenna, and a neighbour's wall. Puddles on the packed earth.
+**Outside.** Step back out through the shutter — it is chained open. There is a courtyard with a tea
+stall cart, a bicycle, a rickshaw wheel, a roof antenna, and a neighbour's wall. Puddles on the
+packed earth, and a gold-on-navy street banner over the left pier: **IMRAN'S GARAGE**, with the shop's
+Bangla name underneath.
+
+**The Bengal wall.** Above the instrument bench: six plaques for জগদীশ চন্দ্র বসু, সত্যেন্দ্রনাথ বসু,
+কুদরত-এ-খুদা, কাজী মোতাহার হোসেন, জামাল নজরুল ইসলাম and মাকসুদুল আলম, under a header reading
+**বিজ্ঞানীদের কর্নার**, and beside them a board titled **এই মাটির আবিষ্কার** — oral rehydration
+therapy first proven in a Dhaka laboratory in 1968, the jute genome, the first satellite, the Padma
+bridge, the solar home programme — closing on **নিজের মাথা, নিজের হাতে**. Press `F` on any plate to
+read it.
 
 **The Bengali signage.** The signboard over the shutters reads **স্বপ্নের গ্যারেজ** — *dream garage* —
 with the tagline **নিজের প্রযুক্তি, নিজের শক্তি**, *own technology, own strength*. Inside there is a

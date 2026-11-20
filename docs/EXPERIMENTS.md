@@ -39,7 +39,7 @@ transfer.
   `CableGenerator.last_stats`, `GarageDressing.layout_stats()`.
 
 **Reproducibility controls.** Fixed seed 1337 for prop generation; a per-group seed for each
-procedural layout; per-surface seeds derived by hash; twelve fixed camera transforms; 30 frames of
+procedural layout; per-surface seeds derived by hash; thirteen fixed camera transforms; 30 frames of
 warm-up discarded before every measurement.
 
 **Known weakness.** Godot 4.7 exposes no GPU timestamp query. All per-pass costs below are
@@ -380,7 +380,7 @@ performance work.
 | Surface synthesis (first surface) | 272 ms | 2.6% | the per-texel loop |
 | Structure — floor, walls, columns, roof, shutter, windows | 5 807 ms | 55.6% | mesh generation, collision shapes, and the surfaces it requests |
 | Environment — sky, `WorldEnvironment`, 30 lights, dust, rain | 39 ms | 0.4% | negligible |
-| Dressing — 171 placements, 36 stations, 4 layout groups, cables, signage, grime decals | 4 638 ms | 41.3% | prop construction, station wiring, and its surfaces |
+| Dressing — 178 placements, 43 stations, 4 layout groups, cables, signage, grime decals, wall plaques | 4 638 ms | 41.3% | prop construction, station wiring, and its surfaces |
 | Screens — 5 live `SubViewport`s and their materials | 75 ms | 0.7% | — |
 | Player — camera, ray, reticle, collision | 31 ms | 0.3% | — |
 | Interface — HUD, 10 panels, objective director | 182 ms | 1.7% | — |
@@ -390,14 +390,19 @@ performance work.
 
 | | |
 |---|---|
-| Props placed by the dressing pass | 169 |
-| Props built in total (includes module payloads and suit parts) | 175 |
-| Distinct prop kinds | 130 |
-| Authored placements | 137 |
+| Props placed by the dressing pass | 178 |
+| Props built in total (includes module payloads and suit parts) | 184 |
+| Distinct prop kinds | 132 |
+| Authored placements | 146 |
 | Procedural placements | 22 (4 groups: 6 + 5 + 6 + 5) |
 | Wall-rack placements | 10 |
-| Mesh cache hits / misses | 1 728 / 1 099 |
+| Mesh cache hits / misses | 1 768 / 1 114 |
 | Rejection-sampler efficiency | 46% of attempts produce a placement |
+
+The counts above are from the shipped build. The per-step times in the table above are from one
+representative run on a quiet machine; they drift by a few hundred milliseconds run to run, and by
+about 20% if something else is using the laptop at the same time — which is worth stating rather
+than pretending the machine is a benchmark rig.
 
 **Finding 7.1 — surface synthesis is 83% of the wall clock.** The first surface costs 272 ms in step
 0; the other 33 are synthesised lazily inside the structure and dressing steps. 8 698 ms of the
@@ -405,8 +410,8 @@ performance work.
 compute shader, not reducing geometry. The earlier build of a 13 × 16.5 m room measured 71%; the
 share rose when the room shrank, because the texture cost is per *surface*, not per cubic metre.
 
-**Finding 7.2 — mesh caching is what makes 177 props affordable.** 1 105 distinct meshes serve 177
-placed props through 1 740 hits. Without the cache every spanner, capacitor and bolt would allocate
+**Finding 7.2 — mesh caching is what makes 184 props affordable.** 1 114 distinct meshes serve 178
+placed props through 1 768 hits. Without the cache every spanner, capacitor and bolt would allocate
 its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
 is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 
@@ -504,7 +509,7 @@ how the 40–55 fps medium / 18–26 fps high figures elsewhere in this document
 11. The per-texel composition loop is the surface-synthesis bottleneck, not the noise generation;
     moving from 512 px to 256 px halved the load time with no visible loss because tiling hides the
     missing resolution. (§1.1)
-12. Mesh caching at 1.6:1 reuse is what makes 177 props affordable. (§7.2)
+12. Mesh caching at 1.6:1 reuse is what makes 178 props affordable. (§7.2)
 13. Two-thirds of the total build is structure and dressing geometry. (§7.4)
 
 **Process findings**

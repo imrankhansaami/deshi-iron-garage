@@ -59,10 +59,14 @@ func _make_text(d: Dictionary) -> Control:
 		lbl.add_theme_font_override("font", _theme_font(font_kind))
 	var w: float = float(d.get("width", -1.0))
 	if w > 0.0:
-		lbl.size = Vector2(w, float(d.get("height", 0.0)))
+		# autowrap must be on BEFORE the size is set: a Label clamps its size up to
+		# its minimum, and with wrapping still off the minimum width is the whole
+		# unwrapped line — so a wrapped note ended up laid out at ~3x its stated
+		# width and ran off the plaque it was supposed to sit inside.
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lbl.horizontal_alignment = _align(d.get("align", "left"))
 		lbl.vertical_alignment = _valign(d.get("valign", "top"))
+		lbl.size = Vector2(w, float(d.get("height", 0.0)))
 	if bool(d.get("shadow", false)):
 		lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
 		lbl.add_theme_constant_override("shadow_offset_x", 2)
@@ -72,6 +76,15 @@ func _make_text(d: Dictionary) -> Control:
 	lbl.rotation_degrees = float(d.get("rotation", 0.0))
 	lbl.name = String(d.get("name", "text"))
 	add_child(lbl)
+	if w > 0.0:
+		# The width is applied once the label is inside the tree, and again on the
+		# next frame: this engine build clamps a Label's size up to its minimum
+		# while it is still parentless, and with `min` not yet reflecting autowrap
+		# the label came back 759 px wide for a 340 px box. Inside the tree — and
+		# again after one deferred pass, when the theme is resolvable — the size
+		# sticks and the wrap width is what the spec asked for.
+		lbl.size = Vector2(w, float(d.get("height", 0.0)))
+		lbl.set_deferred("size", Vector2(w, float(d.get("height", 0.0))))
 	return lbl
 
 

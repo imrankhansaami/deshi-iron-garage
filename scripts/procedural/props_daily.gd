@@ -28,6 +28,7 @@ static func register(f: PropFactory) -> void:
 	f.generators["wall_calendar"] = wall_calendar
 	f.generators["wall_clock"] = wall_clock
 	f.generators["wall_banner"] = wall_banner
+	f.generators["wall_plaque"] = wall_plaque
 	f.generators["poster"] = poster
 	f.generators["notebook"] = notebook
 	f.generators["pen"] = pen
@@ -779,6 +780,31 @@ static func wall_banner(f: PropFactory, o: Dictionary) -> Node3D:
 		var nail: MeshInstance3D = ShapeKit.cyl(0.006, 0.03, f.ML.steel(), 6, Vector3i(0, 0, 1), "Nail")
 		nail.position = Vector3((w * 0.35) * (1.0 if i == 0 else -1.0), h + 0.01, -0.012)
 		root.add_child(nail)
+	return root
+
+
+static func wall_plaque(f: PropFactory, o: Dictionary) -> Node3D:
+	## A small framed wall plaque: teak battens around a plywood back, with a blank
+	## print face the SignageBaker fills. The format used for the inventors' corner
+	## (scientists' plaques and the inventions board) on the lab wall — engraving is
+	## a SignCanvas bake, like every other sign in the room.
+	var w: float = float(o.get("width", 0.30))
+	var h: float = float(o.get("height", 0.38))
+	var root := Node3D.new()
+	root.name = "WallPlaque"
+	var back: MeshInstance3D = ShapeKit.box(Vector3(w, h, 0.014), f.ML.plywood(), "Back")
+	back.position = Vector3(0.0, h * 0.5, -0.012)
+	root.add_child(back)
+	var print_face: MeshInstance3D = ShapeKit.plane(Vector2(w * 0.96, h * 0.96), f.ML.label_stock(), "Print")
+	print_face.position = Vector3(0.0, h * 0.5, -0.002)
+	root.add_child(print_face)
+	for i: int in range(2):
+		var bar_h: MeshInstance3D = ShapeKit.box(Vector3(w + 0.032, 0.022, 0.022), f.ML.teak(), "FrameH")
+		bar_h.position = Vector3(0.0, 0.0 if i == 0 else h, -0.006)
+		root.add_child(bar_h)
+		var bar_v: MeshInstance3D = ShapeKit.box(Vector3(0.022, h + 0.026, 0.022), f.ML.teak(), "FrameV")
+		bar_v.position = Vector3((w * 0.5 + 0.008) * (1.0 if i == 0 else -1.0), h * 0.5, -0.006)
+		root.add_child(bar_v)
 	return root
 
 

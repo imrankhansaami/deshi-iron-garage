@@ -50,7 +50,7 @@ to catch the first.
     ├── Carry                    (Node)     CarrySystem: mouse pick-up / place / rotate / put back
     ├── Garage                   (Node3D)   GarageStructure: floor, walls, columns, roof, shutter frame
     ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 30 lights, dust, rain
-    ├── Dressing                 (Node3D)   GarageDressing: 177 props, 36 stations, cables, signage, decals
+    ├── Dressing                 (Node3D)   GarageDressing: 178 props, 43 stations, cables, signage, decals
     │
     ├── area volumes ×6          (Area3D)   named rooms; group "garage_areas"
     ├── Player                   (CharacterBody3D)
@@ -138,6 +138,13 @@ circles, arcs, polygons, progress bars, bar charts, grids, corner brackets, plus
 `RichTextLabel` layers for text. This is the drawing language shared by the in-world signage and the
 graphics bench's own interface.
 
+A text layer that declares a `width` wraps inside it — with one engine quirk worth recording: a
+`Label` that is not yet inside the tree clamps its own size up to its *unwrapped* minimum, so setting
+the size before `add_child()` produced a 759 px label for a 340 px box and the wrapped text ran off
+the plate it was meant to sit inside. The canvas now applies the width after the label joins the
+tree, and again deferred by one frame; `tests/bake_preview.gd` renders the same sentence at the same
+width and prints the resulting sizes, so the behaviour stays verifiable instead of remembered.
+
 **`garage_theme.gd`** — builds the project `Theme` in code, so a `Label` anywhere inherits the same
 four font families (`latin`, `display`, `mono`, `bangla`) and the same palette. The theme is installed
 on the window root at boot.
@@ -162,7 +169,7 @@ per texel into colour/roughness/metallic/occlusion/height, pack to RGB8 byte buf
 tangent-space normal by Sobel gradient on the wrapped height field, upload in one
 `Image::create_from_data` per channel. See `docs/GRAPHICS_ALGORITHMS.md` §2.
 
-**`shape_kit.gd`** — the primitive composition layer, and the reason 177 props is affordable. Two
+**`shape_kit.gd`** — the primitive composition layer, and the reason 178 props is affordable. Two
 ideas: a mesh cache keyed on dimensions so forty spanners share one mesh, and true generators (lathe
 from a profile, gear from tooth count and module, tube sweep, coil, chain, plate) for the shapes that
 are not primitives. Also `shape_aabb_local()`, `area_aabb()` and `node_bounds()`, which exist because
@@ -343,7 +350,7 @@ and in the capture harness. The rain, the dust and the footsteps use separate se
 one does not perturb another.
 
 **Fixed capture viewpoints.** The capture harness drives the progression to a known state and parks
-the camera at twelve declared transforms, which is what makes the screenshots in `captures/`
+the camera at thirteen declared transforms, which is what makes the screenshots in `captures/`
 comparable between code revisions. It also reports a luminance histogram per shot: the check that
 matters most is the `black` percentage, because a lighting rig that renders almost nothing still
 produces a screenshot and would otherwise read as success.
@@ -365,7 +372,8 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 | `tests/introspect.gd` | Engine API introspection. Used to pin exact signatures when they were uncertain rather than guessing. |
 | `tests/dump_floor.gd` | Builds the world headless and reports: every node within a radius of a floor point, the dressing's occupancy boxes with their owning stations, per-child bound audits, and a full carry-system exercise — surface heights, a pick-up/place cycle and the put-back path. Written to turn "the screenshot shows something odd" into a named object, and "the carry maths should work" into measured numbers. |
 | Perf harness (`perf.flag`) | Drives the full progression, then samples three fixed viewpoints twice each — shipped settings and the earlier values flipped back at runtime in the same session — and writes a paired A/B table to `user://captures/perf.log`. Its first run is what exposed the shadow-budget bug and the session's 7.5 Hz presentation cap (`docs/EXPERIMENTS.md` §7.5). |
-| Capture harness | Boots the real renderer, drives the full progression, writes 12 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
+| `tests/bake_preview.gd` | Renders the lab-wall plate specs (scientists, header, inventions board) to PNGs in `user://captures/`, so Bengali on the wall can be proof-read at full resolution without launching the garage. |
+| Capture harness | Boots the real renderer, drives the full progression, writes 13 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
 | Graphics bench | Self-measurement at runtime, exportable to CSV, with a fixed-camera capture at each configuration. |
 
 What is **not** tested: there is no unit test suite, no automated interaction test that drives `E`

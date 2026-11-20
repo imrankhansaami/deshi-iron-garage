@@ -54,6 +54,7 @@ func dress() -> void:
 	_wall_racks()
 	_cables()
 	_ambience_props()
+	_scientists_corner()
 	# last, so it sees crates placed by any area
 	_register_component_crates()
 	# signage after everything: it looks up props by name
@@ -481,7 +482,8 @@ func _area_electronics() -> void:
 	# --- wall fixtures ----------------------------------------------------
 	_place("switch_wall", Vector3(wall, 1.2, 3.3), Vector3(0.0, -PI * 0.5, 0.0))
 	_place("clip_board", Vector3(wall, 1.55, 2.35), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("poster", Vector3(wall, 2.0, -0.5), Vector3(0.0, -PI * 0.5, 0.0), {"variant": 2, "width": 0.36})
+	# (the second poster used to hang at z = -0.5; the inventions board took that
+	# spot, because a wall in a lab is better spent on the things the lab is for)
 	# the LED strip goes on the wall above the instrument bench: at x = 1.9 m from
 	# the wall it was hanging in mid-air with no bracket
 	_place("led_cluster", Vector3(half_w - 0.06, 1.78, -2.5), Vector3(0.0, -PI * 0.5, 0.2), {"count": 5})
@@ -714,6 +716,50 @@ func _area_store() -> void:
 	_place("storage_box", Vector3(-half_w + 0.58, 0.0, -3.8), Vector3(0.0, 0.9, 0.0), {"w": 0.26, "h": 0.17, "d": 0.19})
 	_place("bulb_hanging", Vector3(-half_w + 1.3, structure.height - 0.15, -4.2), Vector3.ZERO, {"drop": 0.5})
 	_place("shelf_label", Vector3(sx + 0.19, 1.225, -4.2), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.11})
+
+
+# ===========================================================================
+# the scientists' corner, east wall of the lab
+# ===========================================================================
+
+func _scientists_corner() -> void:
+	## Six plaques for scientists this country claims, a header over them, and one
+	## board of things this country built — the east wall above the instrument
+	## bench, where the lab's bench work happens and where a student would actually
+	## look up from a dead oscilloscope. Names, dates and notes come from
+	## data/scientists.json and data/inventions.json; the engraving is a SignCanvas
+	## bake in _signage(), like every other sign in the room.
+	var x: float = structure.half_w - 0.15
+	var spin := Vector3(0.0, -PI * 0.5, 0.0)
+	var rows: Array[float] = [1.90, 1.46]
+	var z0: float = -1.06
+	var step: float = 0.34
+	var scientists: Array = GameConfig.scientists
+	for i: int in range(scientists.size()):
+		var s: Dictionary = scientists[i]
+		var col: int = i % 3
+		var row: int = i / 3
+		var y: float = rows[min(row, rows.size() - 1)]
+		var z: float = z0 - float(col) * step
+		var plaque: Node3D = _place("wall_plaque", Vector3(x, y, z), spin, {})
+		plaque.name = "SciPlaque%d" % i
+		_station(plaque, Station.Kind.SIGN, Vector3.ZERO, {
+			"area": "electronics", "title": String(s.get("name", "")),
+			"desc": String(s.get("note", "")),
+			"spec": [["জীবনকাল", String(s.get("dates", ""))], ["স্মরণে", "গবেষণার দেয়াল"]],
+			"sfx": "paper", "distance": 2.6,
+		})
+	var header: Node3D = _place("wall_plaque", Vector3(x, 2.44, -1.40), spin, {"width": 0.62, "height": 0.16})
+	header.name = "SciHeader"
+	# the inventions board beside them, taller than the plaques
+	var board: Node3D = _place("wall_plaque", Vector3(x, 1.60, -0.42), spin, {"width": 0.58, "height": 0.80})
+	board.name = "InventionsBoard"
+	_station(board, Station.Kind.SIGN, Vector3.ZERO, {
+		"area": "electronics", "title": "এই মাটির আবিষ্কার",
+		"desc": "A hand-lettered board of things this country built or proved: oral rehydration therapy first proven in a Dhaka laboratory, the jute genome, the first satellite, the Padma bridge, the solar home programme.",
+		"spec": [["script", "Bengali, Noto Sans Bengali"], ["board", "plywood and teak batten"], ["items", "%d" % GameConfig.inventions.size()]],
+		"sfx": "paper", "distance": 2.6,
+	})
 
 
 # ===========================================================================
@@ -1078,6 +1124,25 @@ func _signage() -> void:
 		var print_face: MeshInstance3D = outside.get_node_or_null("Print") as MeshInstance3D
 		if print_face != null:
 			baker.apply_baked(print_face, _street_banner_spec(String(labels.garage_name)), "street_banner", 0.12, 0.55)
+	# the scientists' corner: one bake per plaque, from data/scientists.json
+	var scientists: Array = GameConfig.scientists
+	for i: int in range(scientists.size()):
+		var plaque: Node3D = _find_first("SciPlaque%d" % i)
+		if plaque == null:
+			continue
+		var face: MeshInstance3D = plaque.get_node_or_null("Print") as MeshInstance3D
+		if face != null:
+			baker.apply_baked(face, _scientist_spec(scientists[i]), "scientist_%d" % i, 0.10, 0.6)
+	var header: Node3D = _find_first("SciHeader")
+	if header != null:
+		var header_face: MeshInstance3D = header.get_node_or_null("Print") as MeshInstance3D
+		if header_face != null:
+			baker.apply_baked(header_face, _corner_header_spec(), "sci_header", 0.14, 0.55)
+	var board: Node3D = _find_first("InventionsBoard")
+	if board != null:
+		var board_face: MeshInstance3D = board.get_node_or_null("Print") as MeshInstance3D
+		if board_face != null:
+			baker.apply_baked(board_face, _inventions_spec(GameConfig.inventions), "inventions", 0.12, 0.6)
 
 
 func _find_first(name: String) -> Node3D:
@@ -1219,6 +1284,59 @@ func _notebook_spec(first_sketch: String) -> Dictionary:
 		{"type": "text", "name": "NOTE", "pos": Vector2(20, 344), "size": 16, "color": "#6a5a4a", "text": "standing test only — no flight, no load", "font": "mono"},
 	]
 	return {"size": Vector2i(512, 384), "transparent": false, "bg": "#efe7cf", "layers": layers}
+
+
+func _scientist_spec(s: Dictionary) -> Dictionary:
+	## One honour plaque: a gold medallion with the scientist's Bangla monogram,
+	## the name, the years, and one line of what they did — in Bangla, through the
+	## engine's shaper. Sizes are chosen so a name of 30 Bengali glyphs and a note
+	## of four wrapped lines both fit inside 384 x 486.
+	return {
+		"size": Vector2i(384, 486), "transparent": false, "bg": "#101a2c",
+		"border": {"color": "#d4af37", "width": 4.0},
+		"layers": [
+			{"type": "line", "from": Vector2(28, 206), "to": Vector2(356, 206), "color": "#d4af37", "width": 2.0},
+			{"type": "circle", "center": Vector2(192, 112), "radius": 62, "color": "#d4af37", "filled": false, "width": 3.0},
+			{"type": "circle", "center": Vector2(192, 112), "radius": 54, "color": "#1c2a44", "filled": true},
+			{"type": "text", "name": "MONO", "pos": Vector2(32, 60), "size": 62, "width": 320, "align": "center", "color": "#e8c56a", "text": String(s.get("initial", "")), "font": "bangla"},
+			{"type": "text", "name": "NAME", "pos": Vector2(16, 216), "size": 30, "width": 352, "align": "center", "color": "#f2e9d4", "text": String(s.get("name", "")), "font": "bangla"},
+			{"type": "text", "name": "DATES", "pos": Vector2(16, 262), "size": 20, "width": 352, "align": "center", "color": "#d4af37", "text": String(s.get("dates", "")), "font": "bangla"},
+			{"type": "text", "name": "NOTE", "pos": Vector2(22, 302), "size": 21, "width": 340, "align": "center", "color": "#b9c6d6", "text": String(s.get("note", "")), "font": "bangla"},
+		],
+	}
+
+
+func _corner_header_spec() -> Dictionary:
+	## The header over the plaques.
+	return {
+		"size": Vector2i(640, 160), "transparent": false, "bg": "#101a2c",
+		"border": {"color": "#d4af37", "width": 4.0},
+		"layers": [
+			{"type": "text", "name": "BN", "pos": Vector2(16, 22), "size": 54, "width": 608, "align": "center", "color": "#e8c56a", "text": "বিজ্ঞানীদের কর্নার", "font": "bangla"},
+			{"type": "text", "name": "EN", "pos": Vector2(16, 100), "size": 22, "width": 608, "align": "center", "color": "#8fa0ab", "text": "SCIENTISTS OF BENGAL", "font": "mono"},
+		],
+	}
+
+
+func _inventions_spec(items: Array) -> Dictionary:
+	## The board beside the plaques: things this country built or proved, one line
+	## each with a year, under a title that says whose work it is.
+	var layers: Array = [
+		{"type": "text", "name": "TITLE", "pos": Vector2(16, 16), "size": 40, "width": 432, "align": "center", "color": "#e8c56a", "text": "এই মাটির আবিষ্কার", "font": "bangla"},
+		{"type": "line", "from": Vector2(26, 84), "to": Vector2(438, 84), "color": "#d4af37", "width": 2.0},
+	]
+	for i: int in range(mini(items.size(), 6)):
+		var it: Dictionary = items[i]
+		var y: float = 104.0 + float(i) * 104.0
+		layers.append({"type": "text", "name": "T%d" % i, "pos": Vector2(20, y), "size": 27, "width": 424, "align": "center", "color": "#f2e9d4", "text": String(it.get("title", "")), "font": "bangla"})
+		layers.append({"type": "text", "name": "Y%d" % i, "pos": Vector2(20, y + 36), "size": 19, "width": 424, "align": "center", "color": "#d4af37", "text": String(it.get("year", "")), "font": "bangla"})
+		layers.append({"type": "text", "name": "N%d" % i, "pos": Vector2(24, y + 62), "size": 17, "width": 416, "align": "center", "color": "#b9c6d6", "text": String(it.get("note", "")), "font": "bangla"})
+	layers.append({"type": "text", "name": "TAG", "pos": Vector2(20, 636), "size": 24, "width": 424, "align": "center", "color": "#4fd8ff", "text": "নিজের মাথা, নিজের হাতে", "font": "bangla"})
+	return {
+		"size": Vector2i(464, 672), "transparent": false, "bg": "#101a2c",
+		"border": {"color": "#d4af37", "width": 5.0},
+		"layers": layers,
+	}
 
 
 func _poster_spec(index: int, dream: String, prototype: String) -> Dictionary:

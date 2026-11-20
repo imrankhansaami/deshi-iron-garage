@@ -514,8 +514,8 @@ that darkens distant sources.
 
 ### 8.1 Mesh caching
 
-`ShapeKit` keys every primitive on its dimensions and reuses the mesh. The garage builds 177 props
-from **1 105 distinct meshes** with **1 740 cache hits** — a 1.6:1 reuse ratio, which is the difference
+`ShapeKit` keys every primitive on its dimensions and reuses the mesh. The garage builds 178 props
+from **1 114 distinct meshes** with **1 768 cache hits** — a 1.6:1 reuse ratio, which is the difference
 between a scene that runs on integrated graphics and one that does not.
 
 ### 8.2 Generators rather than primitives

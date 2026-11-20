@@ -9,11 +9,15 @@ const CONFIG_PATH: String = "res://data/garage_config.json"
 const COMPONENTS_PATH: String = "res://data/components.json"
 const OBJECTS_PATH: String = "res://data/workshop_objects.json"
 const OBJECTIVES_PATH: String = "res://data/objectives.json"
+const SCIENTISTS_PATH: String = "res://data/scientists.json"
+const INVENTIONS_PATH: String = "res://data/inventions.json"
 
 var config: Dictionary = {}
 var components: Array = []
 var object_defs: Dictionary = {}
 var objectives: Array = []
+var scientists: Array = []
+var inventions: Array = []
 
 var _component_index: Dictionary = {}
 var _objective_index: Dictionary = {}
@@ -24,6 +28,11 @@ func _ready() -> void:
 	components = _read_json_array(COMPONENTS_PATH)
 	object_defs = _read_json(OBJECTS_PATH)
 	objectives = _read_json_array(OBJECTIVES_PATH)
+	# the lab's wall content: scientists this country claims, and things this
+	# country built. Data, like everything else on the walls (see the scientists'
+	# corner in GarageDressing).
+	scientists = _read_json_array(SCIENTISTS_PATH)
+	inventions = _read_json_array(INVENTIONS_PATH)
 	for c: Variant in components:
 		var comp: Dictionary = c
 		_component_index[String(comp.get("id", ""))] = comp

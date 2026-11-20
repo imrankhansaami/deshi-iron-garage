@@ -48,7 +48,7 @@ godot --path . res://scenes/main/main_menu.tscn
 godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 177 props,
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 178 props,
 screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
 **10.4 s**, reported on screen step by step and written to a log.
 
@@ -59,7 +59,7 @@ global-illumination features; the Settings panel switches it live.
 ### Capture / verification mode
 
 Dropping an empty file named `capture.flag` next to `project.godot` puts the world into verification
-mode: it drives the whole twelve-step progression, then parks the camera at twelve fixed viewpoints
+mode: it drives the whole twelve-step progression, then parks the camera at thirteen fixed viewpoints
 and writes a PNG plus a luminance histogram for each, then quits. The files land in `user://captures/`
 (`%APPDATA%\Godot\app_userdata\Deshi Iron Garage\captures\` on Windows), which is how the screenshots
 quoted in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and has no effect without
@@ -167,7 +167,7 @@ geometry, not asserted in text.
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **177 props in 131 distinct kinds** in 4.0 s.
+  prop catalogues build **178 props in 132 distinct kinds** in 4.1 s.
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.
@@ -196,10 +196,18 @@ geometry, not asserted in text.
 ### Text and localisation
 
 All in-world text — signboards, the workshop plate, the danger notice, the wall calendar, the
-notebook page, the component crate tags, and every screen — is drawn as Godot UI inside a
+notebook page, the component crate tags, the scientists' plaques, the inventions board, and every
+screen — is drawn as Godot UI inside a
 `SubViewport` and baked or sampled onto geometry. Bengali is therefore shaped by the engine's
 HarfBuzz integration rather than assembled from glyph bitmaps, and every string is real Bengali
 orthography (see `docs/ASSET_LICENSES.md` for a note on the brief's sample strings).
+
+The lab wall carries the country's own record: six plaques for scientists this land claims — জগদীশ
+চন্দ্র বসু, সত্যেন্দ্রনাথ বসু, কুদরত-এ-খুদা, কাজী মোতাহার হোসেন, জামাল নজরুল ইসলাম, মাকসুদুল আলম —
+and one board of things built or proved here, from oral rehydration therapy (first proven in a Dhaka
+laboratory, 1968) to the jute genome, the first satellite and the Padma bridge. All of it is data:
+`data/scientists.json` and `data/inventions.json` hold the names, dates and one-line notes, and the
+plaques are baked from those files at load.
 
 The garage is themed by data: `data/garage_config.json` carries four presets (Dhaka town workshop,
 Sylhet hill-side garage, village repair shed, small industrial bay) that set the shell dimensions,
@@ -225,11 +233,11 @@ in-world graphics bench. These are the numbers the application reports about its
 |---|---|
 | Full garage build | 10.4 s |
 | Surface synthesis, first 256 px surface | 272 ms |
-| Props built | 177 (131 kinds) |
-| Interactive stations | 36 |
+| Props placed | 178 (184 built, 132 kinds) |
+| Interactive stations | 43 |
 | Registered lights | 30 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1740 hits, 1105 misses |
+| Mesh cache | 1768 hits, 1114 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |
 
@@ -256,6 +264,8 @@ data/
   garage_config.json        # four location presets: dimensions, materials, signage
   components.json           # the three prototype modules and their provenance
   objectives.json           # the twelve-step chain
+  scientists.json           # the lab wall: six scientists, names and notes in Bangla
+  inventions.json           # the lab wall: things built or proved in Bangladesh
   workshop_objects.json     # procedural layout groups, prop pools, Bangla label table
 scenes/
   main/main_menu.tscn       # title screen (procedural animated backdrop)

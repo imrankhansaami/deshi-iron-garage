@@ -652,6 +652,9 @@ const CAP_SHOTS: Array = [
 	# z = 9.2 against a half_l of 8.25, which sat behind the south wall and captured
 	# a full frame of exterior plaster. Room extents are now x ±4.25, z ±5.25.
 	{"name": "11_overview_high", "pos": Vector3(-3.3, 2.95, 4.4), "look": Vector3(1.5, 0.6, -2.4)},
+	# the scientists' corner on the east wall of the lab: the plaques and the
+	# inventions board are the newest content and deserve a fixed viewpoint
+	{"name": "12_lab_wall", "pos": Vector3(1.1, 1.8, 0.7), "look": Vector3(4.2, 1.85, -1.15)},
 ]
 
 var _capturing: bool = false
