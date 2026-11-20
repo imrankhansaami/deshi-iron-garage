@@ -40,6 +40,7 @@ var dressing: GarageDressing
 var player: Player
 var hud: Hud
 var director: ObjectiveDirector
+var carry: CarrySystem
 var build_ms: Dictionary = {}
 var build_complete: bool = false
 var _live_specs: Dictionary = {}
@@ -131,6 +132,25 @@ func _build() -> void:
 	t0 = Time.get_ticks_msec()
 	_build_player()
 	build_ms["player"] = float(Time.get_ticks_msec() - t0)
+
+	# 6b. the garage runs open ----------------------------------------------
+	## The curtain is up from the first frame and the shutter station can no
+	## longer lower it: the project's author asked for a workshop you can simply
+	## walk into. This also settles the daylight shafts, the fog gradient and the
+	## first objective, all of which read this one state — the objective chain
+	## evaluates at director.start() below and sees the shutter already satisfied.
+	runtime.animate_shutter(true, 0.01)
+	runtime.shutter_open_amount = 1.0
+	runtime._apply_shutter(1.0)
+	GameState.shutter_open = true
+
+	# 6c. the carry system ---------------------------------------------------
+	## Built after the dressing (it indexes every carryable prop) and after the
+	## player (it holds objects in front of the camera).
+	carry = CarrySystem.new()
+	carry.name = "Carry"
+	add_child(carry)
+	carry.setup(player, dressing, structure)
 
 	# 7. interface ---------------------------------------------------------
 	t0 = Time.get_ticks_msec()

@@ -20,6 +20,11 @@ signal interaction_performed(target: Node3D, action_name: String)
 signal ui_panel_opened(panel_name: String)
 signal ui_panel_closed(panel_name: String)
 
+# --- carrying (mouse) ------------------------------------------------------
+## Empty text hides the hint. Emitted by the carry system only when the text
+## changes, so the HUD does not repaint a label sixty times a second.
+signal carry_hint_changed(hint: String)
+
 # --- presentation ----------------------------------------------------------
 signal notification_requested(message: String, tone: String)
 signal subtitle_requested(speaker: String, text: String, duration: float)

@@ -121,7 +121,7 @@ func _default_title() -> String:
 
 func _default_prompt() -> String:
 	match kind:
-		Kind.SHUTTER: return "Press E to roll the shutter"
+		Kind.SHUTTER: return "Press E to check the shutter"
 		Kind.SWITCHBOARD: return "Press E to work the main switch"
 		Kind.MCB: return "Press E to isolate this circuit"
 		Kind.COMPUTER: return "Press E to start the workstation"
@@ -153,14 +153,18 @@ func _primary(player: Node) -> void:
 		return
 	match kind:
 		Kind.SHUTTER:
-			var open: bool = not GameState.shutter_open
-			GameState.shutter_open = open
-			runtime.animate_shutter(open)
-			EventBus.shutter_state_changed.emit(open)
-			EventBus.notification_requested.emit(
-				"shutter %s" % ("rolling up" if open else "coming down"), "info")
-			if open:
+			# The garage runs open. This action can no longer lower the curtain —
+			# it only guarantees it is up, because the workshop is meant to be
+			# walked into (see GarageWorld build step 6b). The daylight shafts and
+			# the volumetric fog read the same state, so they stay at full.
+			if not GameState.shutter_open:
+				GameState.shutter_open = true
+				runtime.animate_shutter(true)
+				EventBus.shutter_state_changed.emit(true)
 				runtime.sys_log("SHUTTER OPEN")
+			else:
+				EventBus.notification_requested.emit("the curtain is chained up — the garage runs open", "info")
+			AudioBank.play("latch", -8.0)
 		Kind.SWITCHBOARD:
 			runtime.set_power(not runtime.power_on)
 			state_on = runtime.power_on

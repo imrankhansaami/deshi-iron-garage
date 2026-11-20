@@ -30,6 +30,8 @@ var objective_hint: Label
 var progress_bar: ProgressBar
 var prompt_label: Label
 var prompt_host: Label
+var prompt_box: PanelContainer
+var carry_hint_label: Label
 var status_box: VBoxContainer
 var fps_label: Label
 var modules_box: VBoxContainer
@@ -93,6 +95,7 @@ func _build_all() -> void:
 	## doubled audio on a single hover.
 	_connect_once(EventBus.objective_changed, _on_objective)
 	_connect_once(EventBus.notification_requested, _on_notice)
+	_connect_once(EventBus.carry_hint_changed, _on_carry_hint)
 	_connect_once(EventBus.ui_panel_opened, open_panel)
 	_connect_once(EventBus.ui_panel_closed, close_panel)
 	_connect_once(EventBus.interactable_hovered, _on_hover)
@@ -223,8 +226,12 @@ func _build_hud() -> void:
 	root.add_child(modules_box)
 
 	# --- prompt, bottom centre ------------------------------------------
-	var prompt_box := PanelContainer.new()
+	## The panel is hidden until something is hovered: an empty panel is a grey
+	## bar across the bottom of every capture, which is exactly what the first
+	## capture set showed.
+	prompt_box = PanelContainer.new()
 	prompt_box.name = "PromptBox"
+	prompt_box.visible = false
 	prompt_box.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	prompt_box.position = Vector2(-220, -118)
 	prompt_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -246,6 +253,22 @@ func _build_hud() -> void:
 	prompt_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	prompt_box.add_child(prompt_host)
 	prompt_host.position = Vector2(0, 34)
+
+	# --- carry hint, above the prompt ------------------------------------
+	## The mouse controls (pick up, place, rotate, put back) live on their own
+	## line so they can appear alongside an E prompt without either replacing the
+	## other: "press E to inspect" and "left click to pick up" are both true of
+	## the same spanner.
+	carry_hint_label = Label.new()
+	carry_hint_label.name = "CarryHint"
+	carry_hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	carry_hint_label.position = Vector2(-300, -142)
+	carry_hint_label.custom_minimum_size = Vector2(600, 0)
+	carry_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	carry_hint_label.add_theme_font_size_override("font_size", 15)
+	carry_hint_label.add_theme_color_override("font_color", GarageTheme.col("cyan"))
+	carry_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(carry_hint_label)
 
 	# --- notices, bottom left -------------------------------------------
 	notice_stack = VBoxContainer.new()
@@ -1411,6 +1434,7 @@ func _on_hover(target: Node3D) -> void:
 		prompt_host.text = s.display_name.to_upper()
 		prompt_label.visible = true
 		prompt_host.visible = true
+		prompt_box.visible = true
 		crosshair.modulate = GarageTheme.col("cyan")
 		AudioBank.play("ui_hover", -12.0)
 
@@ -1418,7 +1442,19 @@ func _on_hover(target: Node3D) -> void:
 func _on_unhover(_target: Node3D) -> void:
 	prompt_label.text = ""
 	prompt_host.text = ""
+	prompt_box.visible = false
 	crosshair.modulate = Color.WHITE
+
+
+func _on_carry_hint(hint: String) -> void:
+	## The mouse-carry line. An empty string hides it and restores the crosshair;
+	## a non-empty one tints the crosshair cyan, the same colour that means
+	## "clickable" everywhere else in the interface.
+	if carry_hint_label == null:
+		return
+	carry_hint_label.text = hint
+	if hint != "":
+		crosshair.modulate = GarageTheme.col("cyan")
 
 
 func _on_notice(message: String, tone: String) -> void:

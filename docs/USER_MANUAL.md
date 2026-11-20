@@ -28,7 +28,7 @@ godot --path . res://scenes/main/garage_world.tscn
 ```
 
 The first launch builds the garage and shows real progress: surface synthesis, then the shell, the
-lighting rig, 176 props, the screens and finally the interface. On a machine with integrated graphics
+lighting rig, 177 props, the screens and finally the interface. On a machine with integrated graphics
 this takes around 10 seconds; on a discrete GPU it will be considerably faster. The build time is also
 written to `user://captures/build.log`.
 
@@ -45,6 +45,9 @@ written to `user://captures/build.log`.
 | **Space** | step up / jump |
 | **E** | interact with the object the reticle is on |
 | **F** | inspect the focused object in detail |
+| **Left click** | pick up a small prop / place it down |
+| **Wheel** | rotate the held object |
+| **Right click** | put the held object back where it was |
 | **I** | recovered modules |
 | **Tab** | engineering workstation console |
 | **Esc** | pause, or close the open panel |
@@ -91,8 +94,8 @@ progress. If you are stuck for 35 seconds, a hint appears once in the bottom-lef
 
 | # | Objective | Where | How |
 |---|---|---|---|
-| 1 | Roll the shutter open | entrance | `E` on the shutter |
-| 2 | Restore workshop power | entrance, west wall | `E` on the switchboard. **Inspect it first with `F`** — the IPS bank beside it tells you what state the supply is in |
+| 1 | ~~Roll the shutter open~~ | — | satisfied at start: the garage runs open, the shutter is chained up and can no longer be lowered |
+| 2 | Restore workshop power | entrance, west wall | `E` on the switchboard. **Inspect it first with `F`** - the IPS bank beside it tells you what state the supply is in |
 | 3 | Bring the workstation online | electronics bench, east | `E` on the desktop tower. It runs a POST sequence, then a login, then the console |
 | 4 | Read the inventor's notebook | mechanical bench, west | `E` on the notebook lying open on the bench |
 | 5 | Salvage the structural frame module | mechanical area | `E` on the crate tagged **FRAME** |

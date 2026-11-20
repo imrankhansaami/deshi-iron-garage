@@ -380,7 +380,7 @@ performance work.
 | Surface synthesis (first surface) | 272 ms | 2.6% | the per-texel loop |
 | Structure — floor, walls, columns, roof, shutter, windows | 5 807 ms | 55.6% | mesh generation, collision shapes, and the surfaces it requests |
 | Environment — sky, `WorldEnvironment`, 30 lights, dust, rain | 39 ms | 0.4% | negligible |
-| Dressing — 170 placements, 35 stations, 4 layout groups, cables, signage, grime decals | 4 180 ms | 39.1% | prop construction, station wiring, and its surfaces |
+| Dressing — 171 placements, 36 stations, 4 layout groups, cables, signage, grime decals | 4 638 ms | 41.3% | prop construction, station wiring, and its surfaces |
 | Screens — 5 live `SubViewport`s and their materials | 75 ms | 0.7% | — |
 | Player — camera, ray, reticle, collision | 31 ms | 0.3% | — |
 | Interface — HUD, 10 panels, objective director | 182 ms | 1.7% | — |
@@ -405,8 +405,8 @@ performance work.
 compute shader, not reducing geometry. The earlier build of a 13 × 16.5 m room measured 71%; the
 share rose when the room shrank, because the texture cost is per *surface*, not per cubic metre.
 
-**Finding 7.2 — mesh caching is what makes 176 props affordable.** 1 103 distinct meshes serve 176
-placed props through 1 733 hits. Without the cache every spanner, capacitor and bolt would allocate
+**Finding 7.2 — mesh caching is what makes 177 props affordable.** 1 105 distinct meshes serve 177
+placed props through 1 740 hits. Without the cache every spanner, capacitor and bolt would allocate
 its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
 is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 
@@ -504,7 +504,7 @@ how the 40–55 fps medium / 18–26 fps high figures elsewhere in this document
 11. The per-texel composition loop is the surface-synthesis bottleneck, not the noise generation;
     moving from 512 px to 256 px halved the load time with no visible loss because tiling hides the
     missing resolution. (§1.1)
-12. Mesh caching at 1.6:1 reuse is what makes 176 props affordable. (§7.2)
+12. Mesh caching at 1.6:1 reuse is what makes 177 props affordable. (§7.2)
 13. Two-thirds of the total build is structure and dressing geometry. (§7.4)
 
 **Process findings**

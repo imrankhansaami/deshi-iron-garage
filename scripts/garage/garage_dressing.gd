@@ -182,10 +182,10 @@ func _area_entrance() -> void:
 		runtime.setup_shutter(shutter)
 		_station(shutter, Station.Kind.SHUTTER, Vector3.ZERO, {
 			"area": "entrance", "title": "Rolling shutter",
-			"desc": "The corrugated curtain that keeps the monsoon out. Half-down when you arrive, because the inventor slept in the workshop again.",
-			"lore": "The slats are individual geometry: as the curtain lifts, each one curls around the barrel instead of sliding through the lintel.",
-			"spec": [["mechanism", "manual chain drive"], ["curtain", "20 slats"], ["travel", "2.25 m"], ["padlock", "still on the rail"]],
-			"prompt": "Press E to roll the shutter", "sfx": "latch", "distance": 4.0,
+			"desc": "The corrugated curtain that keeps the monsoon out. It is chained up these days: the workshop runs open, because the inventor works late and customers come when they come.",
+			"lore": "The slats are individual geometry, and the curtain is coupled to the daylight — with it up, the shafts and the volumetric fog stand at full strength all day.",
+			"spec": [["mechanism", "manual chain drive"], ["curtain", "20 slats"], ["travel", "2.25 m"], ["state", "chained open"]],
+			"prompt": "Press E to check the shutter", "sfx": "latch", "distance": 4.0,
 		})
 	# the signboard over the shutter. Raised from 2.78 to 2.95: at 2.78 its bottom
 	# third sat behind the shutter head beam, which is 3 cm prouder than the board.
@@ -195,6 +195,18 @@ func _area_entrance() -> void:
 		"desc": "Hand-painted on a sheet of tin: the shop name in Bangla, the tagline underneath, and a phone number that is really a mobile number.",
 		"spec": [["script", "Bengali, Noto Sans Bengali"], ["medium", "house paint on tin"], ["repainted", "three times"]],
 		"sfx": "", "distance": 7.0,
+	})
+	# the banner over the left pier of the facade, facing the street. A second,
+	# larger print than the signboard, in the English name the owner uses for it.
+	## The print face is a blank in the prop; _signage() bakes the generated banner
+	## onto it through the same SignCanvas the interior signs use.
+	var outside_banner: Node3D = _place("wall_banner", Vector3(-2.85, 1.78, half_l + 0.17), Vector3.ZERO, {"width": 1.7, "spec": true})
+	outside_banner.name = "OutsideBanner"
+	_station(outside_banner, Station.Kind.SIGN, Vector3.ZERO, {
+		"area": "exterior", "title": "Street banner",
+		"desc": "Printed at the sign shop two lanes over: IMRAN'S GARAGE, in gold on navy, because that is what the stickers on the toolboxes say.",
+		"spec": [["print", "flex banner, 1.7 m"], ["script", "English + Bengali"], ["hung", "over the left pier"]],
+		"sfx": "", "distance": 5.5,
 	})
 	# the courtyard: three props, because 8.5 m of frontage holds three
 	var bicycle: Node3D = _place("bicycle", Vector3(-half_w + 1.3, 0.0, half_l + 1.9), Vector3(0.0, 0.5, 0.0), {"scale": 0.95})
@@ -1059,6 +1071,13 @@ func _signage() -> void:
 		var rows: Array = GameConfig.component_spec(comp_id)
 		var detail: String = String(rows[0][1]) if not rows.is_empty() else "salvage"
 		baker.apply_baked(tag, _crate_tag_spec(GameConfig.component_short(comp_id), detail), "tag_" + mod, 0.25, 0.5)
+	# the street banner over the facade: generated text on the banner prop, so the
+	# name over the door is editable data like everything else on these walls
+	var outside: Node3D = _find_first("OutsideBanner")
+	if outside != null:
+		var print_face: MeshInstance3D = outside.get_node_or_null("Print") as MeshInstance3D
+		if print_face != null:
+			baker.apply_baked(print_face, _street_banner_spec(String(labels.garage_name)), "street_banner", 0.12, 0.55)
 
 
 func _find_first(name: String) -> Node3D:
@@ -1089,6 +1108,28 @@ func _sign_spec(garage: String, brand: String, tagline: String) -> Dictionary:
 			{"type": "text", "name": "EN", "pos": Vector2(700, 206), "size": 30, "color": "#8fa0ab", "text": "OPEN 24 HOURS", "font": "mono"},
 			{"type": "circle", "center": Vector2(960, 128), "radius": 34, "color": "#e2453c", "filled": true},
 			{"type": "text", "name": "NUM", "pos": Vector2(700, 74), "size": 40, "color": "#c8d0d8", "text": "017XX-XXXXXX", "font": "mono"},
+		],
+	}
+
+
+func _street_banner_spec(garage_name: String) -> Dictionary:
+	## The banner over the facade's left pier: IMRAN'S GARAGE in gold on navy, a
+	## looking-glass rhyme with the airline banner the owner already has, and the
+	## shop's Bangla name underneath so the two prints agree with each other.
+	## English in the display face, Bangla through the engine's shaper, both baked
+	## through the same SignCanvas the interior signs use. The subtitle stays
+	## Latin because the mono face carries no Bengali glyphs.
+	return {
+		"size": Vector2i(640, 358), "transparent": false, "bg": "#14213a",
+		"border": {"color": "#d4af37", "width": 7.0},
+		"layers": [
+			{"type": "rect", "pos": Vector2(26, 26), "sz": Vector2(588, 3), "color": "#c9a83f"},
+			{"type": "rect", "pos": Vector2(26, 329), "sz": Vector2(588, 3), "color": "#c9a83f"},
+			# size 64, not 84: at 84 the line wrapped inside its own width box and
+			# the second half landed on top of the Bangla name below it
+			{"type": "text", "name": "NAME", "pos": Vector2(20, 62), "size": 64, "width": 600, "align": "center", "color": "#e8c56a", "text": "IMRAN'S GARAGE", "font": "display", "shadow": true},
+			{"type": "text", "name": "BN", "pos": Vector2(20, 172), "size": 38, "width": 600, "align": "center", "color": "#e8ecef", "text": garage_name, "font": "bangla"},
+			{"type": "text", "name": "SUB", "pos": Vector2(20, 252), "size": 22, "width": 600, "align": "center", "color": "#9fb0c8", "text": "PROTOTYPE WORKSHOP  ·  EST. 2019", "font": "mono"},
 		],
 	}
 

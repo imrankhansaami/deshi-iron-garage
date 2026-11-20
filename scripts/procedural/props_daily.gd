@@ -744,9 +744,11 @@ static func tool_chest(f: PropFactory, o: Dictionary) -> Node3D:
 
 static func wall_banner(f: PropFactory, o: Dictionary) -> Node3D:
 	## A printed banner mounted on the wall — a backboard, the print and two
-	## batten rollers, the way a flex banner is actually hung. This is the project's
-	## one supplied photograph: the garage's owner asked for his own banner to hang
-	## in the room, and it is loaded at runtime by MaterialLibrary.banner_print().
+	## batten rollers, the way a flex banner is actually hung. Two modes: with an
+	## `image` file the print is that photograph (the project's one supplied
+	## image), and with `spec` true the print is left as a blank stock for the
+	## SignageBaker, which bakes a generated banner onto it exactly like the
+	## signboard over the shutter.
 	var w: float = float(o.get("width", 2.0))
 	var aspect: float = float(o.get("aspect", 0.558))
 	var h: float = w * aspect
@@ -757,7 +759,10 @@ static func wall_banner(f: PropFactory, o: Dictionary) -> Node3D:
 	back.position = Vector3(0.0, h * 0.5, -0.014)
 	root.add_child(back)
 	# the print itself — ShapeKit.plane faces +Z, which is the wall's outward normal
-	var print_face: MeshInstance3D = ShapeKit.plane(Vector2(w, h), f.ML.banner_print(String(o.get("image", "res://assets/textures/user/imran_banner.jpeg"))), "Print")
+	var print_mat: Material = f.ML.banner_print(String(o.get("image", "res://assets/textures/user/imran_banner.jpeg")))
+	if bool(o.get("spec", false)):
+		print_mat = f.ML.label_stock()
+	var print_face: MeshInstance3D = ShapeKit.plane(Vector2(w, h), print_mat, "Print")
 	print_face.position = Vector3(0.0, h * 0.5, -0.004)
 	root.add_child(print_face)
 	# batten rollers top and bottom, with end caps: how these are really hung

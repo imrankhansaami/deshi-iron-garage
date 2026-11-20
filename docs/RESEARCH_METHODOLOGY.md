@@ -212,7 +212,7 @@ The traceability is explicit:
 | Bundling saves draw calls | `CableGenerator.generate_bundle()` — one `SurfaceTool`, one `commit()` |
 | Seven shadow casters of 30 lights | `GarageEnvironment` registers 30; the bench reports the caster count |
 | Shutter drives the daylight | `GarageEnvironment.set_shutter_influence()`, called from `GarageWorld._process()` |
-| 176 props, 131 kinds | `GarageWorld.build_report()` |
+| 177 props, 131 kinds | `GarageWorld.build_report()` |
 | Screen content reads the simulation | `ScreenContent._snapshot()`, called by every screen and every panel |
 | The A/B performance harness | `GarageWorld._perf_process()` (`perf.flag`), reported in `docs/EXPERIMENTS.md` §7.5 |
 

@@ -33,7 +33,7 @@ func _run() -> void:
 	for row: String in rows:
 		print("DUMP: ", row)
 	print("DUMP: %d nodes within %.1f m of (%.1f, %.1f)" % [rows.size(), r, tx, tz])
-	_dump_occupancy(world)
+	await _dump_occupancy(world)
 	quit()
 
 
@@ -73,6 +73,47 @@ func _dump_occupancy(world: Node) -> void:
 		print("DUMP: probe %s -> %d box(es)%s" % [str(probe), hits, detail])
 	_bounds_audit(world, "HoloTable")
 	_bounds_audit(world, "Workbench")
+	await _carry_probe(world)
+
+
+func _carry_probe(world: Node) -> void:
+	## Exercises the carry system's maths without a window: the surface list, a
+	## full pick-up/place cycle, and the put-back path. This is the difference
+	## between "it compiles" and "a spanner lands on the bench".
+	var carry: Node = world.get("carry")
+	if carry == null:
+		print("DUMP: carry probe: no carry system")
+		return
+	var items: Array = carry.get("_items")
+	var surfaces: Array = carry.get("_surfaces")
+	print("DUMP: carry items=%d surfaces=%d" % [items.size(), surfaces.size()])
+	var probes: Array = [
+		[Vector3(-3.7, 1.2, 1.7), "mechanical bench top (expect ~0.95)"],
+		[Vector3(3.8, 1.3, 1.5), "electronics desk (expect ~0.92)"],
+		[Vector3(0.6, 1.5, 1.4), "open floor (expect ~0.00)"],
+	]
+	for p: Array in probes:
+		var y: float = float(carry.call("_surface_under", p[0], null))
+		print("DUMP: carry surface under %s -> y=%.3f   %s" % [str(p[0]), y, String(p[1])])
+	if items.is_empty():
+		return
+	# pick up the first carryable, place it, then put it back
+	var node: Node3D = items[0].get("node")
+	var home: Vector3 = node.global_position
+	carry.call("_pick_up", node)
+	print("DUMP: carry picked up '%s' state=%d" % [String(node.name), int(carry.get("_state"))])
+	carry.call("_place")
+	for i: int in range(60):
+		await process_frame
+	print("DUMP: carry placed at %s (was %s) state=%d" % [str(node.global_position.snappedf(0.001)), str(home.snappedf(0.001)), int(carry.get("_state"))])
+	carry.call("_pick_up", node)
+	var placed_at: Vector3 = node.global_position
+	carry.call("_put_back")
+	for i: int in range(60):
+		await process_frame
+	print("DUMP: carry put back at %s  (picked up at %s)  delta=%.4f" % [
+		str(node.global_position.snappedf(0.001)), str(placed_at.snappedf(0.001)),
+		placed_at.distance_to(node.global_position)])
 
 
 func _find(node: Node, target: String) -> Node3D:

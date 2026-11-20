@@ -137,7 +137,7 @@ recorded in `docs/ASSET_LICENSES.md`.
 |---|---|
 | First-person controller | WASD, mouse look, sprint, crouch-walk, gravity, jump, distance-driven head bob, material-aware footsteps |
 | Interaction | Raycast focus with a bounding-box reticle, contextual prompts, E to operate, F to inspect |
-| Interactable stations | 35 registered, across 20 behaviour kinds |
+| Interactable stations | 36 registered, across 20 behaviour kinds |
 | Power | 4 circuits, sequential energisation, tube strike simulation, live circuit isolation from the MCB row |
 | Workstation | 6-section `Control`-built interface reading live simulation state, with a POST → login → ready boot |
 | In-world screens | 5 screen meshes, 5 live `SubViewport`s, temperature-graded CRT and LCD glass shader |
@@ -146,7 +146,8 @@ recorded in `docs/ASSET_LICENSES.md`.
 | Assembly | 3 modules, 14 parts, one Tween chain, deck lift, arm choreography, core ignition |
 | Diagnostics | 7-stage pass with live log output to the console panel and the portrait screen |
 | Salvage | 3 collectable modules with world-space crates, baked tags and inventory tracking |
-| Realism layer | 10 projected grime decals from one generated texture (under machinery, below wall fixtures) and the author's supplied workshop banner on the north wall |
+| Mouse carrying | Every prop under ~0.8 m can be picked up, rotated and set down with the mouse; placement settles onto the surface under the aim (bench tops, shelves, the platform deck, the floor) and right click returns a thing to where it came from |
+| Realism layer | 10 projected grime decals from one generated texture (under machinery, below wall fixtures), the author's supplied workshop banner inside, and a generated "IMRAN'S GARAGE" street banner over the facade |
 | Save / load | Full run state persisted; Continue replays it against a fresh build with no boot animation |
 | Settings | Quality preset, FOV, walk speed, sensitivity, invert, bloom, SSAO, shadows, rain, four volumes |
 | Graphics bench | 6 experiment tabs, 34 live parameters, 18 real performance monitors, screenshot and CSV export |

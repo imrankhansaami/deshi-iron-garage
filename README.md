@@ -48,7 +48,7 @@ godot --path . res://scenes/main/main_menu.tscn
 godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 176 props,
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 177 props,
 screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
 **10.4 s**, reported on screen step by step and written to a log.
 
@@ -78,6 +78,9 @@ the flag file.
 | `Space` | step up / jump |
 | `E` | interact with what the reticle is on |
 | `F` | inspect the focused object in detail |
+| **Left click** | **pick up a small prop / place it down** |
+| **Wheel** | **rotate the held object** |
+| **Right click** | **put the held object back where it was** |
 | `I` | recovered modules |
 | `Tab` | engineering workstation console |
 | `Esc` | pause, or close the open panel |
@@ -85,17 +88,25 @@ the flag file.
 | `F6` | graphics bench |
 | `F9` | jump the garage to its finished state (demonstration shortcut) |
 
+Anything under about 0.8 m can be picked up: tools, tins, tea glasses, stools, tyres,
+crates, clutter from the benches and the floor. Look at it, the hint line says
+`LEFT CLICK — PICK UP`, and the object floats to your hand. It follows your aim,
+the wheel spins it, left click settles it onto whatever surface is beneath the
+aim (bench top, shelf, platform deck, floor), and right click puts it back exactly
+where it came from. Nothing can be lost and nothing snaps or clips.
+
 The reticle shows **cyan** brackets when `E` will do something and **amber** when the object is
 recognised but not yet usable — an unpowered monitor, or a module you have not salvaged.
 
 ---
 
-## 4. The twelve-step objective chain
+## 4. The objective chain
 
 Defined in `data/objectives.json`, evaluated by `ObjectiveDirector`, and advanced by events rather
-than by polling, so doing things out of order never strands the player.
+than by polling, so doing things out of order never strands the player. The garage runs open — the
+shutter is chained up at the start and can no longer be lowered — so the chain begins at step 2.
 
-1. Roll the shutter open
+1. ~~Roll the shutter open~~ (satisfied at start: the workshop runs open)
 2. Restore workshop power at the main switchboard
 3. Bring the workstation online
 4. Read the inventor's notebook
@@ -156,7 +167,7 @@ geometry, not asserted in text.
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **176 props in 131 distinct kinds** in 4.0 s.
+  prop catalogues build **177 props in 131 distinct kinds** in 4.0 s.
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.
@@ -214,11 +225,11 @@ in-world graphics bench. These are the numbers the application reports about its
 |---|---|
 | Full garage build | 10.4 s |
 | Surface synthesis, first 256 px surface | 272 ms |
-| Props built | 176 (131 kinds) |
-| Interactive stations | 35 |
+| Props built | 177 (131 kinds) |
+| Interactive stations | 36 |
 | Registered lights | 30 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1733 hits, 1103 misses |
+| Mesh cache | 1740 hits, 1105 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |
 
@@ -234,6 +245,8 @@ harness that produces them is in the application.
 ```
 project.godot               # Forward+, input map, renderer settings
 README.md
+run_game.bat                # double-click: title screen
+run_garage.bat              # double-click: straight into the garage
 
 assets/
   fonts/                    # Noto Sans Bengali, Rubik, Oswald, JetBrains Mono (all OFL 1.1)
