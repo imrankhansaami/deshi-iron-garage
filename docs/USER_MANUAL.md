@@ -28,7 +28,7 @@ godot --path . res://scenes/main/garage_world.tscn
 ```
 
 The first launch builds the garage and shows real progress: surface synthesis, then the shell, the
-lighting rig, 189 props, the screens and finally the interface. On a machine with integrated graphics
+lighting rig, 191 props, the screens and finally the interface. On a machine with integrated graphics
 this takes around 10 seconds; on a discrete GPU it will be considerably faster. The build time is also
 written to `user://captures/build.log`.
 
@@ -231,7 +231,9 @@ walks up: the presence sensor over the lintel lifts the curtain as you approach 
 press; the shutter station only tells you about it). The way in and out is a concrete apron that
 ramps the doorway down to the yard, so you walk in without breaking stride whichever way you come.
 The courtyard itself is walled in — the street wall and the neighbour walls are solid, and the packed
-earth runs right up to them. There is a courtyard with a tea
+earth runs right up to them. On the walls of the entrance: **a hand-drawn map of Bangladesh** right
+of the gate and **its Sylhet division** beside the door — sketch maps, and their `F` text says so.
+There is a courtyard with a tea
 stall cart, a bicycle, a rickshaw wheel, a roof antenna, and a neighbour's wall. Puddles on the
 packed earth, a gold-on-navy street banner over the left pier reading **IMRAN'S GARAGE** with the
 shop's Bangla name underneath, and by the gate the national corner: the **flag of Bangladesh** on

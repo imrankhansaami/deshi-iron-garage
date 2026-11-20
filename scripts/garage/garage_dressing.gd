@@ -55,6 +55,7 @@ func dress() -> void:
 	_cables()
 	_ambience_props()
 	_scientists_corner()
+	_wall_maps()
 	# last, so it sees crates placed by any area
 	_register_component_crates()
 	# signage after everything: it looks up props by name
@@ -1208,6 +1209,17 @@ func _signage() -> void:
 				var mb: StandardMaterial3D = baker.apply_baked(back_face, _coin_face_spec(false), "coin_back", 0.0, 0.34)
 				mb.metallic = 0.6
 				mb.metallic_specular = 0.55
+	# the two wall maps: flat paper prints, so no depth on the bake
+	var bd_map: Node3D = _find_first("BangladeshMap")
+	if bd_map != null:
+		var bd_face: MeshInstance3D = bd_map.get_node_or_null("Print") as MeshInstance3D
+		if bd_face != null:
+			baker.apply_baked(bd_face, _bangladesh_map_spec(), "map_bangladesh", 0.0, 0.62)
+	var sy_map: Node3D = _find_first("SylhetMap")
+	if sy_map != null:
+		var sy_face: MeshInstance3D = sy_map.get_node_or_null("Print") as MeshInstance3D
+		if sy_face != null:
+			baker.apply_baked(sy_face, _sylhet_map_spec(), "map_sylhet", 0.0, 0.62)
 
 
 func _find_first(name: String) -> Node3D:
@@ -1458,6 +1470,182 @@ func _coin_face_spec(front: bool) -> Dictionary:
 		layers.append({"type": "text", "name": "E", "pos": Vector2(32, 418), "size": 30, "width": 448, "align": "center", "color": brass_dark, "text": "FIVE TAKA", "font": "mono"})
 		layers.append({"type": "text", "name": "D", "pos": Vector2(32, 456), "size": 20, "width": 448, "align": "center", "color": brass_dark, "text": "প্রদর্শনী মুদ্রা", "font": "bangla"})
 	return {"size": Vector2i(512, 512), "transparent": false, "bg": brass_mid, "layers": layers}
+
+
+func _wall_maps() -> void:
+	## The two framed wall maps, hung where they are actually useful to a visitor:
+	## the country on the entrance's south wall, right of the gate (the wall you
+	## face walking in), and its Sylhet division on the west wall beside the door.
+	## Both are wall_plaques with larger formats and both prints are hand-drawn
+	## signage bakes (see _bangladesh_map_spec / _sylhet_map_spec) — line sketches,
+	## not survey data, and their inspection text says so.
+	var half_l: float = structure.half_l
+	var bd: Node3D = _place("wall_plaque", Vector3(2.7, 1.30, half_l - 0.16), Vector3(0.0, PI, 0.0), {"width": 0.62, "height": 0.78})
+	bd.name = "BangladeshMap"
+	_station(bd, Station.Kind.SIGN, Vector3(0.0, 0.39, 0.04), {
+		"area": "entrance", "title": "Wall map — Bangladesh",
+		"desc": "A hand-drawn map of the country, hung right of the gate where a customer waiting out a repair can find their district. It is a sketch, not a survey: the delta in the south, the Sylhet wedge in the north-east, the Chittagong hills running down to Teknaf, the four great rivers and the main towns marked.",
+		"spec": [["format", "sketch map, 0.6 × 0.8 m"], ["rivers", "পদ্মা · যমুনা · মেঘনা · সুরমা"], ["honesty", "a line drawing, not survey data"]],
+		"sfx": "paper", "distance": 3.0,
+	})
+	var sy: Node3D = _place("wall_plaque", Vector3(-structure.half_w + 0.20, 1.28, 4.55), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.66, "height": 0.58})
+	sy.name = "SylhetMap"
+	_station(sy, Station.Kind.SIGN, Vector3(0.0, 0.29, 0.04), {
+		"area": "entrance", "title": "Wall map — Sylhet division",
+		"desc": "The division this garage calls home — সুনামগঞ্জ, সিলেট, মৌলভীবাজার and হবিগঞ্জ — drawn with its two rivers, the সুরমা and the কুশিয়ারা, running through it. Same hand and same sketch honesty as the country map across the room.",
+		"spec": [["districts", "4: সুনামগঞ্জ · সিলেট · মৌলভীবাজার · হবিগঞ্জ"], ["rivers", "সুরমা · কুশিয়ারা"], ["honesty", "a line drawing, not survey data"]],
+		"sfx": "paper", "distance": 3.0,
+	})
+
+
+func _bangladesh_map_spec() -> Dictionary:
+	## A sketch map of Bangladesh for the entrance wall: the outline traced from
+	## the country's familiar shape — the north border stepping down from the
+	## Rangpur high corner to the Sylhet wedge, the Tripura notch, the Chittagong
+	## hills running down to Teknaf, the delta and the estuary — with the four great
+	## rivers, the main towns and the sea lines under the coast. Drawn through the
+	## same SignCanvas bake as every other sign. It is deliberately a hand-drawing:
+	## the station text is honest that it is a line sketch, not survey data.
+	var ink: String = "#2f2b26"
+	var land: String = "#b3c48e"
+	var land_edge: String = "#5c6b45"
+	var paper: String = "#efe8d3"
+	var river: String = "#4f86ad"
+	var sea: String = "#8fb4c9"
+	var coast: Array = [
+		Vector2(98, 101), Vector2(130, 104), Vector2(165, 115), Vector2(183, 123),
+		Vector2(196, 155), Vector2(204, 190), Vector2(216, 208), Vector2(226, 214),
+		Vector2(240, 206), Vector2(252, 205), Vector2(270, 208), Vector2(284, 208),
+		Vector2(298, 210), Vector2(318, 212), Vector2(335, 218), Vector2(352, 224),
+		Vector2(360, 240), Vector2(362, 258), Vector2(356, 274), Vector2(348, 288),
+		Vector2(334, 302), Vector2(318, 320), Vector2(302, 338), Vector2(294, 352),
+		Vector2(290, 366), Vector2(296, 380), Vector2(312, 396), Vector2(330, 404),
+		Vector2(352, 414), Vector2(366, 428), Vector2(368, 446), Vector2(362, 466),
+		Vector2(354, 486), Vector2(350, 506), Vector2(350, 524), Vector2(350, 540),
+		Vector2(346, 522), Vector2(340, 504), Vector2(334, 486), Vector2(328, 468),
+		Vector2(322, 450), Vector2(318, 436), Vector2(312, 428), Vector2(304, 432),
+		Vector2(296, 440), Vector2(288, 448), Vector2(280, 454), Vector2(272, 448),
+		Vector2(266, 436), Vector2(262, 422), Vector2(258, 408), Vector2(254, 394),
+		Vector2(250, 384), Vector2(245, 384), Vector2(240, 392), Vector2(234, 400),
+		Vector2(228, 410), Vector2(222, 418), Vector2(214, 428), Vector2(206, 438),
+		Vector2(196, 448), Vector2(188, 456), Vector2(178, 462), Vector2(160, 466),
+		Vector2(146, 468), Vector2(134, 462), Vector2(130, 448), Vector2(130, 430),
+		Vector2(132, 410), Vector2(134, 392), Vector2(130, 372), Vector2(128, 352),
+		Vector2(126, 332), Vector2(122, 316), Vector2(112, 298), Vector2(104, 284),
+		Vector2(94, 268), Vector2(86, 252), Vector2(81, 240), Vector2(85, 226),
+		Vector2(90, 208), Vector2(93, 190), Vector2(94, 172), Vector2(96, 158),
+		Vector2(94, 142), Vector2(94, 126), Vector2(98, 110),
+	]
+	var layers: Array = [
+		{"type": "grid", "pos": Vector2(60, 96), "sz": Vector2(360, 464), "step": 50.0, "color": "#e0d6ba"},
+		{"type": "poly", "points": coast, "color": land, "filled": true},
+		{"type": "poly", "points": coast, "color": land_edge, "filled": false, "width": 2.2},
+		# the sea, hinted with coast-parallel lines under the delta
+		{"type": "line", "from": Vector2(150, 500), "to": Vector2(220, 512), "color": sea, "width": 2.0},
+		{"type": "line", "from": Vector2(180, 528), "to": Vector2(250, 540), "color": sea, "width": 2.0},
+		{"type": "line", "from": Vector2(240, 506), "to": Vector2(268, 546), "color": sea, "width": 2.0},
+		{"type": "text", "name": "SEA", "pos": Vector2(52, 552), "size": 17, "color": sea, "text": "বঙ্গোপসাগর", "font": "bangla"},
+	]
+	var rivers: Array = [
+		# যমুনা, from the Kurigram entry south to the Padma confluence
+		[Vector2(183, 130), Vector2(190, 165), Vector2(196, 205), Vector2(200, 245), Vector2(196, 280), Vector2(185, 305), Vector2(177, 316)],
+		# পদ্মা, entering at Chapainawabganj, running south-east
+		[Vector2(84, 254), Vector2(105, 268), Vector2(130, 286), Vector2(155, 304), Vector2(177, 316)],
+		# the combined Padma from the confluence to the Chandpur meeting with the Meghna
+		[Vector2(177, 316), Vector2(205, 338), Vector2(228, 352), Vector2(244, 361)],
+		# মেঘনা, from the Sylhet hills down into the estuary inlet
+		[Vector2(338, 236), Vector2(322, 254), Vector2(303, 272), Vector2(285, 290), Vector2(268, 300), Vector2(257, 322), Vector2(249, 344), Vector2(245, 360), Vector2(247, 372), Vector2(250, 382)],
+		# সুরমা, the short upper reach by Sylhet town
+		[Vector2(352, 230), Vector2(343, 242), Vector2(332, 250), Vector2(320, 257)],
+		# কর্ণফুলী, the short Chattogram river
+		[Vector2(334, 406), Vector2(326, 420), Vector2(320, 432)],
+	]
+	for chain: Array in rivers:
+		for i: int in range(chain.size() - 1):
+			layers.append({"type": "line", "from": chain[i], "to": chain[i + 1], "color": river, "width": 2.4})
+	# towns: dot and name, and the capital gets the bigger dot
+	var towns: Array = [
+		[Vector2(228, 317), "ঢাকা", 17, 4.5],
+		[Vector2(318, 427), "চট্টগ্রাম", 15, 3.2],
+		[Vector2(322, 233), "সিলেট", 15, 3.2],
+		[Vector2(174, 391), "খুলনা", 15, 3.2],
+		[Vector2(113, 273), "রাজশাহী", 14, 3.0],
+		[Vector2(226, 400), "বরিশাল", 14, 3.0],
+		[Vector2(155, 168), "রংপুর", 14, 3.0],
+		[Vector2(228, 244), "ময়মনসিংহ", 13, 2.8],
+	]
+	for t: Array in towns:
+		layers.append({"type": "circle", "center": t[0], "radius": t[3], "color": ink, "filled": true})
+		var lp: Vector2 = (t[0] as Vector2) + Vector2(7.0, -9.0)
+		if String(t[1]) == "বরিশাল":
+			lp = (t[0] as Vector2) + Vector2(-64.0, -9.0)
+		layers.append({"type": "text", "name": "town_%s" % String(t[1]), "pos": lp, "size": t[2], "color": ink, "text": t[1], "font": "bangla"})
+	# title, subtitle, compass, scale
+	layers.append({"type": "text", "name": "T", "pos": Vector2(40, 22), "size": 44, "width": 400, "align": "center", "color": ink, "text": "বাংলাদেশ", "font": "bangla"})
+	layers.append({"type": "text", "name": "S", "pos": Vector2(40, 70), "size": 14, "width": 400, "align": "center", "color": "#7a7263", "text": "SKETCH MAP  ·  হাতে আঁকা", "font": "mono"})
+	layers.append({"type": "line", "from": Vector2(444, 96), "to": Vector2(444, 66), "color": ink, "width": 2.0})
+	layers.append({"type": "poly", "points": [Vector2(444, 56), Vector2(439, 70), Vector2(449, 70)], "color": ink, "filled": true})
+	layers.append({"type": "text", "name": "N", "pos": Vector2(436, 98), "size": 14, "color": ink, "text": "N", "font": "mono"})
+	layers.append({"type": "line", "from": Vector2(310, 580), "to": Vector2(420, 580), "color": ink, "width": 3.0})
+	layers.append({"type": "line", "from": Vector2(365, 574), "to": Vector2(365, 586), "color": ink, "width": 2.0})
+	layers.append({"type": "text", "name": "SC", "pos": Vector2(302, 560), "size": 12, "color": "#7a7263", "text": "≈ 100 km", "font": "mono"})
+	return {"size": Vector2i(480, 600), "transparent": false, "bg": paper, "border": {"color": "#8a7f66", "width": 3.0}, "layers": layers}
+
+
+func _sylhet_map_spec() -> Dictionary:
+	## A sketch map of the Sylhet division for the wall beside the door: the four
+	## districts, their lines, the city and the Surma and the Kushiyara. Same
+	## honesty as the country map — a hand drawing, said so in its station text.
+	var ink: String = "#2f2b26"
+	var land: String = "#bccd9a"
+	var edge: String = "#5c6b45"
+	var paper: String = "#efe8d3"
+	var river: String = "#4f86ad"
+	var district: String = "#8a8067"
+	var border: Array = [
+		Vector2(96, 104), Vector2(150, 84), Vector2(216, 88), Vector2(270, 74),
+		Vector2(330, 66), Vector2(380, 88), Vector2(414, 124), Vector2(420, 160),
+		Vector2(396, 196), Vector2(402, 232), Vector2(376, 262), Vector2(342, 282),
+		Vector2(308, 292), Vector2(282, 318), Vector2(252, 352), Vector2(214, 374),
+		Vector2(170, 380), Vector2(128, 362), Vector2(92, 326), Vector2(70, 282),
+		Vector2(62, 230), Vector2(70, 176), Vector2(78, 130),
+	]
+	var layers: Array = [
+		{"type": "grid", "pos": Vector2(48, 96), "sz": Vector2(384, 292), "step": 48.0, "color": "#e0d6ba"},
+		{"type": "poly", "points": border, "color": land, "filled": true},
+		{"type": "poly", "points": border, "color": edge, "filled": false, "width": 2.2},
+	]
+	var inner: Array = [
+		[Vector2(206, 86), Vector2(198, 150), Vector2(192, 220), Vector2(188, 292), Vector2(176, 366)],
+		[Vector2(318, 176), Vector2(306, 216), Vector2(296, 258), Vector2(284, 316)],
+		[Vector2(284, 316), Vector2(240, 344), Vector2(206, 362)],
+	]
+	for chain: Array in inner:
+		for i: int in range(chain.size() - 1):
+			layers.append({"type": "line", "from": chain[i], "to": chain[i + 1], "color": district, "width": 1.4})
+	var rivers: Array = [
+		[Vector2(404, 148), Vector2(372, 168), Vector2(340, 182), Vector2(308, 196), Vector2(276, 210), Vector2(240, 220), Vector2(212, 226)],
+		[Vector2(408, 224), Vector2(380, 238), Vector2(350, 250), Vector2(318, 258), Vector2(286, 262), Vector2(252, 262), Vector2(220, 250)],
+	]
+	for chain: Array in rivers:
+		for i: int in range(chain.size() - 1):
+			layers.append({"type": "line", "from": chain[i], "to": chain[i + 1], "color": river, "width": 2.6})
+	var labels: Array = [
+		[Vector2(120, 190), "সুনামগঞ্জ", 18],
+		[Vector2(300, 148), "সিলেট", 20],
+		[Vector2(322, 306), "মৌলভীবাজার", 16],
+		[Vector2(150, 312), "হবিগঞ্জ", 18],
+	]
+	for l: Array in labels:
+		layers.append({"type": "text", "name": "dist_%s" % String(l[1]), "pos": (l[0] as Vector2) - Vector2(60.0, 12.0), "size": l[2], "width": 120, "align": "center", "color": ink, "text": l[1], "font": "bangla"})
+	layers.append({"type": "circle", "center": Vector2(296, 196), "radius": 4.5, "color": ink, "filled": true})
+	layers.append({"type": "text", "name": "CITY", "pos": Vector2(240, 222), "size": 12, "color": "#6f6757", "text": "সিলেট শহর", "font": "bangla"})
+	layers.append({"type": "text", "name": "T", "pos": Vector2(40, 18), "size": 40, "width": 400, "align": "center", "color": ink, "text": "সিলেট", "font": "bangla"})
+	layers.append({"type": "text", "name": "S", "pos": Vector2(40, 62), "size": 14, "width": 400, "align": "center", "color": "#7a7263", "text": "SYLHET DIVISION  ·  চার জেলা", "font": "mono"})
+	layers.append({"type": "line", "from": Vector2(444, 92), "to": Vector2(444, 64), "color": ink, "width": 2.0})
+	layers.append({"type": "poly", "points": [Vector2(444, 54), Vector2(439, 68), Vector2(449, 68)], "color": ink, "filled": true})
+	layers.append({"type": "text", "name": "N", "pos": Vector2(436, 94), "size": 13, "color": ink, "text": "N", "font": "mono"})
+	return {"size": Vector2i(480, 420), "transparent": false, "bg": paper, "border": {"color": "#8a7f66", "width": 3.0}, "layers": layers}
 
 
 func _poster_spec(index: int, dream: String, prototype: String) -> Dictionary:

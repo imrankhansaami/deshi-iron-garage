@@ -707,6 +707,10 @@ const CAP_SHOTS: Array = [
 	{"name": "13_courtyard", "pos": Vector3(0.4, 1.75, 9.35), "look": Vector3(2.9, 1.6, 7.8)},
 	# the always-on bulb over the walk lane: the one light the switchboard cannot cut
 	{"name": "14_walk_lane", "pos": Vector3(2.7, 1.75, 1.7), "look": Vector3(0.0, 2.42, 2.62)},
+	# the two wall maps: the country on the entrance's south wall, the division on
+	# the west wall by the door
+	{"name": "15_country_map", "pos": Vector3(2.72, 1.60, 3.35), "look": Vector3(2.70, 1.66, 5.05)},
+	{"name": "16_division_map", "pos": Vector3(-2.6, 1.56, 4.52), "look": Vector3(-4.05, 1.58, 4.55)},
 ]
 
 var _capturing: bool = false

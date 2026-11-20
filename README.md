@@ -48,7 +48,7 @@ godot --path . res://scenes/main/main_menu.tscn
 godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 189 props,
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 191 props,
 screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
 **≈ 11–12 s** — it moves with machine load — reported on screen step by step and written to a log.
 
@@ -59,7 +59,7 @@ global-illumination features; the Settings panel switches it live.
 ### Capture / verification mode
 
 Dropping an empty file named `capture.flag` next to `project.godot` puts the world into verification
-mode: it drives the whole twelve-step progression, then parks the camera at fifteen fixed viewpoints
+mode: it drives the whole twelve-step progression, then parks the camera at seventeen fixed viewpoints
 and writes a PNG plus a luminance histogram for each, then quits. The files land in `user://captures/`
 (`%APPDATA%\Godot\app_userdata\Deshi Iron Garage\captures\` on Windows), which is how the screenshots
 quoted in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and has no effect without
@@ -177,7 +177,7 @@ geometry, not asserted in text.
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **189 props in 134 distinct kinds** in 4.1 s.
+  prop catalogues build **191 props in 134 distinct kinds** in 4.1 s.
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.
@@ -241,13 +241,13 @@ in-world graphics bench. These are the numbers the application reports about its
 
 | Measurement | Value |
 |---|---|
-| Full garage build | ≈ 11–12 s (11.1 s in the latest capture run; it moves with machine load) |
+| Full garage build | ≈ 11–12 s (11.0 s in the latest capture run; it moves with machine load) |
 | Surface synthesis, first 256 px surface | ≈ 280 ms |
-| Props placed | 183 (189 built, 134 kinds) |
-| Interactive stations | 45 |
+| Props placed | 185 (191 built, 134 kinds) |
+| Interactive stations | 47 |
 | Registered lights | 34 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1776 hits, 1124 misses |
+| Mesh cache | 1781 hits, 1129 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Adaptive resolution | on by default: render scale 0.55–0.85, ±0.05 per second, holding worst-case frames under 24 ms |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |
