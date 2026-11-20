@@ -33,6 +33,10 @@ is running on.
 
 Requires **Godot 4.7.x stable** (standard build, not .NET). No plugins, no external dependencies.
 
+On Windows, the two launcher scripts in the project root do it for you: **`run_game.bat`** opens the
+title screen, **`run_garage.bat`** starts inside the garage. Both point at the Godot 4.7 executable
+path on this machine — edit the `GODOT=` line if it moves.
+
 ```bash
 # open in the editor
 godot --path .
