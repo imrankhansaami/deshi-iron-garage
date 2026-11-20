@@ -67,8 +67,8 @@ static func register(f: PropFactory) -> void:
 # ===========================================================================
 
 static func desktop_tower(f: PropFactory, o: Dictionary) -> Node3D:
-	## The second-hand desktop: yellowed beige case, front mesh, exposed drive
-	## bays, and the side panel missing so the motherboard is visible.
+	# The second-hand desktop: yellowed beige case, front mesh, exposed drive
+	# bays, and the side panel missing so the motherboard is visible.
 	var h: float = float(o.get("height", 0.42))
 	var w: float = 0.19
 	var d: float = 0.44
@@ -133,32 +133,45 @@ static func desktop_tower(f: PropFactory, o: Dictionary) -> Node3D:
 
 
 static func crt_monitor(f: PropFactory, o: Dictionary) -> Node3D:
-	## The 17-inch CRT: deep cabinet, curved glass, the control cluster on the
-	## front right, and the neck visible where the case is opened in the reference.
+	# The 17-inch CRT: deep cabinet, curved glass, the control cluster on the
+	# front right, and the neck visible where the case is opened in the reference.
 	var w: float = float(o.get("width", 0.42))
 	var h: float = w * 0.78
 	var d: float = w * 0.92
 	var root := Node3D.new()
 	root.name = "CrtMonitor"
 	var case_mat: StandardMaterial3D = f.ML.beige_plastic()
-	var body: MeshInstance3D = ShapeKit.box(Vector3(w, h, d * 0.8), case_mat, "Body")
-	body.position = Vector3(0.0, h * 0.5, -d * 0.1)
+	# The cabinet is 0.62 of the depth and pushed back, so the tube can sit in
+	# front of it. The first version made the body nearly full depth and put the
+	# tube face *inside* it, so from every angle the monitor read as an anonymous
+	# beige crate — which is exactly what the electronics-bench screenshot showed.
+	var cab_d: float = d * 0.62
+	var body: MeshInstance3D = ShapeKit.box(Vector3(w, h, cab_d), case_mat, "Body")
+	body.position = Vector3(0.0, h * 0.5, -d * 0.5 + cab_d * 0.5)
 	root.add_child(body)
-	var back: MeshInstance3D = ShapeKit.tapered_cyl(w * 0.34, w * 0.2, d * 0.35, case_mat, 16, "Neck")
-	back.position = Vector3(0.0, h * 0.55, -d * 0.62)
+	var back: MeshInstance3D = ShapeKit.tapered_cyl(w * 0.34, w * 0.2, d * 0.34, case_mat, 16, "Neck")
+	back.position = Vector3(0.0, h * 0.55, -d * 0.5 - d * 0.14)
 	back.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 	root.add_child(back)
 	# the curved tube face: a squashed sphere, the only honest approximation of a
-	// shadow-mask envelope without importing a model
+	# shadow-mask envelope without importing a model. It protrudes by design.
 	var face: MeshInstance3D = ShapeKit.sphere(w * 0.62, f.ML.glass_screen(), 18, "Screen")
-	face.position = Vector3(0.0, h * 0.52, -d * 0.02)
-	face.scale = Vector3(1.0, 0.82, 0.28)
+	face.position = Vector3(0.0, h * 0.52, -d * 0.5 + cab_d + 0.012)
+	face.scale = Vector3(1.0, 0.82, 0.30)
 	root.add_child(face)
-	var bezel: MeshInstance3D = ShapeKit.box(Vector3(w * 0.96, h * 0.86, 0.02), case_mat, "Bezel")
-	bezel.position = Vector3(0.0, h * 0.52, d * 0.28)
-	root.add_child(bezel)
+	# the bezel frames the face rather than covering it
+	var bezel_top: MeshInstance3D = ShapeKit.box(Vector3(w * 0.98, h * 0.12, 0.03), case_mat, "BezelTop")
+	bezel_top.position = Vector3(0.0, h * 0.97, -d * 0.5 + cab_d - 0.004)
+	root.add_child(bezel_top)
+	var bezel_bot: MeshInstance3D = ShapeKit.box(Vector3(w * 0.98, h * 0.16, 0.03), case_mat, "BezelBottom")
+	bezel_bot.position = Vector3(0.0, h * 0.07, -d * 0.5 + cab_d - 0.004)
+	root.add_child(bezel_bot)
+	for i: int in range(2):
+		var bezel_side: MeshInstance3D = ShapeKit.box(Vector3(w * 0.09, h * 0.78, 0.03), case_mat, "BezelSide%d" % i)
+		bezel_side.position = Vector3(w * 0.45 * (1.0 if i == 0 else -1.0), h * 0.52, -d * 0.5 + cab_d - 0.004)
+		root.add_child(bezel_side)
 	var panel: MeshInstance3D = ShapeKit.box(Vector3(w * 0.22, 0.05, 0.012), f.ML.plastic_faded(), "Controls")
-	panel.position = Vector3(w * 0.36, h * 0.12, d * 0.3)
+	panel.position = Vector3(w * 0.34, h * 0.07, -d * 0.5 + cab_d + 0.014)
 	root.add_child(panel)
 	for i: int in range(4):
 		var btn: MeshInstance3D = ShapeKit.cyl(0.007, 0.006, f.ML.plastic_black(), 8, Vector3i(0, 0, 1), "Btn")
@@ -267,9 +280,9 @@ static func mouse(f: PropFactory, _o: Dictionary) -> Node3D:
 
 
 static func laptop_shell(f: PropFactory, o: Dictionary) -> Node3D:
-	## A gutted laptop: base with the keyboard deck missing, lid propped open,
-	## ribbon cables and the mainboard exposed — exactly the state in the
-	## reference photo of the electronics lane.
+	# A gutted laptop: base with the keyboard deck missing, lid propped open,
+	# ribbon cables and the mainboard exposed — exactly the state in the
+	# reference photo of the electronics lane.
 	var w: float = float(o.get("width", 0.34))
 	var root := Node3D.new()
 	root.name = "LaptopShell"
@@ -374,8 +387,8 @@ static func router_box(f: PropFactory, _o: Dictionary) -> Node3D:
 
 
 static func stabilizer(f: PropFactory, _o: Dictionary) -> Node3D:
-	## The voltage stabilizer / servo regulator, a fixture in every Bangladeshi
-	## home with unreliable supply.
+	# The voltage stabilizer / servo regulator, a fixture in every Bangladeshi
+	# home with unreliable supply.
 	var root := Node3D.new()
 	root.name = "Stabilizer"
 	var body: MeshInstance3D = ShapeKit.box(Vector3(0.24, 0.32, 0.18), f.ML.paint_black_or_dark(), "Body")
@@ -434,8 +447,8 @@ static func transistor_radio(f: PropFactory, _o: Dictionary) -> Node3D:
 # ===========================================================================
 
 static func pcb_board(f: PropFactory, o: Dictionary) -> Node3D:
-	## A board shard: substrate, traces from the texture, pads, capacitors, an IC
-	## with legs, a connector edge and the occasional through-hole resistor.
+	# A board shard: substrate, traces from the texture, pads, capacitors, an IC
+	# with legs, a connector edge and the occasional through-hole resistor.
 	var w: float = float(o.get("width", 0.14))
 	var d: float = float(o.get("depth", 0.09))
 	var root := Node3D.new()
@@ -472,7 +485,7 @@ static func pcb_board(f: PropFactory, o: Dictionary) -> Node3D:
 
 
 static func pcb_stack(f: PropFactory, o: Dictionary) -> Node3D:
-	## The heap of board shards that defines a second-hand electronics lane.
+	# The heap of board shards that defines a second-hand electronics lane.
 	var root := Node3D.new()
 	root.name = "PcbStack"
 	var n: int = clampi(int(o.get("count", 9)), 2, 30)
@@ -800,7 +813,7 @@ static func wire_spool(f: PropFactory, o: Dictionary) -> Node3D:
 
 
 static func component_drawer(f: PropFactory, o: Dictionary) -> Node3D:
-	## The multi-drawer component cabinet every electronics shop runs on.
+	# The multi-drawer component cabinet every electronics shop runs on.
 	var drawers: int = clampi(int(o.get("drawers", 6)), 2, 12)
 	var w: float = float(o.get("width", 0.34))
 	var root := Node3D.new()
@@ -927,7 +940,7 @@ static func voltage_regulator(f: PropFactory, _o: Dictionary) -> Node3D:
 
 
 static func blower_fan(f: PropFactory, _o: Dictionary) -> Node3D:
-	## The AC blower motor, salvaged, with its squirrel-cage wheel.
+	# The AC blower motor, salvaged, with its squirrel-cage wheel.
 	var root := Node3D.new()
 	root.name = "BlowerFan"
 	var housing: MeshInstance3D = ShapeKit.cyl(0.11, 0.09, f.ML.plastic_black(), 18, Vector3i(0, 0, 1), "Housing")
@@ -956,8 +969,8 @@ static func blower_fan(f: PropFactory, _o: Dictionary) -> Node3D:
 
 
 static func crt_guts(f: PropFactory, _o: Dictionary) -> Node3D:
-	## The opened tube from the reference photo: funnel, yoke, anode cap, flyback
-	## transformer and the deflection coils. Donor for the energy module.
+	# The opened tube from the reference photo: funnel, yoke, anode cap, flyback
+	# transformer and the deflection coils. Donor for the energy module.
 	var root := Node3D.new()
 	root.name = "CrtGuts"
 	var funnel: MeshInstance3D = ShapeKit.tapered_cyl(0.16, 0.05, 0.22, f.ML.glass_screen(), 20, "Funnel")
@@ -996,9 +1009,9 @@ static func crt_guts(f: PropFactory, _o: Dictionary) -> Node3D:
 
 
 static func cpu_fan(f: PropFactory, o: Dictionary) -> Node3D:
-	## The 80 mm case fan, one of the most repeated small objects in a second-hand
-	## computer shop. Square frame, four corner mounts, the impeller and the hub
-	## label; the impeller is named "Rotor" so the power system can spin it.
+	# The 80 mm case fan, one of the most repeated small objects in a second-hand
+	# computer shop. Square frame, four corner mounts, the impeller and the hub
+	# label; the impeller is named "Rotor" so the power system can spin it.
 	var size: float = float(o.get("size", 0.08))
 	var root := Node3D.new()
 	root.name = "CpuFan"
@@ -1076,8 +1089,8 @@ static func antenna_roof(f: PropFactory, _o: Dictionary) -> Node3D:
 # ===========================================================================
 
 static func ups_battery(f: PropFactory, o: Dictionary) -> Node3D:
-	## The sealed lead-acid IPS/UPS unit. Every workshop in the country has two of
-	## these, and they are the fictional donor for the exosuit's energy module.
+	# The sealed lead-acid IPS/UPS unit. Every workshop in the country has two of
+	# these, and they are the fictional donor for the exosuit's energy module.
 	var s: float = float(o.get("scale", 1.0))
 	var w: float = 0.18 * s
 	var h: float = 0.17 * s
@@ -1116,8 +1129,8 @@ static func ups_battery(f: PropFactory, o: Dictionary) -> Node3D:
 
 
 static func ips_battery(f: PropFactory, o: Dictionary) -> Node3D:
-	## The tall tubular IPS cell, the workhorse of a Bangladeshi load-shedding
-	## household. Bigger than the UPS unit, with the filler caps on top.
+	# The tall tubular IPS cell, the workhorse of a Bangladeshi load-shedding
+	# household. Bigger than the UPS unit, with the filler caps on top.
 	var s: float = float(o.get("scale", 1.0))
 	var w: float = 0.2 * s
 	var h: float = 0.32 * s
@@ -1157,8 +1170,8 @@ static func ips_battery(f: PropFactory, o: Dictionary) -> Node3D:
 
 
 static func battery_rack(f: PropFactory, _o: Dictionary) -> Node3D:
-	## Two IPS cells strapped in series on a wooden skid with a distribution board
-	## — the physical donor for the exosuit's energy module.
+	# Two IPS cells strapped in series on a wooden skid with a distribution board
+	# — the physical donor for the exosuit's energy module.
 	var root := Node3D.new()
 	root.name = "BatteryRack"
 	var skid: MeshInstance3D = ShapeKit.box(Vector3(0.56, 0.06, 0.34), f.ML.teak(), "Skid")
@@ -1223,9 +1236,9 @@ static func power_strip(f: PropFactory, o: Dictionary) -> Node3D:
 
 
 static func switchboard(f: PropFactory, o: Dictionary) -> Node3D:
-	## The wall-mounted distribution board: metal box, the main switch, the MCB
-	## row, the busbar and the incoming weather-proof cable gland. This is the
-	## object the power-restoration puzzle operates on.
+	# The wall-mounted distribution board: metal box, the main switch, the MCB
+	# row, the busbar and the incoming weather-proof cable gland. This is the
+	# object the power-restoration puzzle operates on.
 	var w: float = float(o.get("width", 0.46))
 	var h: float = float(o.get("height", 0.6))
 	var root := Node3D.new()
@@ -1317,8 +1330,8 @@ static func mcb_row(f: PropFactory, o: Dictionary) -> Node3D:
 
 
 static func solder_station(f: PropFactory, _o: Dictionary) -> Node3D:
-	## The temperature-controlled station: box, holder with the sponge, the coil
-	## rest, and the iron sitting in it.
+	# The temperature-controlled station: box, holder with the sponge, the coil
+	# rest, and the iron sitting in it.
 	var root := Node3D.new()
 	root.name = "SolderStation"
 	var body: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.09, 0.13), f.ML.paint_blue(1.2), "Body")

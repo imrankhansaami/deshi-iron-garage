@@ -71,6 +71,14 @@ func _place(kind: String, pos: Vector3, rot: Vector3 = Vector3.ZERO, opts: Dicti
 	return node
 
 
+## Converts a position in a bench-local frame to world space. `u` runs along the
+## bench's width and `v` across its depth, both in metres from the centre, so a
+## placement reads as "840 mm along, 300 mm back" rather than as world arithmetic
+## that has to be re-derived every time the bench moves.
+func _desk(origin: Vector3, size: Vector2, u: float, v: float, height: float = 0.945) -> Vector3:
+	return Vector3(origin.x - u, height, origin.z - v)
+
+
 func _station(node: Node3D, kind: Station.Kind, pos: Vector3 = Vector3.ZERO, opts: Dictionary = {}) -> Station:
 	## Wraps an already-placed prop in a Station volume. The station is a separate
 	## node so the prop's own transform stays authored-clean and the interaction
@@ -375,47 +383,81 @@ func _area_mechanical() -> void:
 
 func _area_electronics() -> void:
 	var x: float = structure.half_w
-	var desk: Node3D = _place("desk_electronics", Vector3(x - 1.5, 0.0, 4.0), Vector3(0.0, PI, 0.0), {"w": 2.6, "d": 0.8})
-	_place("office_chair", Vector3(x - 2.6, 0.0, 4.6), Vector3(0.0, 2.4, 0.0))
-	_place("crt_monitor", Vector3(x - 1.9, 0.96, 3.6), Vector3(0.0, PI + 0.2, 0.0), {"width": 0.44})
-	_place("lcd_monitor", Vector3(x - 1.0, 0.96, 3.5), Vector3(0.0, PI - 0.25, 0.0), {"width": 0.46})
-	var tower: Node3D = _place("desktop_tower", Vector3(x - 2.4, 0.0, 3.1), Vector3(0.0, PI + 0.15, 0.0))
-	_place("keyboard", Vector3(x - 1.5, 0.94, 4.3), Vector3(0.0, PI, 0.0))
-	_place("mouse", Vector3(x - 1.05, 0.94, 4.35))
-	_place("laptop_shell", Vector3(x - 2.0, 0.94, 4.5), Vector3(0.0, PI - 0.4, 0.0))
-	_place("multimeter", Vector3(x - 0.8, 0.94, 4.1))
-	_place("solder_station", Vector3(x - 0.6, 0.94, 3.3), Vector3(0.0, PI + 0.3, 0.0))
-	_place("solder_spool", Vector3(x - 0.9, 0.94, 3.0))
-	_place("wire_cutters", Vector3(x - 1.2, 0.94, 3.05), Vector3(PI * 0.5, 0.0, 0.4))
-	_place("pcb_stack", Vector3(x - 2.2, 0.94, 3.6), Vector3.ZERO, {"count": 11})
-	_place("pcb_board", Vector3(x - 1.4, 0.96, 3.1), Vector3(0.0, 0.7, 0.0))
-	_place("heatsink", Vector3(x - 1.7, 0.96, 3.0))
-	_place("ram_stick", Vector3(x - 1.1, 0.96, 3.4), Vector3(0.0, 1.2, 0.0))
-	_place("cpu_fan", Vector3(x - 1.55, 0.97, 3.35), Vector3(PI * 0.5, 0.0, 0.0))
-	_place("capacitor", Vector3(x - 1.9, 0.96, 3.2), Vector3(0.0, 0.0, 0.4))
-	_place("resistor_pack", Vector3(x - 0.95, 0.95, 3.7))
-	_place("dip_switch", Vector3(x - 1.3, 0.96, 3.75))
-	_place("led_cluster", Vector3(x - 1.75, 0.96, 3.9))
-	_place("fuse_glass", Vector3(x - 2.1, 0.96, 3.95))
-	_place("jack_socket", Vector3(x - 0.75, 0.96, 3.55))
-	_place("power_adapter", Vector3(x - 2.3, 0.94, 4.4))
-	_place("ribbon_cable", Vector3(x - 1.85, 0.96, 4.35), Vector3(0.0, 0.9, 0.0))
-	_place("transformer_core", Vector3(x - 0.7, 0.95, 4.5))
-	_place("component_drawer", Vector3(x - 0.5, 0.94, 2.4), Vector3(0.0, PI, 0.0), {"drawers": 7})
-	_place("oscilloscope", Vector3(x - 2.5, 0.94, 2.3), Vector3(0.0, PI + 0.5, 0.0))
-	_place("variac", Vector3(x - 0.9, 0.94, 2.2))
-	_place("voltage_regulator", Vector3(x - 1.4, 0.96, 2.15))
-	_place("power_strip", Vector3(x - 2.6, 0.02, 4.8), Vector3(0.0, 0.4, 0.0), {"sockets": 5})
-	_place("ups_battery", Vector3(x - 1.2, 0.0, 5.2))
-	_place("ips_battery", Vector3(x - 2.2, 0.0, 5.4))
-	_place("battery_rack", Vector3(x - 3.2, 0.0, 5.9), Vector3(0.0, -0.3, 0.0))
-	_place("stabilizer", Vector3(x - 0.4, 0.94, 5.0))
-	_place("printer", Vector3(x - 2.7, 0.94, 5.1))
-	_place("router_box", Vector3(x - 1.6, 0.96, 5.05))
-	_place("speaker", Vector3(x - 0.6, 0.96, 4.9))
-	_place("blower_fan", Vector3(x - 2.9, 0.94, 2.0))
-	_place("desk_lamp", Vector3(x - 2.35, 0.94, 3.0))
-	_place("table_fan", Vector3(x - 0.5, 0.94, 3.9))
+	# ------------------------------------------------------------------
+	# The electronics bench. Everything here is placed in DESK-LOCAL
+	# coordinates and converted through _desk().
+	#
+	# The first version used hand-computed world offsets and got them wrong: the
+	# desk spans x [3.7, 6.3] by z [3.6, 4.4], but the monitors were placed at
+	# z = 3.5 and 3.6, so one hovered entirely off the front edge and the other
+	# hung half over it. The oscilloscope, printer, speaker and desk lamp were at
+	# z = 2.2 .. 5.1, i.e. scattered around the room at bench height. A local
+	# frame with named rows removes the arithmetic that caused it: BACK is where
+	# the monitors stand, FRONT is where hands work, and every prop sits between.
+	# ------------------------------------------------------------------
+	var desk_origin := Vector3(x - 1.5, 0.0, 4.0)
+	var desk_size := Vector2(3.0, 1.0)
+	var desk: Node3D = _place("desk_electronics", desk_origin, Vector3(0.0, PI, 0.0),
+		{"w": desk_size.x, "d": desk_size.y, "h": 0.92})
+	var desk_top: float = 0.92 + 0.025
+
+	# --- monitors, standing along the back edge, facing into the room ---
+	_place("crt_monitor", _desk(desk_origin, desk_size, -0.75, 0.30), Vector3(0.0, PI + 0.18, 0.0), {"width": 0.44})
+	_place("lcd_monitor", _desk(desk_origin, desk_size, 0.35, 0.30), Vector3(0.0, PI - 0.22, 0.0), {"width": 0.46})
+	# a third panel on a salvaged arm, because a repair bench never has enough
+	_place("monitor_wall_panel", _desk(desk_origin, desk_size, 1.20, 0.24), Vector3(0.0, PI - 0.5, 0.0), {"width": 0.42})
+	# the tower stands on the floor beside the desk, not on it
+	var tower: Node3D = _place("desktop_tower", desk_origin + Vector3(-1.85, 0.0, 0.35), Vector3(0.0, PI + 0.15, 0.0))
+
+	# --- the working row: where the hands actually go ---
+	_place("keyboard", _desk(desk_origin, desk_size, -0.35, -0.30), Vector3(0.0, PI, 0.0))
+	_place("mouse", _desk(desk_origin, desk_size, 0.20, -0.32))
+	_place("multimeter", _desk(desk_origin, desk_size, 0.72, -0.24))
+	_place("solder_station", _desk(desk_origin, desk_size, 1.18, -0.20), Vector3(0.0, PI + 0.3, 0.0))
+	_place("laptop_shell", _desk(desk_origin, desk_size, -1.25, -0.15), Vector3(0.0, PI - 0.35, 0.0))
+
+	# --- component work: the centre of the bench, where the boards are ---
+	_place("pcb_stack", _desk(desk_origin, desk_size, -0.62, 0.02), Vector3.ZERO, {"count": 11})
+	_place("pcb_board", _desk(desk_origin, desk_size, -0.18, 0.06), Vector3(0.0, 0.7, 0.0))
+	_place("heatsink", _desk(desk_origin, desk_size, -0.40, 0.20))
+	_place("ram_stick", _desk(desk_origin, desk_size, 0.06, 0.14), Vector3(0.0, 1.2, 0.0))
+	_place("cpu_fan", _desk(desk_origin, desk_size, -0.30, 0.24), Vector3(PI * 0.5, 0.0, 0.0))
+	_place("capacitor", _desk(desk_origin, desk_size, -0.50, 0.26), Vector3(0.0, 0.0, 0.4))
+	_place("resistor_pack", _desk(desk_origin, desk_size, 0.30, 0.10))
+	_place("dip_switch", _desk(desk_origin, desk_size, 0.02, 0.26))
+	_place("led_cluster", _desk(desk_origin, desk_size, -0.72, 0.22))
+	_place("fuse_glass", _desk(desk_origin, desk_size, 0.34, 0.26))
+	_place("jack_socket", _desk(desk_origin, desk_size, 0.58, 0.14))
+	_place("transformer_core", _desk(desk_origin, desk_size, 0.86, 0.08))
+	_place("solder_spool", _desk(desk_origin, desk_size, 1.30, 0.10))
+	_place("wire_cutters", _desk(desk_origin, desk_size, 1.05, 0.14), Vector3(PI * 0.5, 0.0, 0.4))
+	_place("ribbon_cable", _desk(desk_origin, desk_size, -1.05, 0.20), Vector3(0.0, 0.9, 0.0))
+	_place("power_adapter", _desk(desk_origin, desk_size, -1.42, 0.16))
+
+	# --- instruments on a side bench, because they will not fit on the desk ---
+	var side: Vector3 = desk_origin + Vector3(-0.4, 0.0, -0.95)
+	_place("workbench", side, Vector3(0.0, 0.0, 0.0), {"w": 1.8, "d": 0.7, "h": 0.90})
+	_place("oscilloscope", side + Vector3(-0.5, 0.945, 0.0), Vector3(0.0, 0.2, 0.0))
+	_place("variac", side + Vector3(0.25, 0.94, 0.02))
+	_place("voltage_regulator", side + Vector3(0.62, 0.945, 0.05))
+	_place("table_fan", side + Vector3(0.85, 0.94, -0.18))
+	_place("desk_lamp", side + Vector3(-0.72, 0.94, -0.14))
+
+	# --- floor stock under and beside the bench ---
+	_place("component_drawer", desk_origin + Vector3(-1.95, 0.0, -0.55), Vector3(0.0, PI * 0.5, 0.0), {"drawers": 7})
+	_place("power_strip", desk_origin + Vector3(-1.6, 0.02, 0.9), Vector3(0.0, 0.4, 0.0), {"sockets": 5})
+	_place("ups_battery", desk_origin + Vector3(-2.05, 0.0, 1.15))
+	_place("ips_battery", desk_origin + Vector3(-0.35, 0.0, 1.25))
+	_place("battery_rack", desk_origin + Vector3(1.05, 0.0, 1.35), Vector3(0.0, -0.3, 0.0))
+	_place("stabilizer", desk_origin + Vector3(2.05, 0.0, 0.95), Vector3(0.0, PI, 0.0))
+	_place("printer", desk_origin + Vector3(1.85, 0.0, -0.45), Vector3(0.0, -PI * 0.5, 0.0))
+	_place("router_box", desk_origin + Vector3(1.45, 0.945, -0.62))
+	_place("speaker", desk_origin + Vector3(-1.55, 0.945, -0.55))
+	_place("blower_fan", desk_origin + Vector3(2.3, 0.0, 0.3), Vector3(0.0, PI * 0.5, 0.0))
+	_place("office_chair", desk_origin + Vector3(0.35, 0.0, -1.5), Vector3(0.0, PI * 0.15, 0.0))
+	_place("crt_guts", desk_origin + Vector3(2.45, 0.0, 1.6), Vector3(0.0, 0.8, 0.0))
+	_place("ups_battery", desk_origin + Vector3(-2.5, 0.0, -0.9))
+	_place("tea_glass", desk_origin + Vector3(-1.36, desk_top, 0.16))
 	_place("crt_guts", Vector3(x - 3.0, 0.9, 4.2), Vector3(0.0, 0.8, 0.0))
 	_place("shelf_unit", Vector3(x - 0.45, 0.0, 2.0), Vector3(0.0, -PI * 0.5, 0.0), {"w": 2.2, "levels": 6})
 	_place("wall_socket", Vector3(x - 0.2, 1.3, 3.0), Vector3(0.0, -PI * 0.5, 0.0))

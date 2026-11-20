@@ -1,0 +1,766 @@
+class_name DailyProps
+extends RefCounted
+## World A, daily-life register. These are the objects that decide whether the
+## garage reads as Bangladesh or as a generic industrial shed: the tea glasses,
+## the flask, the gamcha towel, the wall calendar with Bengali month names, the
+## muri tin, the clipboard, the sack of scrap, the inventor's notebook.
+##
+## Every text-bearing surface here is handed to the SignageBaker, so the Bengali
+## is shaped by the engine's text stack rather than drawn as glyphs by hand.
+##
+## Orientation note: Godot's TorusMesh is generated in the XZ plane, so a band,
+## tie or collar around a VERTICAL cylinder needs no rotation. Only parts whose
+## axis is horizontal — a wheel, a tin's bail handle, a pen's collar — carry the
+## PI/2. ShapeKit.disc() faces +Z (mirror, clock face, gauge) while
+## ShapeKit.disc_flat() lies down (tea ring on a page, soap on its dish).
+
+
+static func register(f: PropFactory) -> void:
+	f.generators["tea_glass"] = tea_glass
+	f.generators["flask"] = flask
+	f.generators["muri_tin"] = muri_tin
+	f.generators["biscuit_tin"] = biscuit_tin
+	f.generators["newspaper_fold"] = newspaper_fold
+	f.generators["towel_hanging"] = towel_hanging
+	f.generators["sandals"] = sandals
+	f.generators["water_bucket"] = water_bucket
+	f.generators["clip_board"] = clip_board
+	f.generators["wall_calendar"] = wall_calendar
+	f.generators["wall_clock"] = wall_clock
+	f.generators["poster"] = poster
+	f.generators["notebook"] = notebook
+	f.generators["pen"] = pen
+	f.generators["plastic_bag_roll"] = plastic_bag_roll
+	f.generators["sack"] = sack
+	f.generators["mirror_small"] = mirror_small
+	f.generators["comb"] = comb
+	f.generators["soap_dish"] = soap_dish
+	f.generators["cup_brush"] = cup_brush
+	f.generators["signboard"] = signboard
+	f.generators["shelf_label"] = shelf_label
+	f.generators["hook_nail"] = hook_nail
+	f.generators["socket_wall"] = socket_wall
+	f.generators["switch_wall"] = switch_wall
+	f.generators["meter_box"] = meter_box
+	f.generators["gas_cylinder"] = gas_cylinder
+	f.generators["chair_office"] = chair_office
+	f.generators["photo_frame"] = photo_frame
+	f.generators["tool_chest"] = tool_chest
+
+
+# ===========================================================================
+# Tea and food
+# ===========================================================================
+
+static func tea_glass(f: PropFactory, o: Dictionary) -> Node3D:
+	## The tall thin glass of cha that is the social unit of every workshop.
+	var s: float = float(o.get("scale", 1.0))
+	var root := Node3D.new()
+	root.name = "TeaGlass"
+	var glass: MeshInstance3D = ShapeKit.lathe(PackedVector2Array([
+		Vector2(0.0, 0.0), Vector2(0.026, 0.0), Vector2(0.028, 0.006), Vector2(0.032, 0.06),
+		Vector2(0.034, 0.085), Vector2(0.031, 0.086), Vector2(0.029, 0.06), Vector2(0.025, 0.008),
+		Vector2(0.0, 0.004),
+	]), 14, f.ML.glass_smoky(), true, "Glass")
+	root.add_child(glass)
+	var liquid: MeshInstance3D = ShapeKit.cyl(0.0285, 0.052, f.ML.tea_liquid(), 12, Vector3i(0, 1, 0), "Tea")
+	liquid.position = Vector3(0.0, 0.034, 0.0)
+	root.add_child(liquid)
+	# the froth sits on the top surface, so it lies flat
+	var foam: MeshInstance3D = ShapeKit.disc_flat(0.028, 0.001, f.ML.tea_froth(), "Foam")
+	foam.position = Vector3(0.0, 0.061, 0.0)
+	root.add_child(foam)
+	root.scale = Vector3.ONE * s
+	return root
+
+
+static func flask(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The steel vacuum flask that keeps the tea hot through a shift.
+	var root := Node3D.new()
+	root.name = "Flask"
+	var body: MeshInstance3D = ShapeKit.lathe(PackedVector2Array([
+		Vector2(0.0, 0.0), Vector2(0.05, 0.0), Vector2(0.053, 0.012), Vector2(0.054, 0.16),
+		Vector2(0.048, 0.2), Vector2(0.032, 0.22), Vector2(0.03, 0.24), Vector2(0.0, 0.245),
+	]), 16, f.ML.stainless(), true, "Body")
+	root.add_child(body)
+	var cap: MeshInstance3D = ShapeKit.cyl(0.034, 0.05, f.ML.plastic_black(), 14, Vector3i(0, 1, 0), "Cap")
+	cap.position = Vector3(0.0, 0.265, 0.0)
+	root.add_child(cap)
+	var cup: MeshInstance3D = ShapeKit.lathe(PackedVector2Array([
+		Vector2(0.0, 0.0), Vector2(0.03, 0.0), Vector2(0.032, 0.005), Vector2(0.034, 0.03),
+		Vector2(0.031, 0.031), Vector2(0.029, 0.006), Vector2(0.0, 0.004),
+	]), 14, f.ML.stainless(), true, "CupCap")
+	cup.position = Vector3(0.06, 0.0, 0.02)
+	root.add_child(cup)
+	# the grip band encircles the vertical body
+	var band: MeshInstance3D = ShapeKit.torus(0.0545, 0.004, f.ML.rubber(), 16, 5, "Grip")
+	band.position = Vector3(0.0, 0.09, 0.0)
+	root.add_child(band)
+	var handle: MeshInstance3D = ShapeKit.torus(0.035, 0.006, f.ML.stainless(), 14, 5, "Handle")
+	handle.position = Vector3(0.055, 0.13, 0.0)
+	handle.rotation = Vector3(0.0, PI * 0.5, 0.0)
+	root.add_child(handle)
+	# the dent every working flask acquires
+	var dent: MeshInstance3D = ShapeKit.sphere(0.012, f.ML.stainless(), 8, "Dent")
+	dent.position = Vector3(0.05, 0.12, 0.02)
+	dent.scale = Vector3(0.4, 1.0, 1.0)
+	root.add_child(dent)
+	return root
+
+
+static func muri_tin(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The sealed tin of muri (puffed rice) on the shelf.
+	var root := Node3D.new()
+	root.name = "MuriTin"
+	var body: MeshInstance3D = ShapeKit.cyl(0.075, 0.14, f.ML.tinplate(), 18, Vector3i(0, 1, 0), "Body")
+	body.position = Vector3(0.0, 0.07, 0.0)
+	root.add_child(body)
+	var lid: MeshInstance3D = ShapeKit.cyl(0.078, 0.02, f.ML.tinplate(), 18, Vector3i(0, 1, 0), "Lid")
+	lid.position = Vector3(0.0, 0.15, 0.0)
+	root.add_child(lid)
+	var label: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.07, 0.002), f.ML.tin_label(), "Label")
+	label.position = Vector3(0.0, 0.08, 0.076)
+	root.add_child(label)
+	# spilled muri on the shelf, each grain lying flat
+	for i: int in range(14):
+		var grain: MeshInstance3D = ShapeKit.sphere(0.004, f.ML.muri(), 5, "Grain")
+		grain.position = Vector3(f.rand().randf_range(-0.12, 0.12), 0.002, f.rand().randf_range(0.05, 0.16))
+		grain.scale = Vector3(1.0, 0.7, 1.4)
+		grain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(grain)
+	return root
+
+
+static func biscuit_tin(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The repurposed biscuit tin that in this country always holds screws instead.
+	var root := Node3D.new()
+	root.name = "BiscuitTin"
+	var body: MeshInstance3D = ShapeKit.lathe(PackedVector2Array([
+		Vector2(0.0, 0.0), Vector2(0.11, 0.0), Vector2(0.115, 0.008), Vector2(0.113, 0.09),
+		Vector2(0.108, 0.095), Vector2(0.0, 0.095),
+	]), 20, f.ML.tinplate(), true, "Body")
+	root.add_child(body)
+	var lid: MeshInstance3D = ShapeKit.cyl(0.112, 0.014, f.ML.tinplate(), 20, Vector3i(0, 1, 0), "Lid")
+	lid.position = Vector3(0.0, 0.1, 0.0)
+	root.add_child(lid)
+	var art: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.06, 0.002), f.ML.tin_label(), "Art")
+	art.position = Vector3(0.0, 0.05, 0.114)
+	root.add_child(art)
+	# screws rattling loose on top of the lid
+	for i: int in range(8):
+		var s: Node3D = ShapeKit.bolt(
+			f.rand().randf_range(0.006, 0.01), f.rand().randf_range(0.02, 0.045), f.ML.steel(), "Screw")
+		s.position = Vector3(f.rand().randf_range(-0.06, 0.06), 0.108, f.rand().randf_range(-0.06, 0.06))
+		s.rotation = Vector3(f.rand().randf_range(-1.4, 1.4), f.rand().randf_range(0, 3.14), f.rand().randf_range(-1.4, 1.4))
+		root.add_child(s)
+	return root
+
+
+static func newspaper_fold(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The folded Bengali daily, used as a bench cover, a rag and a pillow.
+	var root := Node3D.new()
+	root.name = "Newspaper"
+	var mat: StandardMaterial3D = f.ML.newspaper()
+	var stack_h: float = 0.0
+	for i: int in range(5):
+		var sheet: MeshInstance3D = ShapeKit.box(Vector3(0.36 - float(i) * 0.008, 0.0035, 0.26 - float(i) * 0.006), mat, "Fold")
+		stack_h += 0.0035
+		sheet.position = Vector3(f.rand().randf_range(-0.01, 0.01), stack_h, f.rand().randf_range(-0.01, 0.01))
+		sheet.rotation.y = f.rand().randf_range(-0.09, 0.09)
+		root.add_child(sheet)
+	var head: MeshInstance3D = ShapeKit.box(Vector3(0.2, 0.001, 0.03), f.ML.newsprint_print(), "Headline")
+	head.position = Vector3(-0.05, stack_h + 0.003, -0.06)
+	head.rotation.y = 0.04
+	root.add_child(head)
+	for i: int in range(6):
+		var col: MeshInstance3D = ShapeKit.box(Vector3(0.05, 0.0008, 0.16), f.ML.newsprint_print(), "Column")
+		col.position = Vector3(-0.14 + float(i) * 0.055, stack_h + 0.003, 0.03)
+		col.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(col)
+	return root
+
+
+static func towel_hanging(f: PropFactory, o: Dictionary) -> Node3D:
+	## The gamcha draped over a nail or a bar.
+	var length: float = float(o.get("length", 0.7))
+	var root := Node3D.new()
+	root.name = "Gamcha"
+	var mat: StandardMaterial3D = f.ML.gamcha()
+	for i: int in range(2):
+		var panel: MeshInstance3D = ShapeKit.box(Vector3(length * 0.5, 0.004, 0.16), mat, "Panel")
+		panel.position = Vector3(-length * 0.25 + float(i) * length * 0.5, -0.02, 0.0)
+		panel.rotation.z = 0.06 * (1.0 if i == 0 else -1.0)
+		root.add_child(panel)
+		var drop: MeshInstance3D = ShapeKit.box(Vector3(length * 0.46, 0.004, 0.34), mat, "Drop")
+		drop.position = Vector3(-length * 0.25 + float(i) * length * 0.5, -0.19, 0.09)
+		drop.rotation = Vector3(0.12, 0.0, 0.03 * (1.0 if i == 0 else -1.0))
+		root.add_child(drop)
+	var stripe: MeshInstance3D = ShapeKit.box(Vector3(length, 0.005, 0.03), f.ML.gamcha_red(), "Border")
+	stripe.position = Vector3(0.0, -0.018, -0.06)
+	root.add_child(stripe)
+	var nail: MeshInstance3D = ShapeKit.cyl(0.004, 0.05, f.ML.steel_dark(), 6, Vector3i(0, 0, 1), "Nail")
+	nail.position = Vector3(0.0, 0.0, -0.02)
+	root.add_child(nail)
+	return root
+
+
+static func sandals(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The rubber slip-on chappal by the door.
+	var root := Node3D.new()
+	root.name = "Sandals"
+	for i: int in range(2):
+		var sole: MeshInstance3D = ShapeKit.lathe(PackedVector2Array([
+			Vector2(0.0, 0.0), Vector2(0.045, 0.0), Vector2(0.048, 0.004), Vector2(0.046, 0.012),
+			Vector2(0.0, 0.014),
+		]), 12, f.ML.sandal_rubber(), true, "Sole")
+		sole.scale = Vector3(1.0, 1.0, 2.2)
+		sole.position = Vector3(0.0, 0.0, 0.07 * (1.0 if i == 0 else -1.0))
+		sole.rotation.y = f.rand().randf_range(-0.3, 0.3)
+		root.add_child(sole)
+		# the thong strap arches over the foot in a vertical plane
+		var strap: MeshInstance3D = ShapeKit.torus(0.045, 0.006, f.ML.sandal_rubber(), 12, 5, "Strap")
+		strap.position = sole.position + Vector3(0.0, 0.02, -0.01)
+		strap.rotation = Vector3(1.1, 0.0, 0.0)
+		strap.scale = Vector3(1.0, 1.0, 0.6)
+		root.add_child(strap)
+	return root
+
+
+static func water_bucket(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "WaterBucket"
+	var body: MeshInstance3D = ShapeKit.lathe(PackedVector2Array([
+		Vector2(0.0, 0.0), Vector2(0.16, 0.0), Vector2(0.17, 0.01), Vector2(0.2, 0.34),
+		Vector2(0.205, 0.36), Vector2(0.196, 0.36), Vector2(0.19, 0.34), Vector2(0.155, 0.015),
+		Vector2(0.0, 0.012),
+	]), 18, f.ML.plastic_blue_body(), true, "Body")
+	root.add_child(body)
+	var water: MeshInstance3D = ShapeKit.cyl(0.185, 0.002, f.ML.water(), 18, Vector3i(0, 1, 0), "Water")
+	water.position = Vector3(0.0, 0.28, 0.0)
+	root.add_child(water)
+	var ladle: MeshInstance3D = ShapeKit.lathe(PackedVector2Array([
+		Vector2(0.0, 0.0), Vector2(0.07, 0.005), Vector2(0.075, 0.04), Vector2(0.07, 0.045),
+		Vector2(0.06, 0.01), Vector2(0.0, 0.004),
+	]), 12, f.ML.plastic_red(), true, "Ladle")
+	ladle.position = Vector3(0.05, 0.3, 0.05)
+	ladle.rotation = Vector3(0.6, 0.3, 0.2)
+	root.add_child(ladle)
+	var handle: MeshInstance3D = ShapeKit.cyl(0.006, 0.16, f.ML.teak(), 8, Vector3i(1, 0, 0), "LadleHandle")
+	handle.position = Vector3(0.12, 0.36, 0.1)
+	handle.rotation = Vector3(0.4, 0.0, 0.3)
+	root.add_child(handle)
+	return root
+
+
+static func gas_cylinder(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "GasCylinder"
+	var body: MeshInstance3D = ShapeKit.cyl(0.14, 0.72, f.ML.paint_blue(1.1), 20, Vector3i(0, 1, 0), "Body")
+	body.position = Vector3(0.0, 0.42, 0.0)
+	root.add_child(body)
+	var shoulder: MeshInstance3D = ShapeKit.sphere(0.14, f.ML.paint_blue(1.1), 18, "Shoulder")
+	shoulder.position = Vector3(0.0, 0.78, 0.0)
+	shoulder.scale = Vector3(1.0, 0.6, 1.0)
+	root.add_child(shoulder)
+	var valve: MeshInstance3D = ShapeKit.cyl(0.03, 0.1, f.ML.brass(), 12, Vector3i(0, 1, 0), "Valve")
+	valve.position = Vector3(0.0, 0.88, 0.0)
+	root.add_child(valve)
+	# the collar rings encircles the vertical body, so no rotation
+	var collar: MeshInstance3D = ShapeKit.torus(0.145, 0.02, f.ML.steel_dark(), 18, 6, "Collar")
+	collar.position = Vector3(0.0, 0.05, 0.0)
+	root.add_child(collar)
+	var foot: MeshInstance3D = ShapeKit.cyl(0.15, 0.04, f.ML.steel_dark(), 18, Vector3i(0, 1, 0), "Foot")
+	foot.position = Vector3(0.0, 0.02, 0.0)
+	root.add_child(foot)
+	root.add_child(ShapeKit.col_cyl(0.16, 0.95))
+	return root
+
+
+# ===========================================================================
+# Paper, wall fixtures, personal objects
+# ===========================================================================
+
+static func clip_board(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "ClipBoard"
+	var board: MeshInstance3D = ShapeKit.box(Vector3(0.24, 0.32, 0.008), f.ML.teak(), "Board")
+	root.add_child(board)
+	var paper: MeshInstance3D = ShapeKit.box(Vector3(0.21, 0.28, 0.002), f.ML.paper(), "Paper")
+	paper.position = Vector3(0.0, -0.01, 0.006)
+	root.add_child(paper)
+	var clip: MeshInstance3D = ShapeKit.box(Vector3(0.07, 0.03, 0.012), f.ML.steel(), "Clip")
+	clip.position = Vector3(0.0, 0.14, 0.008)
+	root.add_child(clip)
+	for i: int in range(9):
+		var line: MeshInstance3D = ShapeKit.box(Vector3(0.16 - float(i % 3) * 0.03, 0.004, 0.001), f.ML.handwriting_line(), "Line")
+		line.position = Vector3(-0.01, 0.1 - float(i) * 0.026, 0.0075)
+		line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(line)
+	return root
+
+
+static func wall_calendar(f: PropFactory, o: Dictionary) -> Node3D:
+	## The free promotional wall calendar with Bengali month names and the two
+	## date columns every one of them carries.
+	var w: float = float(o.get("width", 0.34))
+	var h: float = w * 1.35
+	var root := Node3D.new()
+	root.name = "WallCalendar"
+	var sheet: MeshInstance3D = ShapeKit.box(Vector3(w, h, 0.004), f.ML.calendar_stock(), "Sheet")
+	sheet.position = Vector3(0.0, -h * 0.5, 0.0)
+	root.add_child(sheet)
+	var header: MeshInstance3D = ShapeKit.box(Vector3(w * 0.94, h * 0.14, 0.002), f.ML.calendar_header(), "Header")
+	header.position = Vector3(0.0, -h * 0.06, 0.003)
+	root.add_child(header)
+	var cols: int = 7
+	var rows: int = 6
+	for r: int in range(rows):
+		for c: int in range(cols):
+			var cell: MeshInstance3D = ShapeKit.box(Vector3(w / float(cols) * 0.82, h * 0.055, 0.001), f.ML.calendar_cell(), "Cell")
+			cell.position = Vector3(
+				-w * 0.5 + (float(c) + 0.5) * w / float(cols),
+				-h * 0.16 - float(r) * h * 0.062,
+				0.0035,
+			)
+			cell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			root.add_child(cell)
+	var wire: MeshInstance3D = ShapeKit.cyl(0.002, 0.06, f.ML.steel(), 5, Vector3i(0, 0, 1), "Wire")
+	wire.position = Vector3(0.0, 0.02, 0.01)
+	wire.rotation.x = 1.4
+	root.add_child(wire)
+	var nail: MeshInstance3D = ShapeKit.cyl(0.003, 0.04, f.ML.steel_dark(), 6, Vector3i(0, 0, 1), "Nail")
+	nail.position = Vector3(0.0, 0.03, 0.0)
+	root.add_child(nail)
+	root.set_meta("sheet_path", "Sheet")
+	root.set_meta("header_path", "Header")
+	return root
+
+
+static func wall_clock(f: PropFactory, o: Dictionary) -> Node3D:
+	var r: float = float(o.get("radius", 0.14))
+	var root := Node3D.new()
+	root.name = "WallClock"
+	# the clock faces +Z: rim and hands are edge-on discs in the XY plane
+	var rim: MeshInstance3D = ShapeKit.torus(r, 0.014, f.ML.plastic_black(), 22, 6, "Rim")
+	rim.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	root.add_child(rim)
+	var face: MeshInstance3D = ShapeKit.disc(r * 0.95, 0.006, f.ML.clock_face(), "Face")
+	face.position = Vector3(0.0, 0.0, -0.004)
+	root.add_child(face)
+	var glass: MeshInstance3D = ShapeKit.disc(r * 0.96, 0.002, f.ML.glass_smoky(), "Glass")
+	glass.position = Vector3(0.0, 0.0, 0.008)
+	root.add_child(glass)
+	for i: int in range(12):
+		var a: float = ShapeKit.TAU_K * float(i) / 12.0
+		var tick: MeshInstance3D = ShapeKit.box(Vector3(0.006, 0.002, 0.001), f.ML.plastic_black(), "Tick")
+		tick.position = Vector3(cos(a) * r * 0.8, sin(a) * r * 0.8, 0.001)
+		tick.rotation.z = a
+		tick.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(tick)
+	var hour_hand: MeshInstance3D = ShapeKit.box(Vector3(0.006, r * 0.5, 0.002), f.ML.plastic_black(), "HourHand")
+	hour_hand.position = Vector3(0.0, r * 0.2, 0.004)
+	root.add_child(hour_hand)
+	var minute_hand: MeshInstance3D = ShapeKit.box(Vector3(0.004, r * 0.72, 0.002), f.ML.plastic_black(), "MinuteHand")
+	minute_hand.position = Vector3(0.0, r * 0.3, 0.006)
+	root.add_child(minute_hand)
+	var second_hand: MeshInstance3D = ShapeKit.box(Vector3(0.002, r * 0.8, 0.001), f.ML.indicator(Color("e2453c"), 0.2), "SecondHand")
+	second_hand.position = Vector3(0.0, r * 0.34, 0.008)
+	root.add_child(second_hand)
+	var cap: MeshInstance3D = ShapeKit.cyl(0.008, 0.006, f.ML.brass(), 10, Vector3i(0, 0, 1), "Cap")
+	cap.position = Vector3(0.0, 0.0, 0.01)
+	root.add_child(cap)
+	root.set_meta("hour_path", "HourHand")
+	root.set_meta("minute_path", "MinuteHand")
+	root.set_meta("second_path", "SecondHand")
+	return root
+
+
+static func poster(f: PropFactory, o: Dictionary) -> Node3D:
+	## A printed poster on the wall: film, cricket, or a spare-parts advert.
+	var w: float = float(o.get("width", 0.4))
+	var h: float = w * 1.4
+	var root := Node3D.new()
+	root.name = "Poster"
+	var sheet: MeshInstance3D = ShapeKit.box(Vector3(w, h, 0.002), f.ML.poster_stock(int(o.get("variant", 0))), "Sheet")
+	sheet.position = Vector3(0.0, -h * 0.5, 0.0)
+	sheet.rotation.x = 0.02
+	root.add_child(sheet)
+	for i: int in range(2):
+		var tape: MeshInstance3D = ShapeKit.box(Vector3(0.05, 0.02, 0.001), f.ML.adhesive_tape(), "Tape")
+		tape.position = Vector3(w * 0.4 * (1.0 if i == 0 else -1.0), -0.01, 0.002)
+		tape.rotation.z = -0.4 * (1.0 if i == 0 else -1.0)
+		root.add_child(tape)
+	return root
+
+
+static func photo_frame(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "PhotoFrame"
+	var frame: MeshInstance3D = ShapeKit.box(Vector3(0.18, 0.22, 0.012), f.ML.woodgrain_dark(), "Frame")
+	root.add_child(frame)
+	var photo: MeshInstance3D = ShapeKit.box(Vector3(0.14, 0.18, 0.002), f.ML.photo_paper(), "Photo")
+	photo.position = Vector3(0.0, 0.0, 0.008)
+	root.add_child(photo)
+	var glass: MeshInstance3D = ShapeKit.box(Vector3(0.15, 0.19, 0.001), f.ML.glass_smoky(), "Glass")
+	glass.position = Vector3(0.0, 0.0, 0.01)
+	root.add_child(glass)
+	var stand: MeshInstance3D = ShapeKit.box(Vector3(0.02, 0.16, 0.004), f.ML.steel_dark(), "Stand")
+	stand.position = Vector3(0.0, -0.02, -0.03)
+	stand.rotation.x = -0.5
+	root.add_child(stand)
+	return root
+
+
+static func notebook(f: PropFactory, o: Dictionary) -> Node3D:
+	## THE notebook: the inventor's engineering khata. Corkboard cover, string
+	## binding, dog-eared pages, and the sketch that starts the whole story.
+	var w: float = float(o.get("width", 0.24))
+	var l: float = w * 1.4
+	var root := Node3D.new()
+	root.name = "Notebook"
+	var cover: MeshInstance3D = ShapeKit.box(Vector3(w, 0.014, l), f.ML.notebook_cover(), "Cover")
+	cover.position = Vector3(0.0, 0.007, 0.0)
+	root.add_child(cover)
+	var block: MeshInstance3D = ShapeKit.box(Vector3(w * 0.96, 0.02, l * 0.96), f.ML.paper(), "Pages")
+	block.position = Vector3(0.0, 0.024, 0.0)
+	root.add_child(block)
+	var top_cover: MeshInstance3D = ShapeKit.box(Vector3(w, 0.006, l), f.ML.notebook_cover(), "TopCover")
+	top_cover.position = Vector3(0.0, 0.037, 0.0)
+	root.add_child(top_cover)
+	# the open page, angled so it reads as a book lying mid-use
+	var open_page: MeshInstance3D = ShapeKit.box(Vector3(w * 0.92, 0.002, l * 0.9), f.ML.paper(), "OpenPage")
+	open_page.position = Vector3(w * 0.46, 0.045, 0.0)
+	open_page.rotation = Vector3(0.0, -0.06, 0.0)
+	root.add_child(open_page)
+	# string binding down the spine, one loop per signature
+	for i: int in range(4):
+		var tie: MeshInstance3D = ShapeKit.cyl(0.003, l * 0.94, f.ML.thread_material(), 6, Vector3i(0, 0, 1), "Tie")
+		tie.position = Vector3(-w * 0.5 + 0.004, 0.02 + float(i) * 0.004, -l * 0.35 + float(i) * l * 0.23)
+		tie.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+		root.add_child(tie)
+	# a tea ring dried onto the page, lying flat
+	var stain: MeshInstance3D = ShapeKit.disc_flat(0.03, 0.001, f.ML.tea_stain(), "TeaRing")
+	stain.position = Vector3(w * 0.3, 0.047, l * 0.3)
+	root.add_child(stain)
+	var corner: MeshInstance3D = ShapeKit.box(Vector3(0.04, 0.001, 0.04), f.ML.paper(), "DogEar")
+	corner.position = Vector3(w * 0.44, 0.048, -l * 0.42)
+	corner.rotation = Vector3(0.0, 0.78, 0.0)
+	root.add_child(corner)
+	root.add_child(ShapeKit.col_box(Vector3(w, 0.05, l)))
+	root.set_meta("page_path", "OpenPage")
+	return root
+
+
+static func pen(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Pen"
+	var barrel: MeshInstance3D = ShapeKit.cyl(0.006, 0.14, f.ML.pen_body(), 10, Vector3i(0, 0, 1), "Barrel")
+	root.add_child(barrel)
+	var nib: MeshInstance3D = ShapeKit.tapered_cyl(0.0012, 0.005, 0.02, f.ML.steel_dark(), 8, "Nib")
+	nib.position = Vector3(0.0, 0.0, 0.08)
+	nib.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	root.add_child(nib)
+	var cap: MeshInstance3D = ShapeKit.cyl(0.0065, 0.05, f.ML.plastic_black(), 10, Vector3i(0, 0, 1), "Cap")
+	cap.position = Vector3(0.0, 0.0, -0.05)
+	root.add_child(cap)
+	var clip: MeshInstance3D = ShapeKit.box(Vector3(0.002, 0.001, 0.04), f.ML.brass(), "Clip")
+	clip.position = Vector3(0.006, 0.0, -0.05)
+	root.add_child(clip)
+	root.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	return root
+
+
+static func plastic_bag_roll(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "BagRoll"
+	var roll: MeshInstance3D = ShapeKit.cyl(0.05, 0.16, f.ML.plastic_bag(), 14, Vector3i(1, 0, 0), "Roll")
+	roll.position = Vector3(0.0, 0.05, 0.0)
+	root.add_child(roll)
+	var core: MeshInstance3D = ShapeKit.cyl(0.012, 0.17, f.ML.cardboard(), 10, Vector3i(1, 0, 0), "Core")
+	core.position = roll.position
+	root.add_child(core)
+	var hanging: MeshInstance3D = ShapeKit.box(Vector3(0.12, 0.18, 0.002), f.ML.plastic_bag(), "Bag")
+	hanging.position = Vector3(0.06, -0.06, 0.02)
+	hanging.rotation = Vector3(0.1, 0.2, 0.05)
+	root.add_child(hanging)
+	return root
+
+
+static func sack(f: PropFactory, o: Dictionary) -> Node3D:
+	## The woven polypropylene sack of scrap. Bulged, stitched, leaning.
+	var s: float = float(o.get("scale", 1.0))
+	var root := Node3D.new()
+	root.name = "Sack"
+	var body: MeshInstance3D = ShapeKit.sphere(0.24 * s, f.ML.woven_sack(), 16, "Body")
+	body.scale = Vector3(1.0, 0.75, 0.85)
+	body.position = Vector3(0.0, 0.18 * s, 0.0)
+	root.add_child(body)
+	var neck: MeshInstance3D = ShapeKit.cyl(0.06 * s, 0.1 * s, f.ML.woven_sack(), 12, Vector3i(0, 1, 0), "Neck")
+	neck.position = Vector3(0.0, 0.34 * s, 0.0)
+	neck.rotation.z = 0.15
+	root.add_child(neck)
+	# the drawstring tie encircles the vertical neck
+	var tie: MeshInstance3D = ShapeKit.torus(0.06 * s, 0.006, f.ML.thread_material(), 12, 5, "Tie")
+	tie.position = neck.position + Vector3(0.0, -0.02, 0.0)
+	root.add_child(tie)
+	for i: int in range(8):
+		var stitch: MeshInstance3D = ShapeKit.box(Vector3(0.004, 0.004, 0.02), f.ML.thread_material(), "Stitch")
+		stitch.position = Vector3(-0.02 + float(i) * 0.006, 0.4 * s, 0.0)
+		stitch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(stitch)
+	root.add_child(ShapeKit.col_sphere(0.26 * s))
+	return root
+
+
+static func mirror_small(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Mirror"
+	var frame: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.24, 0.014), f.ML.plastic_faded(), "Frame")
+	root.add_child(frame)
+	var glass: MeshInstance3D = ShapeKit.box(Vector3(0.13, 0.21, 0.004), f.ML.mirror(), "Glass")
+	glass.position = Vector3(0.0, 0.0, 0.008)
+	root.add_child(glass)
+	var hook: MeshInstance3D = ShapeKit.cyl(0.003, 0.03, f.ML.steel_dark(), 6, Vector3i(0, 0, 1), "Hook")
+	hook.position = Vector3(0.0, 0.11, -0.01)
+	root.add_child(hook)
+	return root
+
+
+static func comb(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Comb"
+	var spine: MeshInstance3D = ShapeKit.box(Vector3(0.14, 0.004, 0.02), f.ML.plastic_black(), "Spine")
+	root.add_child(spine)
+	for i: int in range(22):
+		var tooth: MeshInstance3D = ShapeKit.box(Vector3(0.0015, 0.003, 0.028), f.ML.plastic_black(), "Tooth")
+		tooth.position = Vector3(-0.065 + float(i) * 0.006, -0.002, 0.022)
+		tooth.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(tooth)
+	return root
+
+
+static func soap_dish(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "SoapDish"
+	var dish: MeshInstance3D = ShapeKit.cyl(0.06, 0.012, f.ML.plastic_faded(), 14, Vector3i(0, 1, 0), "Dish")
+	dish.position = Vector3(0.0, 0.006, 0.0)
+	root.add_child(dish)
+	var soap: MeshInstance3D = ShapeKit.box(Vector3(0.07, 0.025, 0.045), f.ML.soap(), "Soap")
+	soap.position = Vector3(0.0, 0.022, 0.0)
+	soap.rotation.y = 0.3
+	root.add_child(soap)
+	return root
+
+
+static func cup_brush(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "CupBrush"
+	var handle: MeshInstance3D = ShapeKit.cyl(0.012, 0.18, f.ML.plastic_red(), 10, Vector3i(0, 1, 0), "Handle")
+	handle.position = Vector3(0.0, 0.09, 0.0)
+	root.add_child(handle)
+	var head: MeshInstance3D = ShapeKit.cyl(0.02, 0.05, f.ML.bristle(), 12, Vector3i(0, 1, 0), "Head")
+	head.position = Vector3(0.0, 0.2, 0.0)
+	root.add_child(head)
+	for i: int in range(10):
+		var a: float = ShapeKit.TAU_K * float(i) / 10.0
+		var tuft: MeshInstance3D = ShapeKit.cyl(0.004, 0.03, f.ML.bristle(), 6, Vector3i(0, 1, 0), "Tuft")
+		tuft.position = head.position + Vector3(cos(a) * 0.014, 0.03, sin(a) * 0.014)
+		tuft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(tuft)
+	return root
+
+
+static func shelf_label(f: PropFactory, o: Dictionary) -> Node3D:
+	## The handwritten strip of paper taped to a shelf edge or bin, in Bangla.
+	var w: float = float(o.get("width", 0.14))
+	var root := Node3D.new()
+	root.name = "ShelfLabel"
+	var strip: MeshInstance3D = ShapeKit.box(Vector3(w, 0.035, 0.002), f.ML.label_stock(), "Strip")
+	root.add_child(strip)
+	var tape: MeshInstance3D = ShapeKit.box(Vector3(0.03, 0.012, 0.001), f.ML.adhesive_tape(), "Tape")
+	tape.position = Vector3(-w * 0.4, 0.0, 0.002)
+	root.add_child(tape)
+	return root
+
+
+static func hook_nail(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "NailHook"
+	var shank: MeshInstance3D = ShapeKit.cyl(0.003, 0.05, f.ML.steel_dark(), 6, Vector3i(0, 0, 1), "Shank")
+	shank.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	root.add_child(shank)
+	var crook: MeshInstance3D = ShapeKit.torus(0.012, 0.003, f.ML.steel_dark(), 10, 5, "Crook")
+	crook.position = Vector3(0.0, -0.012, 0.02)
+	root.add_child(crook)
+	return root
+
+
+static func socket_wall(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The three-pin wall socket, Bangladeshi rectangular pattern.
+	var root := Node3D.new()
+	root.name = "WallSocket"
+	var plate: MeshInstance3D = ShapeKit.box(Vector3(0.085, 0.055, 0.008), f.ML.plastic_white_gloss(), "Plate")
+	root.add_child(plate)
+	var insert: MeshInstance3D = ShapeKit.box(Vector3(0.06, 0.036, 0.006), f.ML.plastic_faded(), "Insert")
+	insert.position = Vector3(0.0, 0.0, 0.006)
+	root.add_child(insert)
+	for i: int in range(3):
+		var hole: MeshInstance3D = ShapeKit.box(Vector3(0.008, 0.004, 0.004), f.ML.plastic_black(), "Pin")
+		hole.position = Vector3(-0.018 + float(i) * 0.018, 0.004 if i == 2 else -0.004, 0.01)
+		hole.rotation.z = 0.78 if i < 2 else 0.0
+		root.add_child(hole)
+	for i: int in range(2):
+		var screw: MeshInstance3D = ShapeKit.cyl(0.003, 0.004, f.ML.brass(), 6, Vector3i(0, 0, 1), "Screw")
+		screw.position = Vector3(0.0, 0.02 * (1.0 if i == 0 else -1.0), 0.008)
+		root.add_child(screw)
+	return root
+
+
+static func switch_wall(f: PropFactory, _o: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	root.name = "WallSwitch"
+	var plate: MeshInstance3D = ShapeKit.box(Vector3(0.055, 0.075, 0.008), f.ML.plastic_white_gloss(), "Plate")
+	root.add_child(plate)
+	var rocker: MeshInstance3D = ShapeKit.box(Vector3(0.03, 0.04, 0.01), f.ML.plastic_faded(), "Rocker")
+	rocker.position = Vector3(0.0, 0.0, 0.008)
+	root.add_child(rocker)
+	for i: int in range(2):
+		var scr: MeshInstance3D = ShapeKit.cyl(0.003, 0.004, f.ML.brass(), 6, Vector3i(0, 0, 1), "Screw")
+		scr.position = Vector3(0.0, 0.028 * (1.0 if i == 0 else -1.0), 0.008)
+		root.add_child(scr)
+	root.set_meta("rocker_path", "Rocker")
+	return root
+
+
+static func meter_box(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The external electricity meter on the wall, with the seal wire.
+	var root := Node3D.new()
+	root.name = "MeterBox"
+	var box_b: MeshInstance3D = ShapeKit.box(Vector3(0.28, 0.36, 0.12), f.ML.plastic_faded(), "Box")
+	box_b.position = Vector3(0.0, 0.18, 0.06)
+	root.add_child(box_b)
+	var window: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.1, 0.006), f.ML.glass_smoky(), "Window")
+	window.position = Vector3(0.0, 0.24, 0.124)
+	root.add_child(window)
+	var dials: MeshInstance3D = ShapeKit.box(Vector3(0.14, 0.06, 0.002), f.ML.meter_face(), "Register")
+	dials.position = Vector3(0.0, 0.24, 0.12)
+	root.add_child(dials)
+	var led: MeshInstance3D = ShapeKit.sphere(0.006, f.ML.indicator(Color("e2453c"), 0.0), 8, "PulseLed")
+	led.position = Vector3(0.09, 0.16, 0.124)
+	root.add_child(led)
+	var seal: MeshInstance3D = ShapeKit.cyl(0.008, 0.02, f.ML.brass(), 8, Vector3i(0, 0, 1), "Seal")
+	seal.position = Vector3(-0.1, 0.05, 0.12)
+	root.add_child(seal)
+	var seal_wire: MeshInstance3D = ShapeKit.hose(Vector3(-0.1, 0.05, 0.13), Vector3(0.1, 0.05, 0.13), 0.002, 0.02, f.ML.cable_material(Color("#8a8f94")), "SealWire")
+	root.add_child(seal_wire)
+	var conduit: MeshInstance3D = ShapeKit.cyl(0.02, 0.4, f.ML.plastic_faded(), 10, Vector3i(0, 1, 0), "Conduit")
+	conduit.position = Vector3(0.08, -0.02, 0.06)
+	root.add_child(conduit)
+	root.set_meta("led_path", "PulseLed")
+	return root
+
+
+static func chair_office(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The one genuinely modern object in World A: a second-hand office chair at
+	## the workstation. It is the visual hinge between the two worlds.
+	var root := Node3D.new()
+	root.name = "OfficeChair"
+	var seat: MeshInstance3D = ShapeKit.box(Vector3(0.46, 0.07, 0.44), f.ML.chair_fabric(), "Seat")
+	seat.position = Vector3(0.0, 0.46, 0.0)
+	root.add_child(seat)
+	var back: MeshInstance3D = ShapeKit.box(Vector3(0.44, 0.52, 0.06), f.ML.chair_fabric(), "Back")
+	back.position = Vector3(0.0, 0.78, -0.2)
+	back.rotation.x = 0.14
+	root.add_child(back)
+	var lumbar: MeshInstance3D = ShapeKit.box(Vector3(0.36, 0.1, 0.04), f.ML.plastic_black(), "Lumbar")
+	lumbar.position = Vector3(0.0, 0.62, -0.19)
+	root.add_child(lumbar)
+	var column: MeshInstance3D = ShapeKit.cyl(0.035, 0.36, f.ML.chrome(), 12, Vector3i(0, 1, 0), "Column")
+	column.position = Vector3(0.0, 0.24, 0.0)
+	root.add_child(column)
+	for i: int in range(5):
+		var a: float = ShapeKit.TAU_K * float(i) / 5.0
+		var leg: MeshInstance3D = ShapeKit.box(Vector3(0.04, 0.03, 0.3), f.ML.plastic_black(), "Spoke")
+		leg.position = Vector3(cos(a) * 0.15, 0.06, sin(a) * 0.15)
+		leg.rotation.y = -a
+		root.add_child(leg)
+		# castors roll on a horizontal axle, so the wheel torus is vertical
+		var caster: MeshInstance3D = ShapeKit.cyl(0.03, 0.02, f.ML.rubber(), 10, Vector3i(0, 0, 1), "Caster")
+		caster.position = Vector3(cos(a) * 0.3, 0.03, sin(a) * 0.3)
+		root.add_child(caster)
+	for i: int in range(2):
+		var arm: MeshInstance3D = ShapeKit.box(Vector3(0.05, 0.03, 0.28), f.ML.plastic_black(), "Arm")
+		arm.position = Vector3(0.25 * (1.0 if i == 0 else -1.0), 0.62, 0.0)
+		root.add_child(arm)
+	root.add_child(ShapeKit.col_cyl(0.32, 1.05))
+	return root
+
+
+static func tool_chest(f: PropFactory, o: Dictionary) -> Node3D:
+	## The red steel toolbox on the bench: three drawers, the fold-out handle,
+	## the latches, and the dented paint of a tool that is used daily.
+	var w: float = float(o.get("width", 0.42))
+	var h: float = w * 0.55
+	var d: float = w * 0.5
+	var root := Node3D.new()
+	root.name = "ToolChest"
+	var shell: MeshInstance3D = ShapeKit.box(Vector3(w, h, d), f.ML.paint_red(1.1), "Shell")
+	shell.position = Vector3(0.0, h * 0.5, 0.0)
+	root.add_child(shell)
+	for i: int in range(3):
+		var dr: MeshInstance3D = ShapeKit.box(Vector3(w * 0.94, h * 0.26, 0.008), f.ML.paint_red(1.4), "Drawer%d" % i)
+		dr.position = Vector3(0.0, h * 0.18 + float(i) * h * 0.28, d * 0.5 + 0.004)
+		root.add_child(dr)
+		var pull: MeshInstance3D = ShapeKit.box(Vector3(w * 0.4, 0.012, 0.014), f.ML.steel(), "Pull")
+		pull.position = dr.position + Vector3(0.0, -h * 0.08, 0.008)
+		root.add_child(pull)
+		var tag: MeshInstance3D = ShapeKit.box(Vector3(0.05, 0.018, 0.002), f.ML.label_stock(), "Tag")
+		tag.position = dr.position + Vector3(-w * 0.3, 0.0, 0.006)
+		root.add_child(tag)
+	# the carrying handle hinges on a horizontal pin
+	var hinge: MeshInstance3D = ShapeKit.cyl(0.008, w * 0.5, f.ML.steel_dark(), 8, Vector3i(1, 0, 0), "HandleHinge")
+	hinge.position = Vector3(0.0, h + 0.01, 0.0)
+	root.add_child(hinge)
+	var grip: MeshInstance3D = ShapeKit.box(Vector3(w * 0.46, 0.012, 0.05), f.ML.plastic_black(), "Handle")
+	grip.position = Vector3(0.0, h + 0.09, 0.0)
+	root.add_child(grip)
+	for i: int in range(2):
+		var latch: MeshInstance3D = ShapeKit.box(Vector3(0.035, 0.05, 0.012), f.ML.steel(), "Latch")
+		latch.position = Vector3((w * 0.36) * (1.0 if i == 0 else -1.0), h * 0.98, d * 0.5 + 0.006)
+		root.add_child(latch)
+	var dent: MeshInstance3D = ShapeKit.sphere(0.03, f.ML.paint_red(1.1), 8, "Dent")
+	dent.position = Vector3(w * 0.3, h * 0.4, d * 0.5)
+	dent.scale = Vector3(1.0, 1.0, 0.3)
+	root.add_child(dent)
+	var sticker: MeshInstance3D = ShapeKit.box(Vector3(0.09, 0.04, 0.001), f.ML.label_stock(), "Sticker")
+	sticker.position = Vector3(-w * 0.2, h * 0.7, d * 0.5 + 0.002)
+	root.add_child(sticker)
+	root.add_child(ShapeKit.col_box(Vector3(w, h, d)))
+	root.set_meta("handle_path", "Handle")
+	root.set_meta("drawer_count", 3)
+	return root
+
+
+static func signboard(f: PropFactory, o: Dictionary) -> Node3D:
+	## The garage signboard over the shutter. The text is baked from a SignCanvas
+	## spec, so the Bangla headline and the English subtitle are shaped by the
+	## engine, not hand-placed.
+	var w: float = float(o.get("width", 2.6))
+	var h: float = float(o.get("height", 0.7))
+	var root := Node3D.new()
+	root.name = "Signboard"
+	var board: MeshInstance3D = ShapeKit.box(Vector3(w, h, 0.05), f.ML.signboard_back(), "Board")
+	root.add_child(board)
+	var face: MeshInstance3D = ShapeKit.plane(Vector2(w * 0.98, h * 0.94), f.ML.signboard_face(), "Face")
+	face.position = Vector3(0.0, 0.0, 0.027)
+	root.add_child(face)
+	for i: int in range(2):
+		var trim: MeshInstance3D = ShapeKit.box(Vector3(w * 1.02, 0.03, 0.06), f.ML.paint_yellow(), "Trim")
+		trim.position = Vector3(0.0, h * 0.5 * (1.0 if i == 0 else -1.0), 0.0)
+		root.add_child(trim)
+	for i: int in range(2):
+		var hanger: MeshInstance3D = ShapeKit.cyl(0.006, 0.5, f.ML.steel_dark(), 6, Vector3i(0, 1, 0), "Hanger")
+		hanger.position = Vector3((w * 0.4) * (1.0 if i == 0 else -1.0), h * 0.5 + 0.25, 0.0)
+		root.add_child(hanger)
+	root.set_meta("face_path", "Face")
+	return root

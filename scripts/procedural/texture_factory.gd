@@ -180,16 +180,16 @@ func _synthesize(key: String, spec: Dictionary) -> Dictionary:
 	# the same twelve per texel in GDScript cost 7.8 seconds, which is what made
 	# the original implementation unusable.
 	var fb_mottle: PackedByteArray = _field_bytes(seed, mottle_scale, 5, FastNoiseLite.TYPE_SIMPLEX_SMOOTH, size)
-	var fb_grain: PackedByteArray = _field_bytes(seed + 977, grain_scale, 2, FastNoiseLite.TYPE_VALUE, size)
-	var fb_fine: PackedByteArray = _field_bytes(seed + 3313, 26.0, 3, FastNoiseLite.TYPE_SIMPLEX_SMOOTH, size)
+	var fb_grain: PackedByteArray = _field_bytes(seed + 977, grain_scale * 0.45, 2, FastNoiseLite.TYPE_VALUE, size)
+	var fb_fine: PackedByteArray = _field_bytes(seed + 3313, 7.5, 3, FastNoiseLite.TYPE_SIMPLEX_SMOOTH, size)
 	var fb_wear: PackedByteArray = _field_bytes(seed + 5501, 3.5, 1, FastNoiseLite.TYPE_CELLULAR, size)
 	var fb_front: PackedByteArray = _field_bytes(seed + 401, 3.2, 4, FastNoiseLite.TYPE_SIMPLEX_SMOOTH, size)
 	var fb_pit: PackedByteArray = _field_bytes(seed + 811, pattern_scale * 5.0 + 6.0, 1, FastNoiseLite.TYPE_CELLULAR, size)
 	var fb_streak: PackedByteArray = _field_bytes(seed + 1201, pattern_scale * 2.4, 2, FastNoiseLite.TYPE_VALUE, size)
 	var fb_along: PackedByteArray = _field_bytes(seed + 1223, pattern_scale * 2.4, 3, FastNoiseLite.TYPE_SIMPLEX_SMOOTH, size)
-	var fb_scratch: PackedByteArray = _field_bytes(seed + 2011, 90.0, 2, FastNoiseLite.TYPE_VALUE, size)
+	var fb_scratch: PackedByteArray = _field_bytes(seed + 2011, 26.0, 2, FastNoiseLite.TYPE_VALUE, size)
 	var fb_pat_a: PackedByteArray = _field_bytes(seed + 71, pattern_scale * 1.2, 3, FastNoiseLite.TYPE_SIMPLEX_SMOOTH, size)
-	var fb_pat_b: PackedByteArray = _field_bytes(seed + 173, pattern_scale * 9.0, 2, FastNoiseLite.TYPE_VALUE, size)
+	var fb_pat_b: PackedByteArray = _field_bytes(seed + 173, pattern_scale * 2.2, 2, FastNoiseLite.TYPE_VALUE, size)
 	var fb_pat_c: PackedByteArray = _field_bytes(seed + 91, pattern_scale * 4.0, 1, FastNoiseLite.TYPE_CELLULAR, size)
 	var inv: float = 1.0 / 255.0
 
@@ -209,7 +209,7 @@ func _synthesize(key: String, spec: Dictionary) -> Dictionary:
 			var n_b: float = float(fb_pat_b[i]) * inv
 			var n_c: float = float(fb_pat_c[i]) * inv
 
-			var h: float = m * 0.5 + g * 0.28 + f * 0.22
+			var h: float = m * 0.62 + g * 0.16 + f * 0.10
 			var c: Color = base.lerp(tint_a, clampf(m * 0.5 + 0.5, 0.0, 1.0) * grain)
 			c = c.lerp(tint_b, clampf(-m * 0.5 + 0.5, 0.0, 1.0) * grain * 0.7)
 			var rgh: float = rough_base + m * rough_var * 0.6 + g * rough_var * 0.4
@@ -359,7 +359,7 @@ func _height_to_normal(height: PackedFloat32Array, size: int, strength: float) -
 	## albedo and ORM channels.
 	var bytes: PackedByteArray = PackedByteArray()
 	bytes.resize(size * size * 3)
-	var s: float = strength * 6.0
+	var s: float = strength * 1.6
 	for y: int in range(size):
 		var ym: int = (y - 1 + size) % size
 		var yp: int = (y + 1) % size
@@ -518,35 +518,78 @@ func _panel_gaps(u: float, v: float, n: float) -> float:
 ## joint is about 110 mm, so nine courses is roughly a metre; a corrugated tin
 ## sheet is about 1.2 m wide; a 400 mm concrete block, four of them per repeat.
 const TILE_METERS: Dictionary = {
-	"brick_wall": 1.0, "cement_plaster": 2.6, "concrete_block": 1.7,
-	"worn_concrete": 3.2, "sealed_concrete": 4.0, "packed_earth": 2.0,
-	"corrugated_tin": 1.2, "rust_sheet": 1.5,
-	"steel_brushed": 0.45, "steel_dark": 0.4, "cast_iron": 0.3, "chrome": 0.25,
-	"brass": 0.2, "copper": 0.2, "aluminium": 0.4, "lead_grey": 0.25,
-	"painted_red": 0.5, "painted_blue": 0.5, "painted_green": 0.5, "painted_yellow": 0.5,
-	"armour_red": 0.35, "armour_gold": 0.3,
-	"teak": 0.8, "bamboo": 0.6, "plywood": 0.9, "rattan": 0.5,
-	"rubber": 0.25, "plastic_black": 0.2, "plastic_faded": 0.3, "plastic_red": 0.2,
-	"glass_smoky": 0.5, "circuit_board": 0.14,
-	"fabric": 0.4, "gamcha": 0.35, "newspaper": 0.3, "paper_notebook": 0.22,
+	"brick_wall": 3.0, "cement_plaster": 4.5, "concrete_block": 4.0,
+	"worn_concrete": 6.0, "sealed_concrete": 7.0, "packed_earth": 5.0,
+	"corrugated_tin": 2.6, "rust_sheet": 3.0,
+	"steel_brushed": 1.1, "steel_dark": 1.0, "cast_iron": 0.8, "chrome": 0.7,
+	"brass": 0.55, "copper": 0.55, "aluminium": 1.0, "lead_grey": 0.6,
+	"painted_red": 1.2, "painted_blue": 1.2, "painted_green": 1.2, "painted_yellow": 1.2,
+	"armour_red": 0.85, "armour_gold": 0.75,
+	"teak": 1.9, "bamboo": 1.4, "plywood": 2.1, "rattan": 1.2,
+	"rubber": 0.6, "plastic_black": 0.5, "plastic_faded": 0.75, "plastic_red": 0.5,
+	"glass_smoky": 1.2, "circuit_board": 0.34,
+	"fabric": 1.0, "gamcha": 0.85, "newspaper": 0.75, "paper_notebook": 0.55,
 }
 
 
 static var _stamped: Dictionary = {}
+static var _tuning: Dictionary = {}
 
 
-## The recipe table with its physical tiling density attached. Cached because the
-## material library asks for it on every surface it builds.
+## The recipe table with its physical tiling density attached, plus a single
+## global damping pass over the high-frequency terms.
+##
+## Why damping rather than per-recipe values: the first rendered screenshots showed
+## every surface reading as sandpaper, and the cause was structural, not a matter
+## of taste — grain and fine noise were tuned for a 512 px texture tiled once per
+## metre, and dropping to 256 px on a 3 m tile left those fields at 12 mm feature
+## size, where the eye integrates them as static rather than as material. Rather
+## than hunt 28 hand-written literals (and lose the argument the moment one is
+## missed), the correction is applied here to every recipe at once:
+##
+##   grain_scale  x 0.45   noise features become 2.2x physically larger
+##   height_amp   x 0.60   the height field stops competing with the albedo
+##   bump         x 0.60   and the derived normal map is correspondingly calmer
+##
+## The architectural surfaces that carry the most screen area — brick, plaster,
+## block, concrete, earth, wood, weave — additionally carry hand-tuned values in
+## _raw_recipes(), so what is left for this pass is the small props, where a
+## slightly noisy steel or plastic surface is a feature rather than a defect.
+const GRAIN_FREQ_DAMP: float = 0.45
+const HEIGHT_DAMP: float = 0.60
+const BUMP_DAMP: float = 0.60
+
+
 static func recipes() -> Dictionary:
 	if not _stamped.is_empty():
 		return _stamped
+	if _tuning.is_empty():
+		_tuning = {
+			"grain_scale": GRAIN_FREQ_DAMP,
+			"height_amp": HEIGHT_DAMP,
+			"bump": BUMP_DAMP,
+		}
 	var raw: Dictionary = _raw_recipes()
 	for key: String in raw:
 		var r: Dictionary = raw[key]
 		if not r.has("meters_per_tile"):
 			r["meters_per_tile"] = float(TILE_METERS.get(key, 1.0))
+		# the architecture is hand-tuned and must not be damped twice
+		if not HAND_TUNED.has(key):
+			for field: String in _tuning:
+				if r.has(field):
+					r[field] = float(r[field]) * float(_tuning[field])
 		_stamped[key] = r
 	return _stamped
+
+
+## Surfaces carrying explicit values in _raw_recipes(), derived from the physical
+## size of the feature they represent (a 110 mm brick course, a 400 mm block).
+## These are excluded from the global damping pass above.
+const HAND_TUNED: Array[String] = [
+	"brick_wall", "cement_plaster", "concrete_block", "worn_concrete",
+	"sealed_concrete", "packed_earth", "corrugated_tin", "rust_sheet",
+]
 
 
 static func _raw_recipes() -> Dictionary:
@@ -554,42 +597,42 @@ static func _raw_recipes() -> Dictionary:
 		# --- structure ---------------------------------------------------
 		"brick_wall": {
 			"base": "#6f4030", "tint_a": "#8a5540", "tint_b": "#b9b0a1",
-			"pattern": "brick", "pattern_scale": 9.0, "grain": 0.35, "grain_scale": 12.0,
-			"rough": 0.85, "rough_var": 0.12, "height_amp": 1.35, "bump": 1.5,
+			"pattern": "brick", "pattern_scale": 3.2, "grain": 0.26, "grain_scale": 7.0,
+			"rough": 0.85, "rough_var": 0.12, "height_amp": 1.0, "bump": 0.9,
 			"streaks": 0.35, "repeat": [1.0, 1.0],
 		},
 		"cement_plaster": {
 			"base": "#a9a49a", "tint_a": "#8e8a82", "tint_b": "#c2beb4",
-			"grain": 0.5, "grain_scale": 22.0, "mottle_scale": 2.2,
-			"rough": 0.88, "rough_var": 0.16, "height_amp": 0.7, "bump": 0.8,
+			"grain": 0.34, "grain_scale": 12.0, "mottle_scale": 1.1,
+			"rough": 0.88, "rough_var": 0.16, "height_amp": 0.45, "bump": 0.45,
 			"streaks": 0.3, "pits": 0.12, "wear": 0.12, "repeat": [1.0, 1.0],
 		},
 		"concrete_block": {
 			"base": "#94918c", "tint_a": "#7d7a75", "tint_b": "#adaaa4",
-			"pattern": "panel_lines", "pattern_scale": 4.0, "grain": 0.55, "grain_scale": 30.0,
-			"rough": 0.9, "rough_var": 0.1, "height_amp": 0.9, "bump": 1.0, "pits": 0.2, "repeat": [1.0, 1.0],
+			"pattern": "panel_lines", "pattern_scale": 2.2, "grain": 0.36, "grain_scale": 15.0,
+			"rough": 0.9, "rough_var": 0.1, "height_amp": 0.55, "bump": 0.5, "pits": 0.2, "repeat": [1.0, 1.0],
 		},
 		"worn_concrete": {
 			"base": "#7c7a76", "tint_a": "#666460", "tint_b": "#94928c",
-			"grain": 0.6, "grain_scale": 34.0, "mottle_scale": 1.2,
-			"rough": 0.78, "rough_var": 0.22, "height_amp": 0.55, "bump": 0.7,
+			"grain": 0.42, "grain_scale": 16.0, "mottle_scale": 0.65,
+			"rough": 0.78, "rough_var": 0.22, "height_amp": 0.35, "bump": 0.35,
 			"pits": 0.22, "streaks": 0.25, "wear": 0.1, "repeat": [1.0, 1.0],
 		},
 		"sealed_concrete": {
 			"base": "#6e6f70", "tint_a": "#5a5b5c", "tint_b": "#85868a",
-			"grain": 0.4, "grain_scale": 26.0, "rough": 0.45, "rough_var": 0.18,
-			"height_amp": 0.3, "bump": 0.4, "pattern": "panel_lines", "pattern_scale": 2.0, "repeat": [1.0, 1.0],
+			"grain": 0.28, "grain_scale": 13.0, "rough": 0.45, "rough_var": 0.18,
+			"height_amp": 0.2, "bump": 0.25, "pattern": "panel_lines", "pattern_scale": 1.2, "repeat": [1.0, 1.0],
 		},
 		"packed_earth": {
 			"base": "#7a6248", "tint_a": "#5f4a35", "tint_b": "#93795c",
-			"grain": 0.75, "grain_scale": 40.0, "mottle_scale": 1.0,
-			"rough": 0.95, "rough_var": 0.08, "height_amp": 0.9, "bump": 1.1, "pits": 0.3, "repeat": [1.0, 1.0],
+			"grain": 0.5, "grain_scale": 18.0, "mottle_scale": 0.55,
+			"rough": 0.95, "rough_var": 0.08, "height_amp": 0.55, "bump": 0.55, "pits": 0.3, "repeat": [1.0, 1.0],
 		},
 		"corrugated_tin": {
 			"base": "#8b8f96", "tint_a": "#6d7178", "tint_b": "#a8adb4",
-			"pattern": "corrugation", "pattern_scale": 14.0, "grain": 0.3, "grain_scale": 18.0,
+			"pattern": "corrugation", "pattern_scale": 3.4, "grain": 0.24, "grain_scale": 9.0,
 			"metal": 0.85, "metal_var": 0.1, "rough": 0.42, "rough_var": 0.25,
-			"height_amp": 1.6, "bump": 1.8, "wear": 0.28, "repeat": [1.0, 1.0],
+			"height_amp": 1.6, "bump": 1.6, "wear": 0.28, "repeat": [1.0, 1.0],
 		},
 		"rust_sheet": {
 			"base": "#6d4a2f", "tint_a": "#4a2e1c", "tint_b": "#8c5a34",
@@ -602,7 +645,7 @@ static func _raw_recipes() -> Dictionary:
 		"steel_brushed": {
 			"base": "#9aa0a6", "tint_a": "#7e848a", "tint_b": "#b6bcc2",
 			"metal": 1.0, "metal_var": 0.04, "rough": 0.34, "rough_var": 0.16,
-			"grain": 0.2, "grain_scale": 60.0, "height_amp": 0.25, "bump": 0.5, "repeat": [1.0, 1.0],
+			"grain": 0.16, "grain_scale": 30.0, "height_amp": 0.18, "bump": 0.3, "repeat": [1.0, 1.0],
 		},
 		"steel_dark": {
 			"base": "#4c5157", "tint_a": "#33373c", "tint_b": "#666b72",
@@ -612,7 +655,7 @@ static func _raw_recipes() -> Dictionary:
 		"cast_iron": {
 			"base": "#5a5c60", "tint_a": "#3e4044", "tint_b": "#75787d",
 			"metal": 0.8, "metal_var": 0.15, "rough": 0.68, "rough_var": 0.18,
-			"grain": 0.55, "grain_scale": 36.0, "height_amp": 0.8, "bump": 1.0, "pits": 0.3, "wear": 0.2, "repeat": [1.0, 1.0],
+			"grain": 0.4, "grain_scale": 18.0, "height_amp": 0.5, "bump": 0.5, "pits": 0.3, "wear": 0.2, "repeat": [1.0, 1.0],
 		},
 		"chrome": {
 			"base": "#c9ced4", "tint_a": "#aab0b8", "tint_b": "#e6eaee",
@@ -684,12 +727,12 @@ static func _raw_recipes() -> Dictionary:
 		},
 		"plywood": {
 			"base": "#b08a52", "tint_a": "#8c6a3a", "tint_b": "#c9a56c",
-			"pattern": "weave", "pattern_scale": 22.0, "grain": 0.3, "grain_scale": 36.0,
+			"pattern": "weave", "pattern_scale": 9.0, "grain": 0.24, "grain_scale": 18.0,
 			"rough": 0.7, "rough_var": 0.15, "height_amp": 0.35, "bump": 0.5, "repeat": [1.0, 1.0],
 		},
 		"rattan": {
 			"base": "#c8a878", "tint_a": "#a08256", "tint_b": "#e0c49a",
-			"pattern": "weave", "pattern_scale": 30.0, "grain": 0.3, "grain_scale": 30.0,
+			"pattern": "weave", "pattern_scale": 13.0, "grain": 0.24, "grain_scale": 15.0,
 			"rough": 0.75, "rough_var": 0.12, "height_amp": 0.8, "bump": 1.1, "repeat": [1.0, 1.0],
 		},
 		"rubber": {
@@ -719,17 +762,17 @@ static func _raw_recipes() -> Dictionary:
 		},
 		"circuit_board": {
 			"base": "#0d4a33", "tint_a": "#093726", "tint_b": "#c9a227",
-			"pattern": "circuit", "pattern_scale": 12.0, "grain": 0.15, "grain_scale": 50.0,
+			"pattern": "circuit", "pattern_scale": 5.0, "grain": 0.12, "grain_scale": 22.0,
 			"rough": 0.5, "rough_var": 0.2, "height_amp": 0.5, "bump": 0.7, "repeat": [1.0, 1.0],
 		},
 		"fabric": {
 			"base": "#6b5f52", "tint_a": "#4e453b", "tint_b": "#8a7d6c",
-			"pattern": "weave", "pattern_scale": 40.0, "grain": 0.4, "grain_scale": 30.0,
+			"pattern": "weave", "pattern_scale": 17.0, "grain": 0.3, "grain_scale": 15.0,
 			"rough": 0.92, "rough_var": 0.08, "height_amp": 0.6, "bump": 0.8, "streaks": 0.1, "repeat": [1.0, 1.0],
 		},
 		"gamcha": {
 			"base": "#8a8f7a", "tint_a": "#5f6b4a", "tint_b": "#b0b89a",
-			"pattern": "weave", "pattern_scale": 34.0, "grain": 0.45, "grain_scale": 26.0,
+			"pattern": "weave", "pattern_scale": 15.0, "grain": 0.32, "grain_scale": 13.0,
 			"rough": 0.9, "rough_var": 0.1, "height_amp": 0.7, "bump": 1.0, "repeat": [1.0, 1.0],
 		},
 		"newspaper": {

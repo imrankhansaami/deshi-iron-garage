@@ -1062,7 +1062,7 @@ static func ceiling_fan(f: PropFactory, o: Dictionary) -> Node3D:
 		var blade: MeshInstance3D = ShapeKit.box(Vector3(radius * 0.72, 0.008, 0.13), f.ML.teak(1.2) if bool(o.get("wood", false)) else hub_mat, "Blade")
 		blade.position = Vector3(cos(a) * (radius * 0.62), 0.0, sin(a) * (radius * 0.62))
 		# blade pitch is the whole reason a fan moves air, and it is the detail
-		// that makes a static render of one look wrong when it is missing
+		## that makes a static render of one look wrong when it is missing
 		blade.rotation = Vector3(0.0, -a, 0.28)
 		rotor.add_child(blade)
 	var pull: MeshInstance3D = ShapeKit.cyl(0.002, 0.18, f.ML.brass(), 5, Vector3i(0, 1, 0), "PullChain")

@@ -89,11 +89,11 @@ func _build_environment() -> void:
 	env.ambient_light_sky_contribution = 0.85
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	# Bloom is deliberately restrained. The first render put glow_intensity at
-	// 0.62 and glow_strength at 0.9, and every steel ring in the assembly bay
-	// blew out into a white halo that read as fog rather than as polished metal.
-	// The core and the hologram still spill, because they are the only surfaces
-	// whose emission is above the raised threshold — which is the point of a
-	// threshold-based bloom in the first place.
+	## 0.62 and glow_strength at 0.9, and every steel ring in the assembly bay
+	## blew out into a white halo that read as fog rather than as polished metal.
+	## The core and the hologram still spill, because they are the only surfaces
+	## whose emission is above the raised threshold — which is the point of a
+	## threshold-based bloom in the first place.
 	env.glow_enabled = bool(GameState.settings.get("bloom", true))
 	env.glow_intensity = 0.32
 	env.glow_strength = 0.48
