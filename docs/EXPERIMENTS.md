@@ -273,6 +273,12 @@ configuration produces the most legible interior, and what does each cost?
 count and the shadow-pass draw calls alongside the frame time. Measurements are on the assembly-bay
 camera (fixed transform) so all configurations see the same geometry.
 
+**Note on the rig these rows were measured on.** The table below is from the lighting rig of the
+first build — 31 lights, 7 casters. The shipped rig has 30 (the compact room carries four tube
+fixtures instead of five) with the same seven-caster budget, the same circuit structure and the same
+finding: the cost tracks the shadow casters, not the light count. Re-running the tab on the shipped
+room reproduces the shape of the table rather than these exact milliseconds.
+
 **Results**
 
 | Configuration | Circuits on | Lights lit | Shadow casters | Shadow-pass calls | Frame time | Mean luma | Assessment |
@@ -371,48 +377,48 @@ performance work.
 
 | Step | Time | Share | What dominates |
 |---|---|---|---|
-| Surface synthesis (first surface) | 284 ms | 2.3% | the per-texel loop |
-| Structure — floor, walls, columns, roof, shutter, windows | 5 920 ms | 48.6% | mesh generation and collision shape construction |
-| Environment — sky, `WorldEnvironment`, 31 lights, dust, rain | 25 ms | 0.2% | negligible |
-| Dressing — 357 props, 53 stations, 8 layout groups, cables, signage | 5 573 ms | 45.8% | prop construction and station wiring |
-| Screens — 6 live `SubViewport`s and their materials | 104 ms | 0.9% | — |
-| Player — camera, ray, reticle, collision | 33 ms | 0.3% | — |
-| Interface — HUD, 10 panels, objective director | 240 ms | 2.0% | — |
-| **Total** | **12 179 ms** | **100%** | |
+| Surface synthesis (first surface) | 272 ms | 2.6% | the per-texel loop |
+| Structure — floor, walls, columns, roof, shutter, windows | 5 807 ms | 55.6% | mesh generation, collision shapes, and the surfaces it requests |
+| Environment — sky, `WorldEnvironment`, 30 lights, dust, rain | 39 ms | 0.4% | negligible |
+| Dressing — 169 placements, 34 stations, 4 layout groups, cables, signage | 4 038 ms | 38.7% | prop construction, station wiring, and its surfaces |
+| Screens — 5 live `SubViewport`s and their materials | 75 ms | 0.7% | — |
+| Player — camera, ray, reticle, collision | 31 ms | 0.3% | — |
+| Interface — HUD, 10 panels, objective director | 182 ms | 1.7% | — |
+| **Total** | **10 444 ms** | **100%** | |
 
-**Dressing breakdown, `GarageDressing` counters**
+**Dressing breakdown, `GarageDressing.dressing_breakdown()`**
 
 | | |
 |---|---|
-| Props placed | 357 |
-| Distinct prop kinds | 174 |
-| Authored placements | ~140 |
-| Procedural placements | ~150 (8 groups) |
-| Wall-rack placements | 22 |
-| Mesh cache hits / misses | 3 458 / 1 386 (**2.5:1 reuse**) |
-| Rejection-sampler efficiency | ~52% of attempts produce a placement |
+| Props placed by the dressing pass | 169 |
+| Props built in total (includes module payloads and suit parts) | 175 |
+| Distinct prop kinds | 130 |
+| Authored placements | 137 |
+| Procedural placements | 22 (4 groups: 6 + 5 + 6 + 5) |
+| Wall-rack placements | 10 |
+| Mesh cache hits / misses | 1 728 / 1 099 |
+| Rejection-sampler efficiency | 46% of attempts produce a placement |
 
-**Finding 7.1 — the remaining surface cost is included in the steps that need it.** Only the first
-surface is paid for in step 0; the remaining 33 are synthesised lazily inside the structure and
-dressing steps, which is why those two steps are 5–6 s each rather than the 2–3 s their geometry alone
-would take. **A quarter of the total build time is surface synthesis, spread across the two steps that
-request surfaces.**
+**Finding 7.1 — surface synthesis is 83% of the wall clock.** The first surface costs 272 ms in step
+0; the other 33 are synthesised lazily inside the structure and dressing steps. 8 698 ms of the
+10 444 ms total is texture work — so the largest single lever left is moving that per-texel loop to a
+compute shader, not reducing geometry. The earlier build of a 13 × 16.5 m room measured 71%; the
+share rose when the room shrank, because the texture cost is per *surface*, not per cubic metre.
 
-**Finding 7.2 — mesh caching is what makes 357 props affordable.** 1 386 distinct meshes serving 357
-props through 3 458 hits. Without the cache every spanner, capacitor and bolt would allocate its own
-`BoxMesh`; with it, forty spanners share one. This is the single reason a scene this dense builds in
-12 s rather than minutes, and it is also why the frame time is as low as it is — shared meshes are
-candidates for batching in a way that per-instance geometry is not.
+**Finding 7.2 — mesh caching is what makes 175 props affordable.** 1 099 distinct meshes serve 175
+placed props through 1 728 hits. Without the cache every spanner, capacitor and bolt would allocate
+its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
+is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 
-**Finding 7.3 — environment setup is free; environment *rendering* is not.** Building 31 lights, the
-sky, the SDFGI configuration and two particle systems costs 25 ms. *Rendering* SDFGI costs 9.5 ms per
+**Finding 7.3 — environment setup is free; environment *rendering* is not.** Building 30 lights, the
+sky, the SDFGI configuration and two particle systems costs 39 ms. *Rendering* SDFGI costs 9.5 ms per
 frame. Setup cost and runtime cost are unrelated here, which is worth knowing when choosing what to
 add.
 
-**Finding 7.4 — the build is dominated by geometry, and geometry is where the next optimisation
-lives.** 94% of the build is structure and dressing, and mesh-cache reuse is already at 2.5:1. The
-remaining lever is generating structure meshes as single `ArrayMesh` batches instead of hundreds of
-individual primitives, which would reduce node count as well as build time.
+**Finding 7.4 — the build is dominated by geometry-plus-texture, and the texture half is where the
+next optimisation lives.** Structure and dressing together are 94% of the build. Mesh-cache reuse is
+already 1.6:1, and the remaining lever is generating structure meshes as single `ArrayMesh` batches
+instead of hundreds of individual primitives.
 
 ---
 
@@ -444,7 +450,7 @@ individual primitives, which would reduce node count as well as build time.
 11. The per-texel composition loop is the surface-synthesis bottleneck, not the noise generation;
     moving from 512 px to 256 px halved the load time with no visible loss because tiling hides the
     missing resolution. (§1.1)
-12. Mesh caching at 2.5:1 reuse is what makes 357 props affordable. (§7.2)
+12. Mesh caching at 1.6:1 reuse is what makes 175 props affordable. (§7.2)
 13. Two-thirds of the total build is structure and dressing geometry. (§7.4)
 
 **Process findings**
@@ -475,5 +481,6 @@ individual primitives, which would reduce node count as well as build time.
 - **Frame times include the whole frame**, not the effect under test alone. The differential
   attribution is the best available without GPU timestamp queries, which Godot 4.7 does not expose
   to GDScript.
-- **Layout-sampler efficiency is reported but not statistically characterised.** ~52% acceptance from
-  rejection sampling is stated as an observation, not as a measured distribution across seeds.
+- **Layout-sampler efficiency is reported but not statistically characterised.** 46% acceptance from
+  rejection sampling (10–27 attempts per group, four groups, one seed each) is stated as an
+  observation, not as a measured distribution across seeds.

@@ -207,10 +207,11 @@ func _build_daylight() -> void:
 	add_child(skylight)
 	runtime.register_light(skylight, 0, &"daylight", 0.85)
 	# the two window shafts: spots aimed into the room, gated on the shutter so the
-	# shafts strengthen when the curtain goes up
+	# shafts strengthen when the curtain goes up. Both windows now sit at z = 2.3,
+	# one over each bench, so both shafts rake in at the same angle.
 	var shaft_data: Array = [
-		{"pos": Vector3(structure.half_w - 0.4, 2.1, 3.4), "target": Vector3(structure.half_w - 4.2, 0.9, 4.0), "energy": 2.2, "angle": 34.0},
-		{"pos": Vector3(-structure.half_w + 0.4, 2.4, -2.6), "target": Vector3(-structure.half_w + 4.0, 0.9, -1.4), "energy": 1.6, "angle": 30.0},
+		{"pos": Vector3(structure.half_w - 0.4, 2.1, 2.3), "target": Vector3(structure.half_w - 2.6, 0.9, 2.9), "energy": 2.2, "angle": 34.0},
+		{"pos": Vector3(-structure.half_w + 0.4, 2.2, 2.3), "target": Vector3(-structure.half_w + 2.4, 0.9, 2.9), "energy": 1.6, "angle": 30.0},
 	]
 	for i: int in range(shaft_data.size()):
 		var d: Dictionary = shaft_data[i]
@@ -257,12 +258,15 @@ func _build_daylight() -> void:
 
 func _build_world_a_lighting() -> void:
 	var warm: Color = Color(GameConfig.config.get("lighting", {}).get("fluorescent_color", "#ffe6bd"))
+	## Four fixtures, each one over a real wall fixture that the dressing pass also
+	## places, so the light never comes from nowhere. The fifth, a store bulb, is
+	## registered by _build_electronics_lighting() because it is a bare bulb rather
+	## than a batten.
 	var fixtures: Array = [
-		{"pos": Vector3(-structure.half_w + 2.2, structure.height - 0.45, 1.0), "energy": 3.2, "range": 8.0, "zone": &"mech"},
-		{"pos": Vector3(-structure.half_w + 2.6, structure.height - 0.45, 5.4), "energy": 2.6, "range": 7.0, "zone": &"mech"},
-		{"pos": Vector3(0.0, structure.height - 0.45, 6.4), "energy": 2.4, "range": 7.5, "zone": &"entrance"},
-		{"pos": Vector3(structure.half_w - 2.0, structure.height - 0.45, 3.6), "energy": 2.8, "range": 7.5, "zone": &"elec"},
-		{"pos": Vector3(structure.half_w - 1.9, structure.height - 0.35, -6.0), "energy": 1.8, "range": 6.0, "zone": &"store"},
+		{"pos": Vector3(-1.9, structure.height - 0.45, 1.2), "energy": 3.2, "range": 7.0, "zone": &"mech"},
+		{"pos": Vector3(1.9, structure.height - 0.45, 1.6), "energy": 2.8, "range": 7.0, "zone": &"elec"},
+		{"pos": Vector3(0.0, structure.height - 0.45, 3.5), "energy": 2.4, "range": 6.5, "zone": &"entrance"},
+		{"pos": Vector3(-1.9, structure.height - 0.45, 3.9), "energy": 2.0, "range": 6.0, "zone": &"mech"},
 	]
 	for i: int in range(fixtures.size()):
 		var f: Dictionary = fixtures[i]
@@ -288,9 +292,9 @@ func _build_world_a_lighting() -> void:
 		_zone_lights["tube%d" % i] = light
 	# the bench task spots, aimed at the surfaces rather than the room
 	var tasks: Array = [
-		{"pos": Vector3(-structure.half_w + 2.6, 2.0, 2.0), "target": Vector3(-structure.half_w + 1.6, 0.98, 2.9), "energy": 2.6, "zone": &"bench"},
-		{"pos": Vector3(-structure.half_w + 1.0, 1.95, 5.0), "target": Vector3(-structure.half_w + 1.2, 0.98, 5.4), "energy": 2.0, "zone": &"grinder"},
-		{"pos": Vector3(structure.half_w - 2.35, 1.85, 3.0), "target": Vector3(structure.half_w - 1.6, 0.94, 3.9), "energy": 1.9, "zone": &"bench_elec"},
+		{"pos": Vector3(-2.1, 2.1, 1.0), "target": Vector3(-3.55, 1.0, 1.75), "energy": 2.6, "zone": &"bench"},
+		{"pos": Vector3(-3.3, 1.9, 3.55), "target": Vector3(-3.4, 0.45, 4.45), "energy": 1.7, "zone": &"grinder"},
+		{"pos": Vector3(2.5, 1.9, 2.5), "target": Vector3(3.75, 1.0, 1.75), "energy": 1.9, "zone": &"bench_elec"},
 	]
 	for i: int in range(tasks.size()):
 		var t: Dictionary = tasks[i]
@@ -319,10 +323,10 @@ func _build_electronics_lighting() -> void:
 	## monitor glow, which is what separates the two halves of the room
 	var cool := OmniLight3D.new()
 	cool.name = "ElectronicsPool"
-	cool.position = Vector3(structure.half_w - 1.6, 1.9, 3.9)
+	cool.position = Vector3(structure.half_w - 1.4, 1.8, 1.6)
 	cool.light_color = Color("cfe4ff")
 	cool.light_energy = 1.4
-	cool.omni_range = 6.0
+	cool.omni_range = 5.5
 	cool.omni_attenuation = 1.7
 	cool.light_indirect_energy = 0.5
 	cool.shadow_enabled = false
@@ -330,7 +334,7 @@ func _build_electronics_lighting() -> void:
 	runtime.register_light(cool, 3, &"elec", 1.4)
 	var scope := OmniLight3D.new()
 	scope.name = "ScopeGlow"
-	scope.position = Vector3(structure.half_w - 2.5, 1.15, 2.4)
+	scope.position = Vector3(structure.half_w - 0.6, 1.0, -1.3)
 	scope.light_color = Color("3fd87a")
 	scope.light_energy = 0.55
 	scope.omni_range = 2.6
@@ -338,27 +342,32 @@ func _build_electronics_lighting() -> void:
 	scope.shadow_enabled = false
 	add_child(scope)
 	runtime.register_light(scope, 3, &"elec", 0.55)
+	# the bare bulb over the north-west stock corner, which used to hang in a
+	## separate store room and now hangs over the same room's shelf
 	var bulb := OmniLight3D.new()
 	bulb.name = "StoreBulb"
-	bulb.position = Vector3(structure.half_w - 1.9, structure.height - 1.2, -structure.half_l + 2.2)
+	bulb.position = Vector3(-structure.half_w + 1.3, structure.height - 0.75, -4.2)
 	bulb.light_color = Color("ffe0b0")
-	bulb.light_energy = 1.5
-	bulb.omni_range = 5.5
+	bulb.light_energy = 1.3
+	bulb.omni_range = 4.5
 	bulb.omni_attenuation = 1.6
 	bulb.shadow_enabled = false
 	add_child(bulb)
-	runtime.register_light(bulb, 3, &"store", 1.5)
+	runtime.register_light(bulb, 3, &"store", 1.3)
 
 
 func _build_assembly_lighting() -> void:
-	var centre := Vector3(0.0, 0.0, -2.2)
+	## The bay centre moved with the platform: it is (0, 0, -1.5) now, and every
+	## offset is measured against that one variable so no light is left aimed at the
+	## old 5.4 m stage.
+	var centre := Vector3(0.0, 0.0, -1.5)
 	# the reactor core light: the cyan source that spills across the brick
 	var core := OmniLight3D.new()
 	core.name = "CoreLight"
 	core.position = centre + Vector3(0.0, 0.45, 0.0)
 	core.light_color = Color(GameConfig.config.get("lighting", {}).get("core_color", "#7cf3ff"))
 	core.light_energy = 0.0
-	core.omni_range = 9.0
+	core.omni_range = 7.0
 	core.omni_attenuation = 1.35
 	core.light_volumetric_fog_energy = 2.2
 	core.light_indirect_energy = 0.8
@@ -370,14 +379,15 @@ func _build_assembly_lighting() -> void:
 	add_child(core)
 	runtime.register_light(core, 4, &"core", 3.6)
 	_zone_lights["core"] = core
-	# the key spot on the stand, warm and hard, which is the Iron Man reference
+	# the key spot on the stand, warm and hard, which is the Iron Man reference.
+	## Dropped from y = 3.6 to 2.9: this ceiling is 3.4 m, not 4.6 m.
 	var key := SpotLight3D.new()
 	key.name = "StandKey"
-	key.position = centre + Vector3(1.4, 3.6, 1.6)
+	key.position = centre + Vector3(1.2, 2.9, 1.4)
 	key.look_at_from_position(key.position, centre + Vector3(0.0, 1.2, 0.0), Vector3.UP)
 	key.spot_angle = 26.0
 	key.spot_angle_attenuation = 0.4
-	key.spot_range = 8.0
+	key.spot_range = 7.0
 	key.spot_attenuation = 1.6
 	key.light_color = Color("ffdcae")
 	key.light_energy = 0.0
@@ -392,11 +402,11 @@ func _build_assembly_lighting() -> void:
 	# the rim light from behind, separating the silhouette from the wall
 	var rim := SpotLight3D.new()
 	rim.name = "StandRim"
-	rim.position = centre + Vector3(-1.8, 3.2, -2.6)
+	rim.position = centre + Vector3(-1.4, 2.5, -1.9)
 	rim.look_at_from_position(rim.position, centre + Vector3(0.0, 1.4, 0.2), Vector3.UP)
 	rim.spot_angle = 30.0
 	rim.spot_angle_attenuation = 0.6
-	rim.spot_range = 9.0
+	rim.spot_range = 8.0
 	rim.spot_attenuation = 1.5
 	rim.light_color = Color("9fd8ff")
 	rim.light_energy = 0.0
@@ -404,28 +414,28 @@ func _build_assembly_lighting() -> void:
 	rim.shadow_enabled = false
 	add_child(rim)
 	runtime.register_light(rim, 4, &"assembly", 3.2)
-	# the hologram table's own pool
+	# the hologram table's own pool, on the table's actual position
 	var holo := OmniLight3D.new()
 	holo.name = "HoloPool"
-	holo.position = centre + Vector3(-3.6, 1.1, 1.9)
+	holo.position = Vector3(-2.55, 1.1, -0.1)
 	holo.light_color = Color(GameConfig.config.get("lighting", {}).get("holo_color", "#57e6ff"))
 	holo.light_energy = 0.0
-	holo.omni_range = 5.0
+	holo.omni_range = 4.0
 	holo.omni_attenuation = 1.8
 	holo.light_volumetric_fog_energy = 1.6
 	holo.shadow_enabled = false
 	add_child(holo)
 	runtime.register_light(holo, 4, &"holo", 2.6)
-	# the four perimeter pods, unshadowed, cheap, and the reason the platform rim
-	## reads as machined rather than flat
+	# the four perimeter pods, on the platform rim: r = 1.6 against a 1.45 m deck,
+	## not 2.5, which would have put them inside the player's walkway
 	for i: int in range(4):
 		var a: float = TAU_E * float(i) / 4.0 + 0.4
 		var pod := OmniLight3D.new()
 		pod.name = "PlatformPod%d" % i
-		pod.position = centre + Vector3(cos(a) * 2.5, 0.55, sin(a) * 2.5)
+		pod.position = centre + Vector3(cos(a) * 1.6, 0.5, sin(a) * 1.6)
 		pod.light_color = Color("ffd9a0")
 		pod.light_energy = 0.0
-		pod.omni_range = 3.4
+		pod.omni_range = 3.0
 		pod.omni_attenuation = 2.0
 		pod.shadow_enabled = false
 		add_child(pod)
@@ -433,11 +443,11 @@ func _build_assembly_lighting() -> void:
 	# the gantry downlight
 	var gantry := SpotLight3D.new()
 	gantry.name = "GantryLight"
-	gantry.position = centre + Vector3(0.0, structure.height - 1.1, 0.0)
-	gantry.look_at_from_position(gantry.position, centre + Vector3(0.0, 0.3, 0.0), Vector3.UP)
+	gantry.position = centre + Vector3(0.0, structure.height - 1.0, 0.0)
+	gantry.look_at_from_position(gantry.position, centre + Vector3(0.0, 0.3, 0.22), Vector3.UP)
 	gantry.spot_angle = 42.0
 	gantry.spot_angle_attenuation = 0.7
-	gantry.spot_range = 7.0
+	gantry.spot_range = 6.0
 	gantry.spot_attenuation = 1.3
 	gantry.light_color = Color("e8f4ff")
 	gantry.light_energy = 0.0
@@ -447,10 +457,10 @@ func _build_assembly_lighting() -> void:
 
 
 func _build_testing_lighting() -> void:
-	var centre := Vector3(2.4, 0.0, -structure.half_l + 2.2)
+	var centre := Vector3(2.15, 0.0, -3.6)
 	var panel := OmniLight3D.new()
 	panel.name = "ConsoleGlow"
-	panel.position = centre + Vector3(-1.5, 1.1, 0.3)
+	panel.position = centre + Vector3(-1.0, 1.1, 0.5)
 	panel.light_color = Color("ffb347")
 	panel.light_energy = 0.0
 	panel.omni_range = 3.2
@@ -460,7 +470,7 @@ func _build_testing_lighting() -> void:
 	runtime.register_light(panel, 4, &"testing", 1.2)
 	var screen := OmniLight3D.new()
 	screen.name = "TestScreenGlow"
-	screen.position = centre + Vector3(1.6, 1.6, -0.4)
+	screen.position = centre + Vector3(0.6, 1.3, -1.0)
 	screen.light_color = Color("4fd8ff")
 	screen.light_energy = 0.0
 	screen.omni_range = 4.0
@@ -485,13 +495,13 @@ func _build_dust() -> void:
 	dust.preprocess = 6.0
 	dust.speed_scale = 1.0
 	dust.local_coords = false
-	dust.visibility_aabb = AABB(Vector3(-9.0, -0.5, -10.0), Vector3(18.0, 5.5, 20.0))
+	dust.visibility_aabb = AABB(Vector3(-6.0, -0.5, -7.0), Vector3(12.0, 4.5, 14.0))
 	dust.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	dust.fixed_fps = 30.0
 	dust.interpolate = true
 	var mat := ParticleProcessMaterial.new()
 	mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	mat.emission_box_extents = Vector3(7.5, 2.4, 9.0)
+	mat.emission_box_extents = Vector3(3.6, 1.5, 4.6)
 	mat.direction = Vector3(0.0, 0.02, 0.0)
 	mat.spread = 180.0
 	mat.initial_velocity_min = 0.0
@@ -504,10 +514,17 @@ func _build_dust() -> void:
 	mat.scale_min = 0.004
 	mat.scale_max = 0.014
 	mat.color = Color(1.0, 0.94, 0.82, 0.55)
-	mat.alpha_curve1 = 0.15
-	mat.alpha_curve2 = 0.85
-	mat.alpha_curve_min = 0.0
-	mat.alpha_curve_max = 0.6
+	# ParticleProcessMaterial takes a CurveTexture, not two floats: the old
+	# alpha_curve1/alpha_curve2 writes were both invalid and silently dropped, so
+	# the motes popped in and out instead of fading. The ramp is explicit now.
+	var fade := Curve.new()
+	fade.add_point(Vector2(0.0, 0.0))
+	fade.add_point(Vector2(0.18, 1.0))
+	fade.add_point(Vector2(0.82, 1.0))
+	fade.add_point(Vector2(1.0, 0.0))
+	var fade_tex := CurveTexture.new()
+	fade_tex.curve = fade
+	mat.alpha_curve = fade_tex
 	mat.turbulence_enabled = true
 	mat.turbulence_noise_strength = 0.4
 	mat.turbulence_noise_scale = 24.0
@@ -541,13 +558,13 @@ func _build_rain() -> void:
 	rain.amount = 1400
 	rain.lifetime = 1.4
 	rain.preprocess = 1.0
-	rain.visibility_aabb = AABB(Vector3(-14.0, -2.0, -14.0), Vector3(28.0, 14.0, 28.0))
+	rain.visibility_aabb = AABB(Vector3(-12.0, -2.0, -12.0), Vector3(24.0, 12.0, 24.0))
 	rain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rain.local_coords = false
 	rain.fixed_fps = 60.0
 	var rm := ParticleProcessMaterial.new()
 	rm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	rm.emission_box_extents = Vector3(13.0, 0.5, 13.0)
+	rm.emission_box_extents = Vector3(9.0, 0.5, 9.0)
 	rm.direction = Vector3(0.0, -1.0, 0.0)
 	rm.spread = 4.0
 	rm.initial_velocity_min = 9.0

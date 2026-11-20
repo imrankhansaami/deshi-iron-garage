@@ -106,7 +106,7 @@ technical content is what it is.
 
 ## 6. Objectives
 
-**O1.** Build a single detailed indoor garage, 13 m × 16.5 m × 4.6 m, across five visually distinct
+**O1.** Build a single detailed indoor garage, 8.5 m × 10.5 m × 3.4 m, across five visually distinct
 areas, with no external 3D model, texture or audio assets.
 
 **O2.** Implement a physically based material system whose metallic, roughness, occlusion and normal

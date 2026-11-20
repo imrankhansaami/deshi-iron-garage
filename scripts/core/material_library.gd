@@ -249,7 +249,15 @@ func pcb() -> StandardMaterial3D:
 
 
 func glass_smoky() -> StandardMaterial3D:
-	return surface("glass_smoky", {"transparency": true, "double_sided": true, "albedo_mix": "#c8d0d8"})
+	# The pane this returns is used by both windows, the holo table top and the CRT
+	# face. It had transparency enabled but an opaque albedo (alpha 1.0), so every
+	# "glass" surface in the project rendered as a solid streaky grey panel — the
+	# windows looked like green marble, which is what the captures showed. A smoky
+	# pane wants alpha around a quarter and no shadow contribution.
+	return surface("glass_smoky", {
+		"transparency": true, "double_sided": true,
+		"albedo_mix": Color(0.80, 0.85, 0.90, 0.24),
+	})
 
 
 func fabric() -> StandardMaterial3D:
@@ -365,10 +373,10 @@ func energy_core_material(params: Dictionary = {}) -> ShaderMaterial:
 func holo_floor_material() -> ShaderMaterial:
 	return shader_material("res://shaders/holo_grid.gdshader", {
 		"grid_color": Color("4fd8ff"),
-		"cell_size": 0.5,
+		"cell_size": 0.25,
 		"line_width": 0.02,
 		"sweep_speed": 0.28,
-		"fade_radius": 3.2,
+		"fade_radius": 1.0,
 		"pulse": 1.0,
 	})
 

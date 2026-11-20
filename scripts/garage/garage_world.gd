@@ -225,7 +225,6 @@ func _build_screens() -> void:
 	_live_specs["crt"] = ScreenContent.crt_terminal()
 	_live_specs["diag0"] = ScreenContent.diagnostic_log(0)
 	_live_specs["diag1"] = ScreenContent.diagnostic_log(1)
-	_live_specs["diag2"] = ScreenContent.diagnostic_log(2)
 	_live_specs["test"] = ScreenContent.prototype_trace()
 	for id: String in _live_specs:
 		baker.live(id, _live_specs[id])
@@ -297,9 +296,13 @@ func _build_player() -> void:
 	## _ready time, which aborts the build coroutine.
 	player = Player.new()
 	player.name = "Player"
-	var start: Array = GameConfig.config.get("sightlines", {}).get("player_start", [0.0, 1.1, 11.4])
+	var start: Array = GameConfig.config.get("sightlines", {}).get("player_start", [0.0, 1.1, 8.6])
 	player.position = Vector3(float(start[0]), float(start[1]), float(start[2]))
-	player.rotation.y = PI
+	# facing the shop: the courtyard is at +z, the shutter at +half_l, so looking
+	## into the building is the player's default -z forward, i.e. yaw 0. This
+	## matches reset_position(), which has always re-entered at yaw 0 — the previous
+	## PI here faced the boundary wall.
+	player.rotation.y = 0.0
 
 	var cam := Camera3D.new()
 	cam.name = "Camera3D"
@@ -389,6 +392,8 @@ func build_report() -> Dictionary:
 		"lights": runtime.lights.size(),
 		"screens": runtime.screens.size(),
 		"mesh_cache": ShapeKit.cache_stats(),
+		"dressing": dressing.dressing_breakdown(),
+		"layouts": dressing.layout_stats(),
 	}
 
 
@@ -524,17 +529,19 @@ var _tour_cam: Camera3D
 
 ## The tour waypoints: the five areas in the order the experience visits them,
 ## each with a dwell so the camera actually pauses on the thing it is showing.
+## Rewritten for the 8.5 x 10.5 m plan: the old path walked a 16 m room, and half
+## of its waypoints are now behind the north wall or inside the counter.
 const TOUR_PATH: Array = [
-	{"pos": Vector3(0.0, 1.9, 12.4), "look": Vector3(0.0, 2.2, 8.0), "dwell": 2.4, "caption": "the shutter, half open"},
-	{"pos": Vector3(0.0, 1.7, 6.6), "look": Vector3(-4.0, 1.4, 2.0), "dwell": 2.6, "caption": "entrance and switchboard"},
-	{"pos": Vector3(-3.4, 1.6, 3.0), "look": Vector3(-6.0, 1.2, 2.6), "dwell": 3.0, "caption": "the mechanical bench"},
-	{"pos": Vector3(-3.0, 1.6, -0.6), "look": Vector3(-5.4, 0.9, 1.4), "dwell": 2.6, "caption": "salvaged engine stock"},
-	{"pos": Vector3(2.6, 1.6, 4.2), "look": Vector3(5.4, 1.1, 3.6), "dwell": 2.8, "caption": "the electronics bench"},
-	{"pos": Vector3(1.4, 1.7, -0.4), "look": Vector3(0.0, 1.4, -2.2), "dwell": 3.4, "caption": "the assembly stage"},
-	{"pos": Vector3(-2.6, 1.6, -1.4), "look": Vector3(0.0, 1.3, -2.2), "dwell": 3.2, "caption": "exosuit MK-I"},
-	{"pos": Vector3(-3.2, 1.5, -3.6), "look": Vector3(-3.6, 1.0, -4.1), "dwell": 2.4, "caption": "the holographic table"},
-	{"pos": Vector3(1.2, 1.6, -5.6), "look": Vector3(2.4, 1.2, -6.4), "dwell": 2.6, "caption": "the testing corner"},
-	{"pos": Vector3(0.0, 2.4, 2.0), "look": Vector3(0.0, 1.3, -2.2), "dwell": 4.0, "caption": "both worlds, one room"},
+	{"pos": Vector3(0.0, 1.8, 8.2), "look": Vector3(0.0, 2.2, 5.3), "dwell": 2.4, "caption": "the shutter, half open"},
+	{"pos": Vector3(0.0, 1.7, 4.0), "look": Vector3(-4.0, 1.5, 3.4), "dwell": 2.6, "caption": "entrance and switchboard"},
+	{"pos": Vector3(-1.8, 1.6, 2.2), "look": Vector3(-3.9, 1.05, 1.7), "dwell": 3.0, "caption": "the mechanical bench"},
+	{"pos": Vector3(-2.2, 1.6, -0.6), "look": Vector3(-3.9, 0.9, -1.8), "dwell": 2.6, "caption": "salvaged engine stock"},
+	{"pos": Vector3(1.6, 1.55, 3.3), "look": Vector3(3.8, 1.2, 1.9), "dwell": 2.8, "caption": "the electronics bench"},
+	{"pos": Vector3(1.2, 1.7, -0.3), "look": Vector3(0.0, 1.4, -1.5), "dwell": 3.4, "caption": "the assembly stage"},
+	{"pos": Vector3(-1.3, 1.55, -0.2), "look": Vector3(0.0, 1.3, -1.5), "dwell": 3.2, "caption": "exosuit MK-I"},
+	{"pos": Vector3(-1.8, 1.5, -1.1), "look": Vector3(-2.55, 1.0, -0.1), "dwell": 2.4, "caption": "the holographic table"},
+	{"pos": Vector3(1.1, 1.6, -2.3), "look": Vector3(2.15, 1.2, -3.6), "dwell": 2.6, "caption": "the testing corner"},
+	{"pos": Vector3(0.0, 2.35, 2.6), "look": Vector3(0.0, 1.2, -1.8), "dwell": 4.0, "caption": "both worlds, one room"},
 ]
 
 
@@ -552,7 +559,7 @@ func stop_tour() -> void:
 	tour_active = false
 	if player != null:
 		player.set_ui_owned(false)
-		player.teleport_to(Vector3(0.0, 0.05, 6.0), PI)
+		player.teleport_to(Vector3(0.0, 0.05, 4.0), PI)
 
 
 func _tour_step(delta: float) -> void:
@@ -599,21 +606,21 @@ var _tour_caption_seen: Dictionary = {}
 ## numbers rather than by a description of the code.
 
 const CAP_SHOTS: Array = [
-	{"name": "01_exterior", "pos": Vector3(0.0, 1.9, 13.4), "look": Vector3(0.0, 2.6, 8.0)},
-	{"name": "02_entrance", "pos": Vector3(0.0, 1.7, 7.2), "look": Vector3(-1.6, 1.5, 2.0)},
-	{"name": "03_mechanical", "pos": Vector3(-2.6, 1.7, 3.4), "look": Vector3(-6.2, 1.3, 2.8)},
-	{"name": "04_engine_parts", "pos": Vector3(-3.6, 1.5, 1.2), "look": Vector3(-5.6, 1.05, 1.5)},
-	{"name": "05_electronics", "pos": Vector3(2.2, 1.45, 3.2), "look": Vector3(5.4, 1.25, 4.1)},
-	{"name": "05b_desk_close", "pos": Vector3(3.6, 1.35, 4.0), "look": Vector3(5.6, 1.2, 4.2)},
-	{"name": "06_assembly_wide", "pos": Vector3(0.0, 2.0, 3.0), "look": Vector3(0.0, 1.4, -2.2)},
-	{"name": "07_suit_close", "pos": Vector3(-1.5, 1.6, -0.4), "look": Vector3(0.0, 1.35, -2.2)},
-	{"name": "08_holo_table", "pos": Vector3(-2.2, 1.6, -2.6), "look": Vector3(-3.6, 1.0, -4.1)},
-	{"name": "09_testing", "pos": Vector3(0.4, 1.7, -5.0), "look": Vector3(2.4, 1.2, -6.4)},
-	{"name": "10_final_garage", "pos": Vector3(0.0, 2.5, 2.2), "look": Vector3(0.0, 1.3, -2.2)},
-	# The overview must be inside the room: a camera at z = 9.2 with half_l = 8.25
-	# sits behind the south wall, which is what the first attempt captured — a full
-	# frame of exterior plaster. Room extents are x ±6.5, z ±8.25.
-	{"name": "11_overview_high", "pos": Vector3(-4.4, 3.7, 6.6), "look": Vector3(1.6, 0.7, -3.0)},
+	{"name": "01_exterior", "pos": Vector3(0.0, 1.7, 8.6), "look": Vector3(0.0, 2.85, 5.4)},
+	{"name": "02_entrance", "pos": Vector3(0.0, 1.7, 4.2), "look": Vector3(-2.4, 1.4, 2.6)},
+	{"name": "03_mechanical", "pos": Vector3(-1.9, 1.7, 2.9), "look": Vector3(-3.95, 1.25, 1.9)},
+	{"name": "04_engine_parts", "pos": Vector3(-2.75, 1.5, 1.15), "look": Vector3(-3.95, 1.05, 1.3)},
+	{"name": "05_electronics", "pos": Vector3(1.6, 1.5, 3.3), "look": Vector3(3.8, 1.25, 2.0)},
+	{"name": "05b_desk_close", "pos": Vector3(2.9, 1.35, 1.3), "look": Vector3(3.95, 1.05, 1.2)},
+	{"name": "06_assembly_wide", "pos": Vector3(0.0, 1.85, 2.4), "look": Vector3(0.0, 1.3, -1.5)},
+	{"name": "07_suit_close", "pos": Vector3(-2.3, 1.6, 0.55), "look": Vector3(0.0, 1.25, -1.5)},
+	{"name": "08_holo_table", "pos": Vector3(-1.35, 1.55, 1.5), "look": Vector3(-2.6, 0.9, -0.1)},
+	{"name": "09_testing", "pos": Vector3(0.55, 1.7, -2.7), "look": Vector3(2.15, 1.2, -3.6)},
+	{"name": "10_final_garage", "pos": Vector3(0.0, 2.35, 2.4), "look": Vector3(0.0, 1.2, -1.7)},
+	# The overview must be inside the room: the first attempt put a camera at
+	# z = 9.2 against a half_l of 8.25, which sat behind the south wall and captured
+	# a full frame of exterior plaster. Room extents are now x ±4.25, z ±5.25.
+	{"name": "11_overview_high", "pos": Vector3(-3.3, 2.95, 4.4), "look": Vector3(1.5, 0.6, -2.4)},
 ]
 
 var _capturing: bool = false

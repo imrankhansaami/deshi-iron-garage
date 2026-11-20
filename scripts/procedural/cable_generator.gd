@@ -321,9 +321,15 @@ static func _bounds(path: PackedVector3Array, radius: float) -> AABB:
 
 ## Convenience: builds the mesh and returns a ready MeshInstance3D.
 func make_node(params: Dictionary, name: String = "Cable") -> MeshInstance3D:
+	## Bundles go through generate_bundle(); single wires through generate(). This
+	## dispatch was missing, and the three loom call sites — the switchboard loom,
+	## the workstation loom and the IPS leads — pass {"wires": [...]}, which
+	## generate() does not read. It fell back to its defaults, so each "loom"
+	## became one cable from (0,0,0) to (1,1,1): the loose diagonal cable hanging
+	## through the middle of the room in every capture, in three colours.
 	var mi := MeshInstance3D.new()
 	mi.name = name
-	mi.mesh = generate(params)
+	mi.mesh = generate_bundle(params) if params.has("wires") else generate(params)
 	var mat: Material = params.get("material", null)
 	if mat != null:
 		mi.material_override = mat

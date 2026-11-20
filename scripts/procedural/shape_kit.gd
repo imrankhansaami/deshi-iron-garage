@@ -125,8 +125,15 @@ static func _make_torus(radius: float, tube: float, rings: int, seg: int) -> Mes
 
 
 static func plane(size: Vector2, mat: Material = null, name: String = "Plane") -> MeshInstance3D:
+	## An upright plane. PlaneMesh's native orientation is XZ, facing +Y, so every
+	## face built by this helper used to lie flat like a table: the garage signboard
+	## was a horizontal sheet of artwork at lintel height, which is why the captures
+	## showed a stripe of brick where the shop name should be. The mesh orientation
+	## is set here rather than a node rotation, because callers set node rotations
+	## themselves and would have overridden it.
 	var pm := PlaneMesh.new()
 	pm.size = size
+	pm.orientation = PlaneMesh.FACE_Z
 	pm.subdivide_width = 0
 	pm.subdivide_depth = 0
 	var mi := MeshInstance3D.new()

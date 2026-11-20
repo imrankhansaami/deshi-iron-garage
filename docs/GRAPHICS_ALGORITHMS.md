@@ -134,9 +134,9 @@ visible seam on every repeat.
 
 This is the part that took a rendered screenshot to get right, and it is worth stating as a finding.
 
-Primitive meshes in Godot carry 0..1 UVs. Scaling a `BoxMesh` to 13 m and applying a texture therefore
-stretches exactly **one** texture repeat across the whole wall. The first render of the garage had a
-single brick course painted over a 13 m elevation, which read as grey camouflage.
+Primitive meshes in Godot carry 0..1 UVs. Scaling a `BoxMesh` to span a whole wall and applying a
+texture therefore stretches exactly **one** texture repeat across it. The first render of the garage had
+a single brick course painted over a 13 m elevation, which read as grey camouflage.
 
 The solution has two halves.
 
@@ -514,8 +514,8 @@ that darkens distant sources.
 
 ### 8.1 Mesh caching
 
-`ShapeKit` keys every primitive on its dimensions and reuses the mesh. The garage builds 352 props
-from **1 386 distinct meshes** with **3 458 cache hits** — a 2.5:1 reuse ratio, which is the difference
+`ShapeKit` keys every primitive on its dimensions and reuses the mesh. The garage builds 175 props
+from **1 099 distinct meshes** with **1 728 cache hits** — a 1.6:1 reuse ratio, which is the difference
 between a scene that runs on integrated graphics and one that does not.
 
 ### 8.2 Generators rather than primitives
@@ -533,7 +533,7 @@ Where a primitive is not enough, the shape is generated from parameters:
   throughout both worlds.
 
 This is the difference between "a bottle prop" and "a bottle generator", and it is why the catalogue
-can reach 174 prop kinds in four files.
+reaches 130 prop kinds in four files.
 
 ### 8.3 Three-tier placement
 

@@ -580,8 +580,11 @@ func _build_hologram_content(volume: Node3D) -> void:
 		ring.position = Vector3(0.0, 0.35 + float(i) * 0.28, 0.0)
 		volume.add_child(ring)
 		hologram_materials.append(ring.material_override as ShaderMaterial)
-	# the projected floor grid
-	var grid: MeshInstance3D = ShapeKit.disc(1.6, 0.01, ML.holo_floor_material(), "HoloGrid", 40)
+	# the projected floor grid. It was drawn at 1.6 m radius against a 0.72 m table,
+	# so the grid hung 0.9 m past the table rim on every side as a glowing plane at
+	# ankle height — the "bathtub of light" visible in the assembly captures. It is
+	# sized to the table now.
+	var grid: MeshInstance3D = ShapeKit.disc(0.62, 0.01, ML.holo_floor_material(), "HoloGrid", 40)
 	grid.position = Vector3(0.0, -0.02, 0.0)
 	volume.add_child(grid)
 	# a miniature suit silhouette built from the same part offsets
@@ -670,6 +673,18 @@ func set_hologram_visible(on: bool, duration: float = 1.1) -> void:
 # Exosuit and assembly
 # ===========================================================================
 
+## Node3D has no modulate property — the suit parts are Node3D roots, so the
+## assembly's fade passes go through the geometry instance's own transparency.
+## Before this, every `n.modulate = ...` in the runtime raised a script error and
+## the parts simply popped in at full opacity.
+func _set_part_alpha(node: Node3D, alpha: float) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var t: float = clampf(1.0 - alpha, 0.0, 1.0)
+	for child: Node in node.find_children("*", "GeometryInstance3D", true, false):
+		(child as GeometryInstance3D).transparency = t
+
+
 func install_suit(root: Node3D, parts: Dictionary, stand: Node3D, platform: Node3D, reactor_cradle: Node3D, robot_arms: Array) -> void:
 	suit_root = root
 	suit_parts = parts
@@ -682,7 +697,7 @@ func install_suit(root: Node3D, parts: Dictionary, stand: Node3D, platform: Node
 		var n: Node3D = parts[id] as Node3D
 		n.set_meta("home_position", n.position)
 		n.visible = false
-		n.modulate = Color(1, 1, 1, 0.0)
+		_set_part_alpha(n, 0.0)
 	var stage: int = int(GameState.assembly_stage)
 	if stage >= int(AssemblyStage.FRAME):
 		_install_moduleImmediate("frame_module")
@@ -701,7 +716,7 @@ func _install_moduleImmediate(module_id: String) -> void:
 		if n == null:
 			continue
 		n.visible = true
-		n.modulate = Color(1, 1, 1, 1)
+		_set_part_alpha(n, 1.0)
 		n.position = n.get_meta("home_position") as Vector3
 		n.rotation = Vector3.ZERO
 		n.scale = Vector3.ONE
@@ -725,13 +740,13 @@ func install_module(module_id: String) -> void:
 		var start: Vector3 = home + Vector3(0.9, 0.55, 0.75)
 		n.position = start
 		n.rotation = Vector3(0.4, 0.7, 0.3)
-		n.modulate = Color(1, 1, 1, 0.0)
+		_set_part_alpha(n, 0.0)
 		var tw := create_tween()
 		tw.set_parallel(true)
 		tw.chain().tween_interval(delay)
 		tw.tween_property(n, "position", home, 0.62).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		tw.tween_property(n, "rotation", Vector3.ZERO, 0.62).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		tw.tween_property(n, "modulate:a", 1.0, 0.3)
+		tw.tween_method(_set_part_alpha.bind(n), 0.0, 1.0, 0.3)
 		_tweens.append(tw)
 		delay += 0.13
 		AudioBank.play_at("metal_thunk", n.global_position, -8.0, 0.9 + delay * 0.1)
@@ -813,11 +828,11 @@ func run_assembly() -> void:
 		var home: Vector3 = n.get_meta("home_position") as Vector3
 		n.visible = true
 		n.position = home + Vector3(0.0, 0.35, 0.0)
-		n.modulate = Color(1, 1, 1, 0.0)
+		_set_part_alpha(n, 0.0)
 		var tw := create_tween()
 		tw.set_parallel(true)
 		tw.tween_property(n, "position", home, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tw.tween_property(n, "modulate:a", 1.0, 0.22)
+		tw.tween_method(_set_part_alpha.bind(n), 0.0, 1.0, 0.22)
 		_tweens.append(tw)
 		AudioBank.play_at("metal_clank", n.global_position, -10.0, 1.1 + float(i) * 0.02)
 		if not arms.is_empty():

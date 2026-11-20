@@ -53,8 +53,11 @@ func dress() -> void:
 	_procedural_layouts()
 	_wall_racks()
 	_cables()
-	_signage()
 	_ambience_props()
+	# last, so it sees crates placed by any area
+	_register_component_crates()
+	# signage after everything: it looks up props by name
+	_signage()
 
 
 # ===========================================================================
@@ -103,6 +106,12 @@ func _station(node: Node3D, kind: Station.Kind, pos: Vector3 = Vector3.ZERO, opt
 	s.max_distance = float(opts.get("distance", 3.4))
 	if node != null:
 		node.add_child(s)
+		# fans are registered here rather than at their call sites, because a fan
+		# station is useless without a rotor in the runtime's spin list: the switch
+		# flipped, the log line printed, and the blades stood still.
+		var kind_value: int = int(kind)
+		if kind_value == int(Station.Kind.FAN_CEILING) or kind_value == int(Station.Kind.FAN_PEDESTAL) or kind_value == int(Station.Kind.FAN_TABLE):
+			runtime.register_fan(node, String(opts.get("fan_key", "")), float(opts.get("rpm", 42.0)))
 		var b: AABB = ShapeKit.node_bounds(node)
 		if b.has_volume():
 			var shape: CollisionShape3D = ShapeKit.col_box(b.size + Vector3.ONE * 0.1)
@@ -159,7 +168,12 @@ func _spot(node: Node3D, pos: Vector3, target: Vector3, circuit: int, zone: Stri
 # ===========================================================================
 
 func _area_entrance() -> void:
+	## Compact entrance. Everything here is measured from the structure's own
+	## half-extents so it tracks the preset dimensions instead of assuming them, and
+	## the courtyard props sit in the 4.6 m of yard rather than out past the boundary
+	## wall where the earlier 6 m yard put them.
 	var half_l: float = structure.half_l
+	var half_w: float = structure.half_w
 	# the shutter station is the first interaction in the experience
 	var shutter: Node3D = structure.get_node_or_null("Shutter")
 	if shutter != null:
@@ -168,58 +182,57 @@ func _area_entrance() -> void:
 			"area": "entrance", "title": "Rolling shutter",
 			"desc": "The corrugated curtain that keeps the monsoon out. Half-down when you arrive, because the inventor slept in the workshop again.",
 			"lore": "The slats are individual geometry: as the curtain lifts, each one curls around the barrel instead of sliding through the lintel.",
-			"spec": [["mechanism", "manual chain drive"], ["curtain", "26 slats"], ["travel", "2.9 m"], ["padlock", "still on the rail"]],
-			"prompt": "Press E to roll the shutter", "sfx": "latch", "distance": 5.0,
+			"spec": [["mechanism", "manual chain drive"], ["curtain", "20 slats"], ["travel", "2.25 m"], ["padlock", "still on the rail"]],
+			"prompt": "Press E to roll the shutter", "sfx": "latch", "distance": 4.0,
 		})
-	# the signboard over the shutter
-	var sign: Node3D = _place("signboard", Vector3(0.0, 3.55, half_l + 0.16), Vector3.ZERO, {"width": 3.2, "height": 0.72})
+	# the signboard over the shutter. Raised from 2.78 to 2.95: at 2.78 its bottom
+	# third sat behind the shutter head beam, which is 3 cm prouder than the board.
+	var sign: Node3D = _place("signboard", Vector3(0.0, 2.95, half_l + 0.14), Vector3.ZERO, {"width": 2.5, "height": 0.6})
 	_station(sign, Station.Kind.SIGN, Vector3.ZERO, {
 		"area": "entrance", "title": "Garage signboard",
 		"desc": "Hand-painted on a sheet of tin: the shop name in Bangla, the tagline underneath, and a phone number that is really a mobile number.",
 		"spec": [["script", "Bengali, Noto Sans Bengali"], ["medium", "house paint on tin"], ["repainted", "three times"]],
-		"sfx": "", "distance": 8.0,
+		"sfx": "", "distance": 7.0,
 	})
-	# the courtyard and its clutter
-	_place("bicycle", Vector3(-structure.half_w + 1.6, 0.0, half_l + 2.6), Vector3(0.0, 0.5, 0.0))
-	_place("wheel_rickshaw", Vector3(structure.half_w - 1.4, 0.0, half_l + 1.8), Vector3(0.0, 0.3, 0.0))
-	_place("crate_stack", Vector3(structure.half_w - 2.4, 0.0, half_l + 3.0), Vector3(0.0, -0.4, 0.0), {"count": 4})
-	_place("scrap_bin", Vector3(-structure.half_w + 3.4, 0.0, half_l + 3.6), Vector3(0.0, 0.9, 0.0))
-	_place("tubewell_bucket", Vector3(structure.half_w - 0.9, 0.0, half_l + 0.9))
-	_place("sandals", Vector3(-0.9, 0.0, half_l - 0.35), Vector3(0.0, 0.4, 0.0))
-	_place("sandals", Vector3(1.1, 0.0, half_l - 0.5), Vector3(0.0, -0.7, 0.0))
-	_place("tea_stall_box", Vector3(-structure.half_w + 4.6, 0.0, half_l + 4.2), Vector3(0.0, 0.2, 0.0))
-	# the interior entrance strip: boxes, a stool, the incoming cable
-	_place("storage_box", Vector3(-structure.half_w + 1.2, 0.0, half_l - 1.0), Vector3(0.0, 0.3, 0.0))
-	_place("wooden_stool", Vector3(structure.half_w - 1.6, 0.0, half_l - 1.4))
-	_place("sack", Vector3(-structure.half_w + 2.0, 0.0, half_l - 0.6), Vector3(0.0, 0.6, 0.0))
-	_place("bicycle_chain", Vector3(structure.half_w - 2.2, 0.9, half_l - 0.9), Vector3(0.0, 0.0, 1.4))
-	_place("wall_socket", Vector3(structure.half_w - 0.2, 1.35, half_l - 1.2), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("switchboard", Vector3(-structure.half_w + 0.35, 1.75, half_l - 1.6), Vector3(0.0, PI * 0.5, 0.0))
-	# the switchboard is the power puzzle's object
-	var board: Node3D = structure.get_node_or_null("Switchboard")
-	if board == null:
-		for child: Node in get_children():
-			if String(child.name).contains("switchboard"):
-				board = child as Node3D
-				break
-	if board != null:
-		_station(board, Station.Kind.SWITCHBOARD, Vector3.ZERO, {
-			"area": "entrance", "title": "Main switchboard",
-			"desc": "The distribution board that feeds the whole garage. The main switch is down: the workshop has been running off one borrowed circuit, and it finally gave up.",
-			"lore": "Restoring power here brings up the tube lights, the bench lamps, the workstation, the fans and the reactor zone in sequence — real light nodes, not a material swap.",
-			"spec": [["supply", "230 V / 50 Hz"], ["incoming", "weather-proof gland"], ["MCBs", "5 ways"], ["main", "63 A switch disconnector"]],
-			"prompt": "Press E to work the main switch", "sfx": "switch_throw", "distance": 3.0,
-		})
-	# the MCB row is separately interactive, for the circuit toggles
-	for mcb_host: Node in get_children():
-		if String(mcb_host.name) == "McbRow":
-			_station(mcb_host, Station.Kind.MCB, Vector3.ZERO, {
-				"area": "entrance", "title": "MCB bank", "circuit": 2,
-				"desc": "The miniature circuit breakers. Each way feeds a different half of the workshop.",
-				"spec": [["ways", "5"], ["rating", "6 A / C-curve"]],
-				"prompt": "Press E to isolate this circuit", "sfx": "switch_throw",
-			})
-			break
+	# the courtyard: three props, because 8.5 m of frontage holds three
+	var bicycle: Node3D = _place("bicycle", Vector3(-half_w + 1.3, 0.0, half_l + 1.9), Vector3(0.0, 0.5, 0.0), {"scale": 0.95})
+	_station(bicycle, Station.Kind.PART, Vector3.ZERO, {
+		"area": "exterior", "title": "Workshop bicycle",
+		"desc": "The spare bicycle. It does not belong to anyone in particular and it is used by everyone.",
+		"spec": [["wheels", "26 inch, wire spoked"], ["purpose", "spares and short errands"]],
+		"sfx": "metal_tink", "distance": 2.8,
+	})
+	_place("wheel_rickshaw", Vector3(half_w - 1.1, 0.34, half_l + 1.6), Vector3(0.0, 0.3, 0.0), {"radius": 0.34})
+	_place("crate_stack", Vector3(half_w - 2.0, 0.0, half_l + 2.6), Vector3(0.0, -0.4, 0.0), {"count": 3})
+	_place("scrap_bin", Vector3(-half_w + 2.6, 0.0, half_l + 2.9), Vector3(0.0, 0.9, 0.0), {"w": 0.7, "h": 0.45})
+	_place("sandals", Vector3(-0.7, 0.0, half_l - 0.3), Vector3(0.0, 0.4, 0.0))
+	_place("water_bucket", Vector3(half_w - 0.6, 0.0, half_l - 0.5))
+	# the interior entrance strip
+	var stool: Node3D = _place("wooden_stool", Vector3(half_w - 1.5, 0.0, half_l - 1.7))
+	_station(stool, Station.Kind.EVERYDAY, Vector3.ZERO, {
+		"area": "entrance", "title": "Wooden stool",
+		"desc": "Where the visitor sits while the job is finished. Three legs are original.",
+		"spec": [["seat", "teak, 380 mm"], ["legs", "4, one replaced"]],
+		"sfx": "tool_place",
+	})
+	_place("storage_box", Vector3(-half_w + 1.0, 0.0, half_l - 1.4), Vector3(0.0, 0.3, 0.0))
+	_place("sack", Vector3(-half_w + 1.9, 0.0, half_l - 0.7), Vector3(0.0, 0.6, 0.0), {"scale": 0.85})
+	_place("bicycle_chain", Vector3(half_w - 0.12, 1.35, 3.75), Vector3(0.0, -PI * 0.5, 1.4), {"links": 14})
+	# the entrance light is the batten _ambience_props() hangs at (0, 3.5): the bare
+	# bulb that used to hang here sat 15 cm from it
+	_place("wall_socket", Vector3(half_w - 0.14, 1.25, half_l - 1.2), Vector3(0.0, -PI * 0.5, 0.0))
+	# the switchboard on the west wall, four metres from the shutter
+	var board: Node3D = _place("switchboard", Vector3(-half_w + 0.2, 1.58, 3.6), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.42, "height": 0.55, "mcbs": 4})
+	_station(board, Station.Kind.SWITCHBOARD, Vector3.ZERO, {
+		"area": "entrance", "title": "Main switchboard",
+		"desc": "The distribution board that feeds the whole garage. The main switch is down: the workshop has been running off one borrowed circuit, and it finally gave up.",
+		"lore": "Restoring power here brings up the tube lights, the bench lamps, the workstation, the fans and the reactor zone in sequence — real light nodes, not a material swap.",
+		"spec": [["supply", "230 V / 50 Hz"], ["incoming", "weather-proof gland"], ["MCBs", "4 ways"], ["main", "63 A switch disconnector"]],
+		"prompt": "Press E to work the main switch", "sfx": "switch_throw", "distance": 2.8,
+	})
+	# the incoming supply and the battery bank it is charged from, beside the board
+	_place("ips_battery", Vector3(-half_w + 0.75, 0.0, 4.55), Vector3(0.0, 0.3, 0.0))
+	_place("cable_reel", Vector3(-half_w + 1.55, 0.0, half_l - 0.35), Vector3(0.0, 0.0, 0.0))
 
 
 # ===========================================================================
@@ -227,133 +240,100 @@ func _area_entrance() -> void:
 # ===========================================================================
 
 func _area_mechanical() -> void:
-	var x: float = -structure.half_w
-	# the main bench against the west wall, the heart of World A
-	var bench: Node3D = _place("workbench", Vector3(x + 1.6, 0.0, 2.9), Vector3(0.0, PI * 0.5, 0.0), {"w": 3.0, "d": 0.9})
-	_station(bench, Station.Kind.TOOLBOX, Vector3(0.0, 1.0, 0.0), {
+	## West wall, 10.5 m of it. The previous layout used the same wall but stretched
+	## its objects from z = -7 to z = +7; in a 10.5 m room the usable bay is z +5.1 to
+	## -5.1, so this is a genuine redistribution rather than a translation. The rule
+	## applied: bench and its tools in the middle third where the light is, floor
+	## salvage in the corners, nothing within 0.6 m of the walk lane.
+	var half_w: float = structure.half_w
+	var wall: float = -half_w + 0.13
+	# --- the bench, the heart of World A ---------------------------------
+	var bench: Node3D = _place("workbench", Vector3(wall + 0.36, 0.0, 1.7), Vector3(0.0, PI * 0.5, 0.0), {"w": 2.0, "d": 0.7})
+	_station(bench, Station.Kind.TOOLBOX, Vector3(0.0, 0.95, 0.0), {
 		"area": "mechanical", "title": "Mechanical bench",
 		"desc": "Three boards of teak, scarred through to the grain where the bench edge meets a forearm. Everything on it has been moved at least once today.",
-		"spec": [["top", "3.0 m teak"], ["age", "19 years"], ["surface oil", "used gear oil"]],
+		"spec": [["top", "2.0 m teak"], ["age", "19 years"], ["surface oil", "used gear oil"]],
 		"sfx": "tool_place",
 	})
-	_place("bench_pegboard", Vector3(x + 0.28, 1.55, 2.9), Vector3(0.0, PI * 0.5, 0.0), {"w": 2.9, "h": 1.2})
-	_place("tool_chest", Vector3(x + 1.35, 0.96, 3.6), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.46})
-	_place("bench_vice", Vector3(x + 1.9, 0.98, 2.1))
-	_place("grindstone", Vector3(x + 0.9, 0.0, 5.4))
-	_place("welding_mask", Vector3(x + 2.2, 1.02, 4.3), Vector3(0.0, 0.6, 0.0))
-	_place("welding_rod", Vector3(x + 1.7, 1.0, 4.6), Vector3(0.2, 1.1, 0.0))
-	_place("weld_spatter", Vector3(x + 1.1, 0.97, 5.0))
-	_place("oil_can", Vector3(x + 1.05, 0.98, 3.2))
-	_place("funnel", Vector3(x + 2.4, 0.99, 3.4))
-	_place("hammer", Vector3(x + 1.5, 1.02, 2.6), Vector3(PI * 0.5, 0.0, 0.3))
-	_place("spanner", Vector3(x + 1.2, 1.0, 2.3), Vector3(PI * 0.5, 0.0, 0.9))
-	_place("screwdriver", Vector3(x + 1.8, 1.0, 2.9), Vector3(PI * 0.5, 0.0, -0.4))
-	_place("pliers", Vector3(x + 2.0, 1.0, 2.2), Vector3(PI * 0.5, 0.0, 1.2))
-	_place("tape_measure", Vector3(x + 0.9, 1.0, 2.8))
-	_place("bolt_cluster", Vector3(x + 2.1, 1.0, 3.0))
-	_place("washer_pile", Vector3(x + 1.6, 1.0, 3.1))
-	_place("notebook", Vector3(x + 1.1, 1.0, 3.5), Vector3(0.0, 0.35, 0.0), {"width": 0.26})
-	_place("pen", Vector3(x + 1.35, 1.02, 3.35), Vector3(PI * 0.5, 0.0, 0.2))
-	_place("tea_glass", Vector3(x + 2.3, 1.0, 2.7))
-	_place("flask", Vector3(x + 2.5, 0.98, 3.8))
-	_place("newspaper_fold", Vector3(x + 0.7, 0.96, 4.4))
-	_place("workbench_lamp", Vector3(x + 2.6, 0.98, 2.0))
-	_place("cot_bed", Vector3(x + 1.1, 0.0, 6.6), Vector3(0.0, 0.1, 0.0))
-	_place("plastic_chair", Vector3(x + 3.0, 0.0, 5.8), Vector3(0.0, -0.5, 0.0))
-	_place("wooden_stool", Vector3(x + 2.6, 0.0, 4.0))
-	_place("shelf_unit", Vector3(x + 0.55, 0.0, 0.6), Vector3(0.0, PI * 0.5, 0.0), {"w": 2.4, "levels": 5})
-	_place("scrap_bin", Vector3(x + 1.6, 0.0, -1.4))
-	_place("steel_drum", Vector3(x + 0.9, 0.0, -2.6))
-	_place("rickshaw_frame", Vector3(x + 2.6, 0.0, -3.4), Vector3(0.0, 0.4, 0.0), {"scale": 0.9})
-	_place("wheel_rickshaw", Vector3(x + 1.2, 0.36, -4.4), Vector3(0.0, 0.2, 0.0))
-	_place("bicycle", Vector3(x + 2.4, 0.0, 7.4), Vector3(0.0, 1.2, 0.0))
-	# the engine parts that the exosuit is built from
-	var engine: Node3D = _place("engine_block", Vector3(x + 1.4, 0.98, 1.6), Vector3(0.0, 0.4, 0.0))
+	_place("bench_pegboard", Vector3(wall + 0.02, 1.72, 1.7), Vector3(0.0, PI * 0.5, 0.0), {"w": 1.9, "h": 0.95})
+	# The tool chest moved to the floor: it was on the bench in the old 3 m layout
+	# and would now hang past the bench end at y = 0.96.
+	_place("tool_chest", Vector3(wall + 0.30, 0.0, 2.98), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.4})
+	_place("vice", Vector3(wall + 0.7, 0.96, 0.85))
+	_place("workbench_lamp", Vector3(wall + 0.42, 0.96, 0.85))
+	_place("brush_cup", Vector3(wall + 0.34, 0.96, 1.45))
+	_place("oil_can", Vector3(wall + 0.62, 0.96, 1.28))
+	_place("notebook", Vector3(wall + 0.5, 0.98, 1.95), Vector3(0.0, 0.35, 0.0), {"width": 0.24})
+	_place("pen", Vector3(wall + 0.34, 1.0, 1.82), Vector3(PI * 0.5, 0.0, 0.2))
+	_place("tea_glass", Vector3(wall + 0.66, 0.97, 2.35))
+	_place("flask", Vector3(wall + 0.5, 0.95, 2.62))
+	# --- the engine, on the bench where it is being worked on ------------
+	var engine: Node3D = _place("engine_block", Vector3(wall + 0.36, 0.95, 1.15), Vector3(0.0, 0.4, 0.0))
 	_station(engine, Station.Kind.PART, Vector3.ZERO, {
 		"area": "mechanical", "title": "Split single-cylinder engine",
 		"desc": "Pulled off a 100 cc bike two monsoons ago. The fins are still straight, which means it was not seized when it came off.",
 		"spec": [["type", "air-cooled OHV single"], ["bore", "50 mm"], ["condition", "carboned, serviceable"], ["donor for", "frame module"]],
 		"sfx": "metal_thunk",
 	})
-	_place("cylinder_head", Vector3(x + 2.0, 1.0, 1.2), Vector3(0.0, 0.9, 0.0))
-	_place("piston", Vector3(x + 1.1, 1.0, 0.9), Vector3(0.3, 0.0, 0.0))
-	_place("camshaft", Vector3(x + 1.7, 1.0, 0.6), Vector3(0.0, 0.4, PI * 0.5))
-	_place("crankshaft", Vector3(x + 2.2, 1.0, 0.8), Vector3(0.0, 1.1, PI * 0.5))
-	_place("carburettor", Vector3(x + 0.9, 1.0, 0.5))
-	_place("silencer", Vector3(x + 1.3, 0.0, -0.6), Vector3(0.0, 0.3, 0.0))
-	_place("spark_plug", Vector3(x + 2.3, 1.0, 1.5))
-	_place("chain_sprocket", Vector3(x + 0.8, 1.0, 1.9), Vector3(PI * 0.5, 0.0, 0.0))
-	_place("bicycle_chain", Vector3(x + 1.5, 1.0, 2.0), Vector3(0.0, 0.6, 0.0), {"links": 18})
-	_place("gear_set", Vector3(x + 2.1, 1.0, 1.9))
-	_place("bearing", Vector3(x + 1.0, 1.0, 1.4))
-	_place("brake_drum", Vector3(x + 2.5, 1.0, 4.9), Vector3(PI * 0.5, 0.0, 0.0))
-	_place("headlamp_bowl", Vector3(x + 0.7, 1.0, 4.7), Vector3(0.0, 0.4, 0.0))
-	_place("tail_lamp", Vector3(x + 1.9, 1.0, 5.1))
-	_place("suspension_fork", Vector3(x + 0.5, 0.0, 3.9), Vector3(0.0, 0.0, 0.35))
-	_place("suspension_fork", Vector3(x + 0.9, 0.0, 4.2), Vector3(0.0, 0.3, -0.3))
-	_place("tyre", Vector3(x + 2.8, 0.3, 6.4), Vector3(0.0, 0.5, PI * 0.5))
-	_place("wheel_motorcycle", Vector3(x + 3.2, 0.3, -1.0), Vector3(0.0, 0.2, PI * 0.5))
-	_place("motorcycle_frame", Vector3(x + 3.4, 0.0, 1.0), Vector3(0.0, -0.3, 0.0))
-	_place("electric_motor", Vector3(x + 1.2, 0.1, 5.9), Vector3(0.0, 0.7, 0.0))
-	_place("transformer_block", Vector3(x + 2.6, 0.98, 5.6))
-	_place("scrap_plate", Vector3(x + 3.0, 0.02, 2.4))
-	_place("bent_rod", Vector3(x + 2.7, 0.05, 3.0))
-	_place("offcut_tin", Vector3(x + 3.1, 0.03, 4.6))
-	_place("rusty_can", Vector3(x + 0.6, 0.98, 6.0))
-	_place("old_lock", Vector3(x + 2.4, 1.0, 6.2))
-	_place("spring_coil", Vector3(x + 1.4, 1.0, 6.4))
-	_place("cable_reel", Vector3(x + 0.5, 0.0, 7.0))
-	_place("angle_bracket", Vector3(x + 1.9, 1.0, 6.7))
-	_place("broken_fan_guard", Vector3(x + 2.9, 0.9, 6.9))
-	_place("brush_cup", Vector3(x + 0.8, 0.98, 2.0))
-	_place("mirror_small", Vector3(x + 0.3, 1.9, 6.2), Vector3(0.0, PI * 0.5, 0.0))
-	_place("radio", Vector3(x + 2.2, 0.98, 6.9))
-	_place("pedestal_fan", Vector3(x + 3.6, 0.0, 7.2), Vector3(0.0, -0.6, 0.0))
-	_place("ceiling_fan", Vector3(x + 2.4, structure.height - 0.2, 3.0), Vector3.ZERO, {"radius": 0.62, "drop": 0.5})
-	_place("fluorescent_battlement", Vector3(x + 2.2, structure.height - 0.35, 1.0), Vector3(0.0, PI * 0.5, 0.0), {"length": 1.4})
-	_place("bulb_hanging", Vector3(x + 3.0, structure.height - 0.4, 5.6), Vector3.ZERO, {"drop": 0.9})
-	_place("wall_calendar", Vector3(x + 0.26, 2.3, 4.6), Vector3(0.0, PI * 0.5, 0.0))
-	_place("poster", Vector3(x + 0.26, 2.4, 6.6), Vector3(0.0, PI * 0.5, 0.0), {"variant": 1})
-	_place("wall_clock", Vector3(x + 0.26, 2.6, 0.2), Vector3(0.0, PI * 0.5, 0.0))
-	# the interactive ones
+	_place("cylinder_head", Vector3(wall + 0.62, 0.97, 1.62), Vector3(0.0, 0.9, 0.0))
+	_place("piston", Vector3(wall + 0.3, 0.97, 1.55), Vector3(0.3, 0.0, 0.0))
+	_place("carburettor", Vector3(wall + 0.66, 0.96, 0.95))
+	# --- the shelf, north of the bench -----------------------------------
+	_place("shelf_unit", Vector3(wall + 0.26, 0.0, -1.15), Vector3(0.0, PI * 0.5, 0.0), {"w": 1.6, "levels": 4})
+	_place("bench_pegboard", Vector3(wall + 0.02, 1.62, -3.0), Vector3(0.0, PI * 0.5, 0.0), {"w": 1.3, "h": 0.8})
+	# --- floor salvage: the corners, not the walkable middle --------------
+	var scrap: Node3D = _place("scrap_bin", Vector3(-half_w + 0.72, 0.0, -2.55), Vector3(0.0, 0.3, 0.0), {"w": 0.75, "h": 0.5})
+	_station(scrap, Station.Kind.SCRAP, Vector3.ZERO, {
+		"area": "mechanical", "title": "Scrap bin",
+		"desc": "Offcuts, brackets and bent rod. It is not rubbish: every piece in it was kept because it might become something.",
+		"spec": [["contents", "steel offcuts"], ["kept since", "first week"]],
+		"sfx": "metal_clank",
+	})
+	_place("motorcycle_frame", Vector3(wall + 0.5, 0.0, -1.95), Vector3(0.0, 0.45, 0.0), {"scale": 0.85})
+	_place("wheel_rickshaw", Vector3(wall + 0.42, 0.34, -0.55), Vector3(0.0, 0.2, 0.0), {"radius": 0.33})
+	_place("steel_drum", Vector3(-half_w + 0.6, 0.0, -4.3))
+	_place("tyre", Vector3(-half_w + 1.05, 0.26, 3.9), Vector3(0.0, 0.5, PI * 0.5), {"radius": 0.26})
+	_place("suspension_fork", Vector3(-half_w + 0.42, 0.0, 3.3), Vector3(0.0, 0.0, 0.32))
+	# the silencer was on the old 3 m bench; here it leans against the wall
+	_place("silencer", Vector3(-half_w + 0.6, 0.0, 3.4), Vector3(0.0, 0.3, 0.0))
+	_place("brake_drum", Vector3(wall + 0.28, 1.583, -1.3))
+	_place("grindstone", Vector3(-half_w + 0.85, 0.0, 4.45), Vector3(0.0, 0.5, 0.0), {"scale": 0.85})
+	_place("plastic_chair", Vector3(-half_w + 1.5, 0.0, 3.55), Vector3(0.0, -0.5, 0.0))
+	_place("biscuit_tin", Vector3(wall + 0.5, 1.583, -1.15))
+	# --- wall fixtures ----------------------------------------------------
+	_place("wall_calendar", Vector3(wall + 0.01, 2.05, 0.75), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.3})
+	# the poster moved off the switchboard wall: at z = 3.65 it collided with the
+	# danger notice above the board
+	_place("poster", Vector3(wall + 0.01, 2.28, 3.0), Vector3(0.0, PI * 0.5, 0.0), {"variant": 1, "width": 0.36})
+	_place("hook_nail", Vector3(wall + 0.01, 2.0, 4.4), Vector3(0.0, PI * 0.5, 0.0))
+	_place("towel_hanging", Vector3(wall + 0.02, 1.98, 4.4), Vector3(0.0, 0.2, 0.0), {"length": 0.6})
+	# the frame crate, standing where the frame came off the bench
+	_place("component_crate", Vector3(-2.6, 0.0, 4.35), Vector3(0.0, 0.5, 0.0), {"module": "frame", "width": 0.52})
+	# --- one fan, one tube light -----------------------------------------
+	var fan: Node3D = _place("ceiling_fan", Vector3(-1.6, structure.height - 0.12, 2.4), Vector3.ZERO, {"radius": 0.52, "drop": 0.38})
+	_station(fan, Station.Kind.FAN_CEILING, Vector3(0.0, -0.35, 0.0), {
+		"area": "mechanical", "fan_key": "ceiling", "title": "Ceiling fan",
+		"desc": "The three-blade fan that is in every room in the country. The pull chain is the only switch it has ever known.",
+		"spec": [["blades", "3"], ["sweep", "1.04 m"], ["pull chain", "yes"]],
+		"prompt": "Press E to pull the chain", "sfx": "switch_throw",
+	})
+	var tube: Node3D = _place("fluorescent_battlement", Vector3(-1.9, structure.height - 0.3, 1.2), Vector3(0.0, PI * 0.5, 0.0), {"length": 1.2})
+	_station(tube, Station.Kind.TUBE_LIGHT, Vector3.ZERO, {
+		"area": "mechanical", "title": "Tube light", "circuit": 1,
+		"desc": "The 4 ft batten. The choke is original, the starter is a spare, and the diffuser has gone the colour of strong tea.",
+		"spec": [["tube", "4 ft / 18 W"], ["ballast", "iron choke"], ["starter", "replaced twice"]],
+		"prompt": "Press E to switch the tube", "sfx": "switch_throw",
+	})
+	# --- stations for the props that carry text --------------------------
 	for n: Node in get_children():
 		match String(n.name):
 			"Toolbox":
 				pass
-			"PedestalFan":
-				_station(n, Station.Kind.FAN_PEDESTAL, Vector3.ZERO, {
-					"area": "mechanical", "fan_key": "pedestal", "title": "Pedestal fan",
-					"desc": "The wire-guarded standing fan. One blade is cracked, so it ticks twice per revolution when it is up to speed.",
-					"spec": [["blades", "3, one cracked"], ["motor", "40 W shaded pole"], ["height", "1.15 m"]],
-					"prompt": "Press E to start the fan", "sfx": "switch_throw",
-				})
-			"CeilingFan":
-				_station(n, Station.Kind.FAN_CEILING, Vector3(0.0, -0.4, 0.0), {
-					"area": "mechanical", "fan_key": "ceiling", "title": "Ceiling fan",
-					"desc": "The three-blade fan that is in every room in the country. The pull chain is the only switch it has ever known.",
-					"spec": [["blades", "3"], ["sweep", "1.24 m"], ["pull chain", "yes"]],
-					"prompt": "Press E to pull the chain", "sfx": "switch_throw",
-				})
-			"WorkbenchLamp":
-				_station(n, Station.Kind.LAMP_BENCH, Vector3.ZERO, {
-					"area": "mechanical", "title": "Workbench lamp", "circuit": 2,
-					"desc": "The spring-arm bench lamp. The shade is a cut petrol can, painted inside.",
-					"spec": [["arm", "spring balanced"], ["shade", "hand-formed tin"], ["lamp", "40 W bulb"]],
-					"prompt": "Press E to switch the lamp", "sfx": "switch_throw",
-				})
-			"FluorescentBattlement":
-				_station(n, Station.Kind.TUBE_LIGHT, Vector3.ZERO, {
-					"area": "mechanical", "title": "Tube light", "circuit": 1,
-					"desc": "The 4 ft batten. The choke is original, the starter is a spare, and the diffuser has gone the colour of strong tea.",
-					"spec": [["tube", "4 ft / 18 W"], ["ballast", "iron choke"], ["starter", "replaced twice"]],
-					"prompt": "Press E to switch the tube", "sfx": "switch_throw",
-				})
-			"HangingBulb":
-				_station(n, Station.Kind.BULB, Vector3.ZERO, {
-					"area": "mechanical", "title": "Hanging bulb", "circuit": 3,
-					"desc": "A bare bulb on a flex, tied to the beam with a length of wire. The whole country is lit by these.",
-					"spec": [["lamp", "60 W incandescent"], ["flex", "salvaged"], ["height", "adjustable"]],
-					"prompt": "Press E to switch the bulb", "sfx": "switch_throw",
+			"WallCalendar":
+				_station(n, Station.Kind.CALENDAR, Vector3.ZERO, {
+					"area": "mechanical", "title": "Wall calendar",
+					"desc": "A free promotional calendar from a spare-parts dealer, showing both the Gregorian and Bengali months. It is four months out of date.",
+					"spec": [["script", "Bengali"], ["columns", "English / Bangla dates"]],
 				})
 			"Notebook":
 				_station(n, Station.Kind.NOTEBOOK, Vector3.ZERO, {
@@ -363,331 +343,279 @@ func _area_mechanical() -> void:
 					"spec": [["pages", "84, numbered"], ["binding", "strung corkboard"], ["sketches", "17"]],
 					"prompt": "Press E to read the notebook", "sfx": "paper",
 				})
-			"WallCalendar":
-				_station(n, Station.Kind.CALENDAR, Vector3.ZERO, {
-					"area": "mechanical", "title": "Wall calendar",
-					"desc": "A free promotional calendar from a spare-parts dealer, showing both the Gregorian and Bengali months. It is four months out of date.",
-					"spec": [["script", "Bengali"], ["columns", "English / Bangla dates"]],
-				})
-			"WallClock":
-				_station(n, Station.Kind.CLOCK, Vector3.ZERO, {
-					"area": "mechanical", "title": "Wall clock",
-					"desc": "Battery clock, one hand bent. Keeps time anyway.",
-					"spec": [["movement", "quartz"], ["battery", "AA, uncertain"]],
-				})
-
-
-# ===========================================================================
-# AREA 3 — electronics repair laboratory
-# ===========================================================================
-
-func _area_electronics() -> void:
-	var x: float = structure.half_w
-	# ------------------------------------------------------------------
-	# The electronics bench. Everything here is placed in DESK-LOCAL
-	# coordinates and converted through _desk().
-	#
-	# The first version used hand-computed world offsets and got them wrong: the
-	# desk spans x [3.7, 6.3] by z [3.6, 4.4], but the monitors were placed at
-	# z = 3.5 and 3.6, so one hovered entirely off the front edge and the other
-	# hung half over it. The oscilloscope, printer, speaker and desk lamp were at
-	# z = 2.2 .. 5.1, i.e. scattered around the room at bench height. A local
-	# frame with named rows removes the arithmetic that caused it: BACK is where
-	# the monitors stand, FRONT is where hands work, and every prop sits between.
-	# ------------------------------------------------------------------
-	var desk_origin := Vector3(x - 1.5, 0.0, 4.0)
-	var desk_size := Vector2(3.0, 1.0)
-	var desk: Node3D = _place("desk_electronics", desk_origin, Vector3(0.0, PI, 0.0),
-		{"w": desk_size.x, "d": desk_size.y, "h": 0.92})
-	var desk_top: float = 0.92 + 0.025
-
-	# --- monitors, standing along the back edge, facing into the room ---
-	_place("crt_monitor", _desk(desk_origin, desk_size, -0.75, 0.30), Vector3(0.0, PI + 0.18, 0.0), {"width": 0.44})
-	_place("lcd_monitor", _desk(desk_origin, desk_size, 0.35, 0.30), Vector3(0.0, PI - 0.22, 0.0), {"width": 0.46})
-	# a third panel on a salvaged arm, because a repair bench never has enough
-	_place("monitor_wall_panel", _desk(desk_origin, desk_size, 1.20, 0.24), Vector3(0.0, PI - 0.5, 0.0), {"width": 0.42})
-	# the tower stands on the floor beside the desk, not on it
-	var tower: Node3D = _place("desktop_tower", desk_origin + Vector3(-1.85, 0.0, 0.35), Vector3(0.0, PI + 0.15, 0.0))
-
-	# --- the working row: where the hands actually go ---
-	_place("keyboard", _desk(desk_origin, desk_size, -0.35, -0.30), Vector3(0.0, PI, 0.0))
-	_place("mouse", _desk(desk_origin, desk_size, 0.20, -0.32))
-	_place("multimeter", _desk(desk_origin, desk_size, 0.72, -0.24))
-	_place("solder_station", _desk(desk_origin, desk_size, 1.18, -0.20), Vector3(0.0, PI + 0.3, 0.0))
-	_place("laptop_shell", _desk(desk_origin, desk_size, -1.25, -0.15), Vector3(0.0, PI - 0.35, 0.0))
-
-	# --- component work: the centre of the bench, where the boards are ---
-	_place("pcb_stack", _desk(desk_origin, desk_size, -0.62, 0.02), Vector3.ZERO, {"count": 11})
-	_place("pcb_board", _desk(desk_origin, desk_size, -0.18, 0.06), Vector3(0.0, 0.7, 0.0))
-	_place("heatsink", _desk(desk_origin, desk_size, -0.40, 0.20))
-	_place("ram_stick", _desk(desk_origin, desk_size, 0.06, 0.14), Vector3(0.0, 1.2, 0.0))
-	_place("cpu_fan", _desk(desk_origin, desk_size, -0.30, 0.24), Vector3(PI * 0.5, 0.0, 0.0))
-	_place("capacitor", _desk(desk_origin, desk_size, -0.50, 0.26), Vector3(0.0, 0.0, 0.4))
-	_place("resistor_pack", _desk(desk_origin, desk_size, 0.30, 0.10))
-	_place("dip_switch", _desk(desk_origin, desk_size, 0.02, 0.26))
-	_place("led_cluster", _desk(desk_origin, desk_size, -0.72, 0.22))
-	_place("fuse_glass", _desk(desk_origin, desk_size, 0.34, 0.26))
-	_place("jack_socket", _desk(desk_origin, desk_size, 0.58, 0.14))
-	_place("transformer_core", _desk(desk_origin, desk_size, 0.86, 0.08))
-	_place("solder_spool", _desk(desk_origin, desk_size, 1.30, 0.10))
-	_place("wire_cutters", _desk(desk_origin, desk_size, 1.05, 0.14), Vector3(PI * 0.5, 0.0, 0.4))
-	_place("ribbon_cable", _desk(desk_origin, desk_size, -1.05, 0.20), Vector3(0.0, 0.9, 0.0))
-	_place("power_adapter", _desk(desk_origin, desk_size, -1.42, 0.16))
-
-	# --- instruments on a side bench, because they will not fit on the desk ---
-	var side: Vector3 = desk_origin + Vector3(-0.4, 0.0, -0.95)
-	_place("workbench", side, Vector3(0.0, 0.0, 0.0), {"w": 1.8, "d": 0.7, "h": 0.90})
-	_place("oscilloscope", side + Vector3(-0.5, 0.945, 0.0), Vector3(0.0, 0.2, 0.0))
-	_place("variac", side + Vector3(0.25, 0.94, 0.02))
-	_place("voltage_regulator", side + Vector3(0.62, 0.945, 0.05))
-	_place("table_fan", side + Vector3(0.85, 0.94, -0.18))
-	_place("desk_lamp", side + Vector3(-0.72, 0.94, -0.14))
-
-	# --- floor stock under and beside the bench ---
-	_place("component_drawer", desk_origin + Vector3(-1.95, 0.0, -0.55), Vector3(0.0, PI * 0.5, 0.0), {"drawers": 7})
-	_place("power_strip", desk_origin + Vector3(-1.6, 0.02, 0.9), Vector3(0.0, 0.4, 0.0), {"sockets": 5})
-	_place("ups_battery", desk_origin + Vector3(-2.05, 0.0, 1.15))
-	_place("ips_battery", desk_origin + Vector3(-0.35, 0.0, 1.25))
-	_place("battery_rack", desk_origin + Vector3(1.05, 0.0, 1.35), Vector3(0.0, -0.3, 0.0))
-	_place("stabilizer", desk_origin + Vector3(2.05, 0.0, 0.95), Vector3(0.0, PI, 0.0))
-	_place("printer", desk_origin + Vector3(1.85, 0.0, -0.45), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("router_box", desk_origin + Vector3(1.45, 0.945, -0.62))
-	_place("speaker", desk_origin + Vector3(-1.55, 0.945, -0.55))
-	_place("blower_fan", desk_origin + Vector3(2.3, 0.0, 0.3), Vector3(0.0, PI * 0.5, 0.0))
-	_place("office_chair", desk_origin + Vector3(0.35, 0.0, -1.5), Vector3(0.0, PI * 0.15, 0.0))
-	_place("crt_guts", desk_origin + Vector3(2.45, 0.0, 1.6), Vector3(0.0, 0.8, 0.0))
-	_place("ups_battery", desk_origin + Vector3(-2.5, 0.0, -0.9))
-	_place("tea_glass", desk_origin + Vector3(-1.36, desk_top, 0.16))
-	_place("crt_guts", Vector3(x - 3.0, 0.9, 4.2), Vector3(0.0, 0.8, 0.0))
-	_place("shelf_unit", Vector3(x - 0.45, 0.0, 2.0), Vector3(0.0, -PI * 0.5, 0.0), {"w": 2.2, "levels": 6})
-	_place("wall_socket", Vector3(x - 0.2, 1.3, 3.0), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("switch_wall", Vector3(x - 0.2, 1.3, 4.4), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("tea_glass", Vector3(x - 1.35, 0.95, 4.7))
-	_place("clip_board", Vector3(x - 0.25, 1.6, 4.9), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("newspaper_fold", Vector3(x - 2.85, 0.94, 4.9))
-	_place("poster", Vector3(x - 0.22, 2.3, 2.6), Vector3(0.0, -PI * 0.5, 0.0), {"variant": 2})
-	_place("pedestal_fan", Vector3(x - 3.4, 0.0, 6.6), Vector3(0.0, 2.2, 0.0))
-	_place("ceiling_fan", Vector3(x - 2.0, structure.height - 0.2, 4.4), Vector3.ZERO, {"radius": 0.55, "drop": 0.42, "wood": true})
-	_place("fluorescent_battlement", Vector3(x - 2.0, structure.height - 0.35, 3.6), Vector3(0.0, PI * 0.5, 0.0), {"length": 1.2})
-	# the workstation station, the centre of the electronics half
-	if tower != null:
-		_station(tower, Station.Kind.COMPUTER, Vector3(0.0, 0.2, 0.1), {
-			"area": "electronics", "title": "Workstation tower",
-			"desc": "A second-hand desktop with the side panel missing. It is the only machine in the garage that can run the design software, and it has been repaired four times.",
-			"lore": "Starting it opens the engineering computer: prototype status, part inventory, assembly progress, diagnostics and system logs.",
-			"spec": [["cpu", "salvaged quad-core"], ["ram", "8 GB, two sticks"], ["storage", "500 GB HDD"], ["display out", "VGA + HDMI"]],
-			"prompt": "Press E to start the workstation", "sfx": "relay", "distance": 3.0,
-		})
-	for n: Node in get_children():
-		match String(n.name):
-			"CrtMonitor":
-				var s: Station = _station(n, Station.Kind.CRT, Vector3.ZERO, {
-					"area": "electronics", "title": "Salvaged CRT",
-					"desc": "The 17-inch tube the inventor kept when everything else went to the scrap dealer. Its yoke is the donor for the core's coupling coil.",
-					"spec": [["tube", "17 inch shadow mask"], ["refresh", "60/75 Hz"], ["donor for", "energy module"]],
-					"prompt": "Press E to power the tube", "sfx": "relay",
-				})
-				runtime.register_screen(n.get_node_or_null("Screen") as Node3D, "crt", "crt")
-			"LcdMonitor":
-				_station(n, Station.Kind.LCD, Vector3.ZERO, {
-					"area": "electronics", "title": "Second-hand LCD",
-					"desc": "The panel that shows the prototype status board. Bright, flat, and older than the student using it.",
-					"spec": [["panel", "15.6 inch TN"], ["input", "VGA"], ["content", "prototype status board"]],
-					"prompt": "Press E to wake the panel", "sfx": "relay",
-				})
-				runtime.register_screen(n.get_node_or_null("Screen") as Node3D, "workstation", "status")
-			"TableFan":
-				_station(n, Station.Kind.FAN_TABLE, Vector3.ZERO, {
-					"area": "electronics", "fan_key": "table", "title": "Desk fan",
-					"desc": "Points at the oscilloscope, because the scope runs hot and there is no air conditioning.",
-					"spec": [["blades", "3"], ["purpose", "scope cooling"]],
-					"prompt": "Press E to start the fan", "sfx": "switch_throw",
-				})
-			"DeskLamp":
-				_station(n, Station.Kind.LAMP_DESK, Vector3.ZERO, {
-					"area": "electronics", "title": "Desk lamp", "circuit": 3,
-					"desc": "Cool-white task light for the soldering position. The shade is bent from a biscuit tin lid.",
-					"spec": [["colour", "cool white"], ["shade", "tin lid"]],
+			"WorkbenchLamp":
+				_station(n, Station.Kind.LAMP_BENCH, Vector3.ZERO, {
+					"area": "mechanical", "title": "Workbench lamp", "circuit": 2,
+					"desc": "The spring-arm bench lamp. The shade is a cut petrol can, painted inside.",
+					"spec": [["arm", "spring balanced"], ["shade", "hand-formed tin"], ["lamp", "40 W bulb"]],
 					"prompt": "Press E to switch the lamp", "sfx": "switch_throw",
 				})
-			"Oscilloscope":
-				_station(n, Station.Kind.OSCILLOSCOPE, Vector3.ZERO, {
-					"area": "electronics", "title": "Bench oscilloscope",
-					"desc": "Analogue dual-trace, salvaged, recalibrated against a 555 timer because there is no proper reference here.",
-					"spec": [["bandwidth", "20 MHz"], ["channels", "2"], ["calibration", "homemade"]],
-				})
-			"Variac":
-				_station(n, Station.Kind.VARIAC, Vector3.ZERO, {
-					"area": "electronics", "title": "Variac",
-					"desc": "The variable autotransformer every repair bench in the country owns. Used to test adaptors at half supply.",
-					"spec": [["range", "0-260 V"], ["current", "5 A"]],
-				})
-			"Stabilizer":
-				_station(n, Station.Kind.STABILIZER, Vector3.ZERO, {
-					"area": "electronics", "title": "Voltage stabilizer",
-					"desc": "Servo stabilizer. The supply in this lane swings between 170 and 260 V, and nothing survives that without one.",
-					"spec": [["type", "servo voltage regulator"], ["rating", "1 kVA"], ["output", "220 V +-3%"]],
-				})
-			"BatteryRack":
-				_station(n, Station.Kind.BATTERY, Vector3.ZERO, {
-					"area": "electronics", "title": "IPS battery rack",
-					"desc": "Two tubular cells strapped in series with a distribution board and a ferrite coupling coil lifted off a dead flyback. This is the physical donor for the exosuit's energy module.",
-					"lore": "Nothing here is a live high-voltage source. The glowing core in the suit is a display model, and the fiction is deliberate.",
-					"spec": [["cells", "2 x 12 V tubular"], ["buffer", "series string"], ["coupling", "flyback ferrite coil"]],
-					"sfx": "metal_thunk",
-				})
-			"IpsBattery":
-				_station(n, Station.Kind.BATTERY, Vector3.ZERO, {
-					"area": "electronics", "title": "IPS cell",
-					"desc": "The tall tubular lead-acid cell that keeps a Bangladeshi household through load shedding. Six filler caps, corroded terminals.",
-					"spec": [["type", "tubular flooded"], ["capacity", "150 Ah nominal"], ["terminals", "corroded"]],
-					"sfx": "metal_thunk",
-				})
-			"UpsBattery":
-				_station(n, Station.Kind.BATTERY, Vector3.ZERO, {
-					"area": "electronics", "title": "UPS unit",
-					"desc": "A sealed lead-acid UPS that no longer holds a charge. Its case is the housing for the fictional energy module.",
-					"spec": [["type", "sealed SLA"], ["state", "dead, kept for the case"]],
-					"sfx": "metal_thunk",
-				})
-			"Radio":
-				_station(n, Station.Kind.RADIO, Vector3.ZERO, {
-					"area": "mechanical", "title": "Transistor radio",
-					"desc": "Runs on a single cell and plays the news at half volume. The scale is hand-marked in Bengali.",
-					"spec": [["bands", "MW / SW"], ["speaker", "8 ohm"]],
-				})
-			"CeilingFan":
-				if String(n.name) == "CeilingFan" and not runtime.fans.any(func(f: Dictionary) -> bool: return String(f.key) == "ceiling_elec"):
-					_station(n, Station.Kind.FAN_CEILING, Vector3(0.0, -0.4, 0.0), {
-						"area": "electronics", "fan_key": "ceiling_elec", "title": "Ceiling fan",
-						"desc": "The electronics-side fan. Wooden blades on this one, inherited from an older room.",
-						"spec": [["blades", "3, teak"], ["sweep", "1.1 m"]],
-						"prompt": "Press E to pull the chain", "sfx": "switch_throw",
-					})
+			_:
+				pass
 
 
-# ===========================================================================
-# AREA 4 — futuristic assembly laboratory
-# ===========================================================================
+func _area_electronics() -> void:
+	## East wall. The previous version had a 3.0 x 1.0 m desk with a second workbench
+	## behind it and thirty-odd props spread across both. This is one bench, because a
+	## repair shop with one bench is the honest picture of a one-person operation, and
+	## because at 8.5 m wide the room cannot hold two facing workstations without the
+	## player losing the walk lane.
+	var half_w: float = structure.half_w
+	var wall: float = half_w - 0.12
+	# --- the desk, monitors standing along it ----------------------------
+	# 1.9 m of bench, 0.62 deep, hard against the wall so the player's shoulder has
+	# clearance on the far side. The desk faces west into the room.
+	var desk: Node3D = _place("desk_electronics", Vector3(wall - 0.32, 0.0, 1.5), Vector3(0.0, -PI * 0.5, 0.0),
+		{"w": 1.9, "d": 0.62, "h": 0.9})
+	var dtop: float = 0.925
+	_station(desk, Station.Kind.TOOLBOX, Vector3(0.0, dtop, 0.0), {
+		"area": "electronics", "title": "Electronics bench",
+		"desc": "A lighter table than the mechanical bench, with an anti-static mat taped down at one corner. This is where the boards are worked on.",
+		"spec": [["top", "plywood on steel legs"], ["mat", "ESD, taped"], ["solder", "60/40, 0.8 mm"]],
+		"sfx": "tool_place",
+	})
+	# monitors, standing at the back of the desk facing the room
+	var crt: Node3D = _place("crt_monitor", Vector3(wall - 0.12, dtop, 0.95), Vector3(0.0, -PI * 0.5 + 0.16, 0.0), {"width": 0.38})
+	_station(crt, Station.Kind.CRT, Vector3.ZERO, {
+		"area": "electronics", "title": "Salvaged CRT",
+		"desc": "The 15-inch tube the inventor kept when everything else went to the scrap dealer. Its yoke is the donor for the core's coupling coil.",
+		"spec": [["tube", "15 inch shadow mask"], ["refresh", "60/75 Hz"], ["donor for", "energy module"]],
+		"prompt": "Press E to power the tube", "sfx": "relay",
+	})
+	runtime.register_screen(crt.get_node_or_null("Screen") as Node3D, "crt", "crt")
+	var lcd: Node3D = _place("lcd_monitor", Vector3(wall - 0.12, dtop, 1.85), Vector3(0.0, -PI * 0.5 - 0.2, 0.0), {"width": 0.4})
+	_station(lcd, Station.Kind.LCD, Vector3.ZERO, {
+		"area": "electronics", "title": "Second-hand LCD",
+		"desc": "The panel that shows the prototype status board. Bright, flat, and older than the student using it.",
+		"spec": [["panel", "15.6 inch TN"], ["input", "VGA"], ["content", "prototype status board"]],
+		"prompt": "Press E to wake the panel", "sfx": "relay",
+	})
+	runtime.register_screen(lcd.get_node_or_null("Screen") as Node3D, "workstation", "status")
+	# the working row: keyboard, mouse, multimeter, solder station
+	_place("keyboard", Vector3(wall - 0.42, dtop - 0.012, 1.75), Vector3(0.0, -PI * 0.5, 0.0), {"width": 0.38})
+	_place("mouse", Vector3(wall - 0.4, dtop - 0.012, 1.38))
+	var solder: Node3D = _place("solder_station", Vector3(wall - 0.24, dtop, 2.28), Vector3(0.0, -PI * 0.5 + 0.25, 0.0))
+	_station(solder, Station.Kind.TOOL, Vector3.ZERO, {
+		"area": "electronics", "title": "Solder station",
+		"desc": "Temperature-controlled, with a sponge that has not been wet since yesterday. The iron lives in the coil rest.",
+		"spec": [["range", "200-450 C"], ["tip", "conical, 0.8 mm"], ["alloy", "60/40"]],
+		"sfx": "tool_place", "distance": 2.6,
+	})
+	_place("multimeter", Vector3(wall - 0.3, dtop, 1.05))
+	_place("laptop_shell", Vector3(wall - 0.38, dtop - 0.005, 0.52), Vector3(0.0, -PI * 0.5 - 0.3, 0.0), {"width": 0.3})
+	# component work along the front of the desk
+	_place("pcb_stack", Vector3(wall - 0.5, dtop - 0.01, 1.5), Vector3.ZERO, {"count": 7})
+	_place("pcb_board", Vector3(wall - 0.36, dtop, 0.72), Vector3(0.0, 0.7, 0.0))
+	_place("heatsink", Vector3(wall - 0.46, dtop, 0.6))
+	_place("ram_stick", Vector3(wall - 0.3, dtop, 0.85), Vector3(0.0, 1.2, 0.0))
+	_place("cpu_fan", Vector3(wall - 0.42, dtop + 0.005, 0.72), Vector3(-PI * 0.5, 0.0, 0.0), {"size": 0.07})
+	_place("transformer_core", Vector3(wall - 0.26, dtop, 2.0))
+	_place("solder_spool", Vector3(wall - 0.5, dtop, 2.2))
+	_place("wire_cutters", Vector3(wall - 0.36, dtop, 2.02), Vector3(-PI * 0.5, 0.0, 0.4))
+	_place("tea_glass", Vector3(wall - 0.5, dtop, 1.12))
+	_place("desk_lamp", Vector3(wall - 0.22, dtop, 1.6))
+	# --- the tower and the instruments -------------------------------------
+	# The earlier version had a shelf unit standing behind this desk whose uprights
+	# passed through the desktop, and a printer, router, oscilloscope and speaker
+	# all placed at y = 0.9 with nothing under them — four props floating in mid-air
+	# and only visible as such from the side. This version puts every instrument on
+	# a surface that exists: a small instrument bench north of the desk, and the
+	# parts cabinet for the router.
+	var tower: Node3D = _place("desktop_tower", Vector3(wall - 0.4, 0.0, 2.85), Vector3(0.0, -PI * 0.5 + 0.15, 0.0), {"height": 0.4})
+	_station(tower, Station.Kind.COMPUTER, Vector3(0.0, 0.25, 0.05), {
+		"area": "electronics", "title": "Workstation tower",
+		"desc": "A second-hand desktop with the side panel missing. It is the only machine in the garage that can run the design software, and it has been repaired four times.",
+		"lore": "Starting it opens the engineering computer: prototype status, part inventory, assembly progress, diagnostics and system logs.",
+		"spec": [["cpu", "salvaged quad-core"], ["ram", "8 GB, two sticks"], ["storage", "500 GB HDD"], ["display out", "VGA + HDMI"]],
+		"prompt": "Press E to start the workstation", "sfx": "relay", "distance": 2.6,
+	})
+	_place("speaker", Vector3(half_w - 0.8, 0.0, 2.5), Vector3(0.0, -1.1, 0.0))
+	# the parts cabinet, and the router on top of it because the phone line comes
+	# in at that corner
+	_place("component_drawer", Vector3(half_w - 0.6, 0.0, -0.55), Vector3(0.0, -PI * 0.5, 0.0), {"drawers": 6, "width": 0.3})
+	_place("router_box", Vector3(half_w - 0.6, 0.515, -0.55), Vector3(0.0, -PI * 0.5, 0.0))
+	# the instrument bench: shorter and lower than the desk, for the scope and the
+	# printer. The desk is 1.9 m and carries the workstation; this is 1.4 m.
+	_place("desk_electronics", Vector3(wall - 0.3, 0.0, -1.6), Vector3(0.0, -PI * 0.5, 0.0),
+		{"w": 1.4, "d": 0.5, "h": 0.78})
+	var itop: float = 0.805
+	_place("oscilloscope", Vector3(wall - 0.28, itop, -1.15), Vector3(0.0, -PI * 0.5 + 0.25, 0.0))
+	_place("printer", Vector3(wall - 0.3, itop, -1.95), Vector3(0.0, -PI * 0.5, 0.0))
+	_place("tea_glass", Vector3(wall - 0.5, itop, -1.62))
+	_place("stabilizer", Vector3(half_w - 0.5, 0.0, 3.6), Vector3(0.0, -PI * 0.5, 0.0))
+	_place("chair_office", Vector3(half_w - 1.6, 0.0, 1.5), Vector3(0.0, -PI * 0.5 - 0.2, 0.0), {"scale": 0.95})
+	# --- the power hardware, which is the donor for the energy module -----
+	var rack: Node3D = _place("battery_rack", Vector3(half_w - 1.0, 0.0, 4.0), Vector3(0.0, -0.25, 0.0), {"scale": 0.92})
+	_station(rack, Station.Kind.BATTERY, Vector3.ZERO, {
+		"area": "electronics", "title": "IPS battery rack",
+		"desc": "Two tubular cells strapped in series with a distribution board and a ferrite coupling coil lifted off a dead flyback. This is the physical donor for the exosuit's energy module.",
+		"lore": "Nothing here is a live high-voltage source. The glowing core in the suit is a display model, and the fiction is deliberate.",
+		"spec": [["cells", "2 x 12 V tubular"], ["buffer", "series string"], ["coupling", "flyback ferrite coil"]],
+		"sfx": "metal_thunk",
+	})
+	_place("ups_battery", Vector3(half_w - 0.45, 0.0, 4.85))
+	_place("power_strip", Vector3(half_w - 1.3, 0.02, 3.2), Vector3(0.0, -PI * 0.4, 0.0), {"sockets": 4})
+	# one fan, pointing at the scope, because the scope runs hot. Aimed at the
+	# instrument bench 6 m north of it rather than at the old bench at z = 4.2.
+	var fan: Node3D = _place("pedestal_fan", Vector3(half_w - 1.5, 0.0, 4.9), Vector3(0.0, -0.15, 0.0), {"height": 1.0})
+	_station(fan, Station.Kind.FAN_PEDESTAL, Vector3.ZERO, {
+		"area": "electronics", "fan_key": "pedestal", "title": "Pedestal fan",
+		"desc": "The wire-guarded standing fan, aimed at the oscilloscope because the scope runs hot and there is no air conditioning.",
+		"spec": [["blades", "3, one cracked"], ["motor", "40 W shaded pole"], ["purpose", "scope cooling"]],
+		"prompt": "Press E to start the fan", "sfx": "switch_throw",
+	})
+	# --- wall fixtures ----------------------------------------------------
+	_place("switch_wall", Vector3(wall, 1.2, 3.3), Vector3(0.0, -PI * 0.5, 0.0))
+	_place("clip_board", Vector3(wall, 1.55, 2.35), Vector3(0.0, -PI * 0.5, 0.0))
+	_place("poster", Vector3(wall, 2.0, -0.5), Vector3(0.0, -PI * 0.5, 0.0), {"variant": 2, "width": 0.36})
+	# the LED strip goes on the wall above the instrument bench: at x = 1.9 m from
+	# the wall it was hanging in mid-air with no bracket
+	_place("led_cluster", Vector3(half_w - 0.06, 1.78, -2.5), Vector3(0.0, -PI * 0.5, 0.2), {"count": 5})
+	# the energy crate, beside the rack it came out of
+	_place("component_crate", Vector3(half_w - 2.1, 0.0, 2.55), Vector3(0.0, -1.1, 0.0), {"module": "energy", "width": 0.48})
+
 
 func _area_assembly() -> void:
-	var centre := Vector3(0.0, 0.0, -2.2)
-	var platform: Node3D = _place("assembly_platform", centre, Vector3.ZERO, {"radius": 2.7})
-	var stand: Node3D = _place("suit_stand", centre + Vector3(0.0, 0.22, 0.0), Vector3(0.0, PI, 0.0))
+	## North-centre. The platform drops from 2.7 m to 1.45 m radius and the arms come
+	## in from 2.4 m to 1.3 m: at 8.5 m wide, a 5.4 m stage left no floor at all and the
+	## player could not walk around the thing they had just built. Four arms at 1.3 m
+	## still close a complete ring around a 1.86 m figure.
+	var centre := Vector3(0.0, 0.0, -1.5)
+	var platform: Node3D = _place("assembly_platform", centre, Vector3.ZERO, {"radius": 1.45})
+	var stand: Node3D = _place("suit_stand", centre + Vector3(0.0, 0.2, 0.0), Vector3(0.0, PI, 0.0))
 	# the suit itself
 	var exosuit := ExosuitFactory.new(props)
 	var built: Dictionary = exosuit.build({})
 	var suit_root: Node3D = built["root"] as Node3D
-	suit_root.position = centre + Vector3(0.0, 0.3, 0.0)
 	suit_root.rotation.y = PI
+	suit_root.scale = Vector3.ONE * 1.12
+	suit_root.position = centre + Vector3(0.0, 0.32, 0.0)
 	add_child(suit_root)
-	# The suit is the centrepiece and it was being dwarfed: a 1.86 m figure on a
-	# 5.4 m stage reads as a figurine in the first screenshot. Raising it onto the
-	# stand's torso cradle and scaling it up puts the chest core at roughly eye
-	# level from the entrance sightline, which is what the brief asks for.
-	suit_root.scale = Vector3.ONE * 1.22
-	suit_root.position = centre + Vector3(0.0, 0.34, 0.0)
 	runtime.install_suit(suit_root, built["parts"] as Dictionary, stand, platform, null, [])
 	# the reactor cradle at the platform centre
 	var cradle: Node3D = platform.get_node_or_null("ReactorCradle") as Node3D
 	if cradle == null:
-		cradle = _place("energy_cradle", centre + Vector3(0.0, 0.3, 0.0), Vector3.ZERO, {"radius": 0.6})
+		cradle = _place("energy_cradle", centre + Vector3(0.0, 0.28, 0.0), Vector3.ZERO, {"radius": 0.42})
 	runtime.cradle = cradle
 	runtime.install_core(cradle)
-	# the four arms
+	# the four arms, still four, at a radius that fits the smaller stage
 	var arm_nodes: Array[Node3D] = []
 	for i: int in range(4):
 		var a: float = TAU_D * float(i) / 4.0 + 0.4
-		var arm: Node3D = _place("robot_arm", centre + Vector3(cos(a) * 2.4, 0.28, sin(a) * 2.4), Vector3(0.0, -a + PI * 0.5, 0.0), {"reach": 1.2})
+		var arm: Node3D = _place("robot_arm", centre + Vector3(cos(a) * 1.28, 0.24, sin(a) * 1.28), Vector3(0.0, -a + PI * 0.5, 0.0), {"reach": 0.9})
 		arm_nodes.append(arm)
 	runtime.arms = arm_nodes
-	# the overhead gantry
-	var rail: Node3D = _place("overhead_rail", centre + Vector3(0.0, structure.height - 0.75, 0.0), Vector3(0.0, PI * 0.5, 0.0), {"span": 5.4})
-	# the holographic design table
-	var table: Node3D = _place("holo_table", centre + Vector3(-3.6, 0.0, 1.9), Vector3(0.0, 0.7, 0.0), {"radius": 1.0})
+	# the overhead gantry, spanning the platform only
+	_place("overhead_rail", centre + Vector3(0.0, structure.height - 0.58, 0.0), Vector3(0.0, PI * 0.5, 0.0), {"span": 3.0})
+	# the holographic design table, on the west side of the bay
+	var table: Node3D = _place("holo_table", Vector3(-2.55, 0.0, -0.1), Vector3(0.0, 0.55, 0.0), {"radius": 0.72})
 	var holo_volume: Node3D = table.get_node_or_null("HoloVolume") as Node3D
 	runtime.install_hologram(holo_volume)
-	# the wall of salvaged monitors behind the stand
-	for i: int in range(3):
-		var panel: Node3D = _place("monitor_wall_panel", centre + Vector3(-1.5 + float(i) * 1.5, 2.6, -structure.half_l + 0.45), Vector3.ZERO, {"width": 0.56})
+	# the wall array behind the stand: two panels, not three
+	for i: int in range(2):
+		var panel: Node3D = _place("monitor_wall_panel", Vector3(-0.8 + float(i) * 1.05, 2.0, -structure.half_l + 0.32), Vector3.ZERO, {"width": 0.46})
 		var scr: Node3D = panel.get_node_or_null("Screen") as Node3D
 		if scr != null:
 			runtime.register_screen(scr, "diagnostic", "diag%d" % i)
-	# the big reactor housing on the north wall
-	var housing: Node3D = _place("reactor_housing", centre + Vector3(0.0, 2.5, -structure.half_l + 0.35), Vector3.ZERO, {"radius": 0.85})
-	# indicator strips along the platform rim
-	for i: int in range(4):
-		var a: float = TAU_D * float(i) / 4.0
-		_place("indicator_strip", centre + Vector3(cos(a) * 2.9, 0.42, sin(a) * 2.9), Vector3(0.0, -a, 0.0), {"length": 1.6, "count": 12})
-	# the conduit runs feeding the platform
-	_place("conduit_run", centre + Vector3(3.4, 0.35, -1.0), Vector3(0.0, 0.9, 0.0), {"length": 3.2})
-	_place("conduit_run", centre + Vector3(-3.4, 0.35, -1.4), Vector3(0.0, -0.9, 0.0), {"length": 3.0})
-	_place("cable_tray_future", centre + Vector3(0.0, structure.height - 1.3, -3.0), Vector3.ZERO, {"length": 5.0})
-	# part kits and crates around the platform
-	_place("part_kit", centre + Vector3(2.2, 0.34, 1.6), Vector3(0.0, 0.6, 0.0), {"count": 10})
-	_place("part_kit", centre + Vector3(-2.3, 0.34, -1.2), Vector3(0.0, -0.4, 0.0), {"count": 8})
-	_place("component_crate", centre + Vector3(3.6, 0.0, 2.6), Vector3(0.0, -0.5, 0.0), {"module": "frame", "width": 0.56})
-	_place("component_crate", centre + Vector3(-4.4, 0.0, -0.6), Vector3(0.0, 0.9, 0.0), {"module": "energy", "width": 0.52})
-	_place("component_crate", centre + Vector3(1.9, 0.0, 3.9), Vector3(0.0, 2.1, 0.0), {"module": "shell", "width": 0.54})
-	# futuristic lighting
-	_spot(platform, Vector3(0.0, 3.4, 0.0), Vector3(0.0, 1.2, 0.0), 4, &"assembly", 6.5, 34.0, true, Color("ffe0b8"))
-	_register_light(platform, 4, &"core", 3.2, 7.0, 1.5, false, Color("7cf3ff"))
+	# the reactor housing on the north wall, scaled to the headroom
+	_place("reactor_housing", Vector3(1.5, 1.9, -structure.half_l + 0.26), Vector3.ZERO, {"radius": 0.5})
+	# two indicator strips resting on the platform's outer ring (ring tube top at
+	# y = 0.23) rather than floating above it
+	for i: int in range(2):
+		var a: float = TAU_D * float(i) / 2.0 + 0.4
+		_place("indicator_strip", centre + Vector3(cos(a) * 1.5, 0.26, sin(a) * 1.5), Vector3(0.0, -a, 0.0), {"length": 1.1, "count": 8})
+	# one conduit run feeding the platform
+	_place("conduit_run", centre + Vector3(1.85, 0.3, -0.2), Vector3(0.0, 1.0, 0.0), {"length": 2.0})
+	_place("cable_tray_future", centre + Vector3(0.0, structure.height - 1.0, -2.5), Vector3.ZERO, {"length": 3.2})
+	# the parts tray on the floor beside the stage, where a fitter would leave it
+	_place("part_kit", centre + Vector3(-1.9, 0.0, -0.9), Vector3(0.0, -0.4, 0.0), {"count": 6})
+	# futuristic lighting: one key spot, the core, the hologram pool
+	_spot(platform, Vector3(0.0, 2.65, 0.7), Vector3(0.0, 1.15, 0.0), 4, &"assembly", 5.6, 36.0, true, Color("ffe0b8"))
+	var core_light := OmniLight3D.new()
+	platform.add_child(core_light)
+	core_light.light_color = Color("7cf3ff")
+	core_light.light_energy = 0.0
+	core_light.omni_range = 5.5
+	core_light.omni_attenuation = 1.45
+	core_light.shadow_enabled = false
+	runtime.register_light(core_light, 4, &"core", 3.0)
 	var table_light := OmniLight3D.new()
 	table.add_child(table_light)
 	table_light.light_color = Color("57e6ff")
 	table_light.light_energy = 0.0
-	table_light.omni_range = 4.0
-	table_light.omni_attenuation = 1.4
-	runtime.register_light(table_light, 4, &"holo", 2.4)
+	table_light.omni_range = 3.2
+	table_light.omni_attenuation = 1.5
+	table_light.shadow_enabled = false
+	runtime.register_light(table_light, 4, &"holo", 2.0)
 	# stations
-	_station(platform, Station.Kind.ASSEMBLY, Vector3(0.0, 0.6, 0.0), {
+	_station(platform, Station.Kind.ASSEMBLY, Vector3(0.0, 0.5, 0.0), {
 		"area": "assembly", "title": "Assembly station",
 		"desc": "The circular stage the prototype is built on. Deck plates, four manipulator arms, the reactor pit and the umbilical.",
 		"lore": "Opening the interface installs the salvaged modules in order and runs the assembly sequence.",
 		"spec": [["deck", "8 lift plates"], ["arms", "4, two-axis"], ["reactor", "coupling coil cradle"]],
-		"prompt": "Press E to open the assembly interface", "sfx": "servo", "distance": 4.5,
+		"prompt": "Press E to open the assembly interface", "sfx": "servo", "distance": 3.2,
 	})
-	_station(suit_root, Station.Kind.SUIT_DISPLAY, Vector3(0.0, 1.3, 0.0), {
+	_station(suit_root, Station.Kind.SUIT_DISPLAY, Vector3(0.0, 1.25, 0.0), {
 		"area": "assembly", "title": "Exosuit MK-I",
 		"desc": "The finished prototype: asymmetric shoulders, exposed hydraulics, hand-formed red plates over a recycled frame, and a core set in a brake-drum bezel.",
 		"spec": [["height", "1.86 m"], ["mass", "27.5 kg"], ["frame", "recycled chrome-moly"], ["status", "standing test only"]],
-		"prompt": "Press E to wake the prototype", "sfx": "servo", "distance": 4.0,
+		"prompt": "Press E to wake the prototype", "sfx": "servo", "distance": 3.0,
 	})
 	_station(cradle, Station.Kind.CORE, Vector3.ZERO, {
 		"area": "assembly", "title": "Energy core",
 		"desc": "The fictional reactor display: plasma churn, containment rings, arc filaments and a fresnel shell, all in one emissive shader.",
 		"lore": "Exposed parameters: glow strength, pulse speed, core colour, rotation speed. The graphics bench lets you drive all four live.",
 		"spec": [["shader", "energy_core.gdshader"], ["terms", "plasma, rings, spokes, arcs, fresnel"], ["emission", "feeds bloom"]],
-		"prompt": "Press E to pulse the core", "sfx": "core_charge", "distance": 4.0,
+		"prompt": "Press E to pulse the core", "sfx": "core_charge", "distance": 3.2,
 	})
-	_station(table, Station.Kind.HOLO_TABLE, Vector3(0.0, 0.9, 0.0), {
+	_station(table, Station.Kind.HOLO_TABLE, Vector3(0.0, 0.7, 0.0), {
 		"area": "assembly", "title": "Holographic design table",
 		"desc": "The inventor's answer to a design review room: a projected cyan schematic of the suit, drawn from the same part list the assembly uses.",
 		"spec": [["shader", "hologram.gdshader"], ["terms", "fresnel, scanlines, grid, flicker, band"], ["labels", "Bengali + English"]],
-		"prompt": "Press E to raise the schematic", "sfx": "core_charge", "distance": 3.6,
+		"prompt": "Press E to raise the schematic", "sfx": "core_charge", "distance": 3.0,
 	})
+	# the shell crate, beside the stage it will be installed on
+	_place("component_crate", Vector3(2.35, 0.0, -1.05), Vector3(0.0, 2.1, 0.0), {"module": "shell", "width": 0.5})
+
+
+# ===========================================================================
+# the three salvage crates
+# ===========================================================================
+
+func _register_component_crates() -> void:
+	## Called once from dress() after every area has been placed. Two bugs are
+	## fixed here rather than inherited: the earlier loop broke after the first
+	## crate (so two of three salvage objectives were unreachable), and it matched
+	## children by name — but Godot renames duplicate node names as they are added,
+	## so only the first crate is ever called "ComponentCrate". The module meta the
+	## crate prop writes is unique, so that is the test now.
+	var registered: int = 0
 	for n: Node in get_children():
-		if String(n.name) == "ComponentCrate":
-			var mod: String = String(n.get_meta("module_kind", "frame"))
-			var k: Station.Kind = Station.Kind.MODULE_FRAME
-			var comp_id: String = "frame_module"
-			match mod:
-				"energy":
-					k = Station.Kind.MODULE_ENERGY
-					comp_id = "energy_module"
-				"shell":
-					k = Station.Kind.MODULE_SHELL
-					comp_id = "armour_shell"
-			_station(n, k, Vector3(0.0, 0.4, 0.0), {
-				"area": "assembly", "title": GameConfig.component_label(comp_id),
-				"desc": GameConfig.component_story(comp_id),
-				"spec": GameConfig.component_spec(comp_id),
-				"module_id": comp_id,
-				"prompt": "Press E to recover the module", "sfx": "metal_thunk",
-				"repeatable": false,
-			})
-			(n as Station).module_id = comp_id
-			break
+		if not n.has_meta("module_kind"):
+			continue
+		var mod: String = String(n.get_meta("module_kind", "frame"))
+		var k: Station.Kind = Station.Kind.MODULE_FRAME
+		var comp_id: String = "frame_module"
+		match mod:
+			"energy":
+				k = Station.Kind.MODULE_ENERGY
+				comp_id = "energy_module"
+			"shell":
+				k = Station.Kind.MODULE_SHELL
+				comp_id = "armour_shell"
+		var s: Station = _station(n, k, Vector3(0.0, 0.35, 0.0), {
+			"area": "salvage", "title": GameConfig.component_label(comp_id),
+			"desc": GameConfig.component_story(comp_id),
+			"spec": GameConfig.component_spec(comp_id),
+			"module_id": comp_id,
+			"prompt": "Press E to recover the module", "sfx": "metal_thunk",
+			"repeatable": false,
+		})
+		s.module_id = comp_id
+		registered += 1
+	if registered != GameConfig.total_components():
+		push_warning("GarageDressing: %d salvage crates registered, expected %d" % [
+			registered, GameConfig.total_components()])
 
 
 # ===========================================================================
@@ -695,29 +623,37 @@ func _area_assembly() -> void:
 # ===========================================================================
 
 func _area_testing() -> void:
-	var centre := Vector3(2.4, 0.0, -structure.half_l + 2.2)
-	var deck: Node3D = _place("testing_platform", centre, Vector3.ZERO, {"size": 2.4})
-	_place("safety_boundary", centre, Vector3.ZERO, {"radius": 2.1})
-	var panel: Node3D = _place("instrument_panel", centre + Vector3(-1.5, 0.0, 0.2), Vector3(0.0, 0.9, 0.0), {"width": 0.95})
-	var screen: Node3D = _place("diagnostic_screen", centre + Vector3(1.6, 0.0, -0.6), Vector3(0.0, -0.7, 0.0), {"width": 0.46})
+	## North-east corner, a 1.5 m deck inside a 1.3 m rail. The previous corner had a
+	## 2.4 m deck and a 2.1 m boundary in a room 13 m wide; here the whole corner is
+	## about 3 x 3.4 m, so the deck is one person's standing platform and the rail is
+	## just wide enough to walk outside of.
+	var centre := Vector3(2.15, 0.0, -3.6)
+	var deck: Node3D = _place("testing_platform", centre, Vector3.ZERO, {"size": 1.5})
+	_place("safety_boundary", centre, Vector3.ZERO, {"radius": 1.3})
+	var panel: Node3D = _place("instrument_panel", centre + Vector3(-1.0, 0.0, 0.45), Vector3(0.0, 0.75, 0.0), {"width": 0.72})
+	# The diagnostic screen's origin is the middle of its frame, with the post and
+	# base hanging 0.7 m below it — it was placed at y = 0, which buried the post,
+	# the base and the bottom third of the panel under the floor. w = 0.36 gives
+	# h = 0.61, so the frame centre belongs at 0.61/2 + 0.4 = 0.71.
+	var screen: Node3D = _place("diagnostic_screen", centre + Vector3(0.6, 0.71, -1.0), Vector3(0.0, -0.5, 0.0), {"width": 0.36})
 	var scr: Node3D = screen.get_node_or_null("Screen") as Node3D
 	if scr != null:
 		runtime.register_screen(scr, "diagnostic", "test")
-	_place("wooden_stool", centre + Vector3(-1.2, 0.0, 1.2))
-	_place("tea_glass", centre + Vector3(-1.3, 0.72, 1.0))
-	_place("oil_can", centre + Vector3(-1.6, 0.0, 1.6))
-	_place("crate_stack", centre + Vector3(2.2, 0.0, 0.8), Vector3(0.0, 0.4, 0.0), {"count": 3})
-	_place("bulb_hanging", centre + Vector3(0.0, structure.height - 0.4, 0.0), Vector3.ZERO, {"drop": 1.1})
-	_place("indicator_strip", centre + Vector3(0.0, 1.05, -1.6), Vector3.ZERO, {"length": 2.4, "count": 16})
-	_place("conduit_run", centre + Vector3(1.8, 0.3, -1.0), Vector3(0.0, 0.4, 0.0), {"length": 2.2})
-	_spot(deck, Vector3(0.0, 3.2, 0.0), Vector3(0.0, 1.0, 0.0), 4, &"testing", 4.2, 30.0, true, Color("fff0d8"))
-	_station(panel, Station.Kind.DIAGNOSTICS, Vector3(0.0, 0.9, 0.0), {
+	_place("wooden_stool", centre + Vector3(-0.8, 0.0, 1.0))
+	_place("tea_glass", centre + Vector3(-0.86, 0.484, 0.86))
+	_place("crate_stack", centre + Vector3(1.1, 0.0, 0.7), Vector3(0.0, 0.4, 0.0), {"count": 2})
+	_place("bulb_hanging", centre + Vector3(0.0, structure.height - 0.2, 0.0), Vector3.ZERO, {"drop": 0.62})
+	# the status strip runs along the floor at the deck edge, where it can be seen
+	# and where it has something to sit on
+	_place("indicator_strip", centre + Vector3(0.0, 0.02, -0.95), Vector3.ZERO, {"length": 1.4, "count": 10})
+	_spot(deck, Vector3(0.0, 2.55, 0.0), Vector3(0.0, 0.9, 0.22), 4, &"testing", 3.4, 32.0, true, Color("fff0d8"))
+	_station(panel, Station.Kind.DIAGNOSTICS, Vector3(0.0, 0.8, 0.0), {
 		"area": "testing", "title": "Diagnostic console",
 		"desc": "Analog gauges, a toggle bank, an emergency stop and a small panel. The instruments are World A; the readings are World B.",
 		"spec": [["gauges", "3, panel meter"], ["stops", "1 mushroom head"], ["logging", "200 lines"]],
-		"prompt": "Press E to run diagnostics", "sfx": "relay", "distance": 3.4,
+		"prompt": "Press E to run diagnostics", "sfx": "relay", "distance": 2.8,
 	})
-	_station(screen, Station.Kind.SUIT_DISPLAY, Vector3(0.0, 1.2, 0.0), {
+	_station(screen, Station.Kind.SUIT_DISPLAY, Vector3.ZERO, {
 		"area": "testing", "title": "Prototype display screen",
 		"desc": "Portrait panel showing the suit's live diagnostic trace once the prototype is complete.",
 		"spec": [["orientation", "portrait"], ["content", "diagnostic trace"]],
@@ -726,25 +662,28 @@ func _area_testing() -> void:
 
 
 # ===========================================================================
-# store room
+# the north-west corner, which used to be a separate store room
 # ===========================================================================
 
 func _area_store() -> void:
-	var x: float = structure.half_w - 1.9
-	var z: float = -structure.half_l + 2.2
-	_place("shelf_unit", Vector3(x, 0.0, z - 1.2), Vector3(0.0, PI * 0.5, 0.0), {"w": 2.6, "levels": 6, "wood": true})
-	_place("shelf_unit", Vector3(x, 0.0, z + 1.2), Vector3(0.0, -PI * 0.5, 0.0), {"w": 2.6, "levels": 5})
-	_place("crate_stack", Vector3(x - 0.6, 0.0, z), Vector3(0.0, 0.3, 0.0), {"count": 4})
-	_place("sack", Vector3(x + 0.6, 0.0, z - 0.4), Vector3(0.0, 1.1, 0.0))
-	_place("sack", Vector3(x + 0.4, 0.55, z + 0.5), Vector3(0.0, 0.4, 0.0))
-	_place("storage_box", Vector3(x - 0.2, 0.0, z + 1.8), Vector3(0.0, 0.9, 0.0))
-	_place("biscuit_tin", Vector3(x, 1.62, z - 1.2))
-	_place("muri_tin", Vector3(x, 1.05, z + 1.2))
-	_place("gas_cylinder", Vector3(x + 1.0, 0.0, z + 1.9))
-	_place("pallet", Vector3(x, 0.0, z + 2.6))
-	_place("hay_bale", Vector3(x, 0.16, z + 2.6))
-	_place("water_bucket", Vector3(x - 1.0, 0.0, z + 2.0))
-	_place("bulb_hanging", Vector3(x, structure.height - 0.3, z), Vector3.ZERO, {"drop": 0.8})
+	## Not a room any more. In an 8.5 x 10.5 m single-volume workshop there is no
+	## separate store, so the stock occupies the north-west corner: one shelf, a crate
+	## stack, the sacks, and the gas cylinder that has nowhere else to live. The
+	## previous version had two 2.6 m shelf units, a pallet with a hay bale and a
+	## bucket — about four square metres of floor that this room does not have.
+	var half_w: float = structure.half_w
+	var sx: float = -half_w + 0.3
+	_place("shelf_unit", Vector3(sx, 0.0, -4.25), Vector3(0.0, PI * 0.5, 0.0), {"w": 1.5, "levels": 5, "d": 0.36})
+	_place("crate_stack", Vector3(-half_w + 0.8, 0.0, -2.9), Vector3(0.0, 0.3, 0.0), {"count": 3})
+	_place("sack", Vector3(-2.7, 0.0, -4.4), Vector3(0.0, 1.1, 0.0), {"scale": 0.88})
+	_place("sack", Vector3(-2.62, 0.44, -4.3), Vector3(0.0, 0.4, 0.0), {"scale": 0.76})
+	_place("gas_cylinder", Vector3(-half_w + 0.62, 0.0, -5.0))
+	# tin and label sit on shelf planks: the unit's levels are at 0.18/0.695/1.21/
+	# 1.725/2.24, so these y values are measured, not guessed
+	_place("muri_tin", Vector3(sx + 0.02, 0.71, -4.15))
+	_place("storage_box", Vector3(-half_w + 0.58, 0.0, -3.8), Vector3(0.0, 0.9, 0.0), {"w": 0.26, "h": 0.17, "d": 0.19})
+	_place("bulb_hanging", Vector3(-half_w + 1.3, structure.height - 0.15, -4.2), Vector3.ZERO, {"drop": 0.5})
+	_place("shelf_label", Vector3(sx + 0.19, 1.225, -4.2), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.11})
 
 
 # ===========================================================================
@@ -831,9 +770,20 @@ func _vec3(v: Variant) -> Vector3:
 
 
 func _inside_authored(p: Vector3) -> bool:
+	## True when a point would spawn inside authored furniture. A point within half
+	## a metre of a box's top face is allowed instead: that is what "on the bench"
+	## means, and every station's box is taller than the surface it describes — the
+	## mechanical bench by 0.45 m because of its tool rail, and all of them by
+	## 0.5 m below floor level because their collision shapes are centred on the
+	## prop origin. Without this tolerance the bench-top group rejected all 84 of
+	## its attempts and placed nothing, which is what the build log showed.
 	for box: AABB in _occupied:
-		if box.has_point(p + Vector3(0.0, 0.1, 0.0)):
-			return true
+		var probe: Vector3 = p + Vector3(0.0, 0.1, 0.0)
+		if not box.has_point(probe):
+			continue
+		if probe.y >= box.position.y + box.size.y - 0.55:
+			continue
+		return true
 	return false
 
 
@@ -862,16 +812,16 @@ func _desc_from_kind(kind: String) -> String:
 # ===========================================================================
 
 func _wall_racks() -> void:
+	## Two rails, not three. The third ran along the west wall at z = 5.4, which is
+	## outside this room's north wall, and the first carried ten tools across 3.1 m
+	## of wall — longer than the bench it served. One rail per bench, sized to it.
 	var rack_specs: Array = [
-		{"origin": Vector3(-structure.half_w + 0.3, 1.75, 2.2), "facing": PI * 0.5,
-			"tools": ["hammer", "hacksaw", "pipe_wrench", "pliers", "spanner", "screwdriver", "chisel", "tape_measure", "spirit_level", "file_metal"],
-			"spacing": 0.29},
-		{"origin": Vector3(-structure.half_w + 0.3, 1.3, 5.4), "facing": PI * 0.5,
-			"tools": ["spanner", "screwdriver", "pliers", "adjustable_wrench", "hammer", "tyre_lever", "chisel"],
-			"spacing": 0.31},
-		{"origin": Vector3(structure.half_w - 0.3, 1.7, 2.0), "facing": -PI * 0.5,
-			"tools": ["soldering_iron", "wire_cutters", "screwdriver", "pliers", "tape_measure"],
-			"spacing": 0.3},
+		{"origin": Vector3(-structure.half_w + 0.3, 1.72, 1.7), "facing": PI * 0.5,
+			"tools": ["hammer", "hacksaw", "pipe_wrench", "pliers", "spanner", "tape_measure"],
+			"spacing": 0.30},
+		{"origin": Vector3(structure.half_w - 0.3, 1.66, 3.8), "facing": -PI * 0.5,
+			"tools": ["soldering_iron", "wire_cutters", "pliers", "screwdriver"],
+			"spacing": 0.32},
 	]
 	for rs: Dictionary in rack_specs:
 		var origin: Vector3 = rs["origin"]
@@ -919,12 +869,14 @@ func _cables() -> void:
 	var half_l: float = structure.half_l
 	var x: float = structure.half_w
 
-	# 1. switchboard -> mechanical bench, a bundled loom of four
+	# 1. switchboard -> mechanical bench, a bundled loom of four. The switchboard
+	# is on the west wall at z = 3.6 and the bench at z = 1.7, so these runs are
+	# short and steep rather than the six-metre diagonal the old plan had.
 	var loom_wires: Array = [
-		{"start": Vector3(-x + 0.4, 1.6, half_l - 1.6), "end": Vector3(-x + 1.2, 0.98, 3.0), "sag": 0.28},
-		{"start": Vector3(-x + 0.4, 1.55, half_l - 1.6), "end": Vector3(-x + 1.6, 0.98, 2.4), "sag": 0.3},
-		{"start": Vector3(-x + 0.4, 1.5, half_l - 1.6), "end": Vector3(-x + 2.2, 0.98, 4.4), "sag": 0.34},
-		{"start": Vector3(-x + 0.4, 1.45, half_l - 1.6), "end": Vector3(-x + 0.9, 0.0, 5.8), "sag": 0.5},
+		{"start": Vector3(-x + 0.4, 1.62, half_l - 1.65), "end": Vector3(-x + 1.3, 0.98, 2.4), "sag": 0.26},
+		{"start": Vector3(-x + 0.4, 1.56, half_l - 1.65), "end": Vector3(-x + 1.1, 0.98, 1.9), "sag": 0.28},
+		{"start": Vector3(-x + 0.4, 1.5, half_l - 1.65), "end": Vector3(-x + 0.8, 0.98, 1.4), "sag": 0.3},
+		{"start": Vector3(-x + 0.4, 1.44, half_l - 1.65), "end": Vector3(-x + 0.9, 0.02, 4.1), "sag": 0.42},
 	]
 	var bundle: MeshInstance3D = gen.make_node({
 		"wires": loom_wires, "radius": 0.011, "radial_segments": 7, "length_segments": 26,
@@ -933,56 +885,61 @@ func _cables() -> void:
 	add_child(bundle)
 	_bundle_stats = gen.last_stats.duplicate()
 
-	# 2. workstation loom: tower -> CRT -> LCD -> socket, bundled
+	# 2. workstation loom: tower -> monitors -> wall socket, bundled
 	var ws_wires: Array = [
-		{"start": Vector3(x - 2.4, 0.35, 3.1), "end": Vector3(x - 1.9, 0.94, 3.6), "sag": 0.12},
-		{"start": Vector3(x - 2.4, 0.35, 3.1), "end": Vector3(x - 1.0, 0.94, 3.5), "sag": 0.16},
-		{"start": Vector3(x - 2.4, 0.35, 3.1), "end": Vector3(x - 1.5, 0.94, 4.3), "sag": 0.1},
-		{"start": Vector3(x - 2.4, 0.35, 3.1), "end": Vector3(x - 0.2, 1.3, 3.0), "sag": 0.3},
+		{"start": Vector3(x - 0.62, 0.36, 2.85), "end": Vector3(x - 0.24, 0.9, 1.9), "sag": 0.1},
+		{"start": Vector3(x - 0.62, 0.36, 2.85), "end": Vector3(x - 0.2, 0.92, 1.0), "sag": 0.14},
+		{"start": Vector3(x - 0.62, 0.36, 2.85), "end": Vector3(x - 0.14, 1.2, 4.0), "sag": 0.3},
 	]
 	add_child(gen.make_node({
 		"wires": ws_wires, "radius": 0.008, "radial_segments": 6, "length_segments": 22,
 		"spread": 0.022, "material": sleeve, "u_scale": 1.6,
 	}, "WorkstationLoom"))
 
-	# 3. IPS leads: battery rack -> switchboard, the heaviest cables in the room
+	# 3. IPS leads: the battery rack down to the stabilizer and the floor strip,
+	# which are on the same wall it is. They used to run the width of the room to
+	# the switchboard, which is now on the opposite wall.
 	add_child(gen.make_node({
 		"wires": [
-			{"start": Vector3(x - 3.2, 0.35, 5.9), "end": Vector3(x - 2.2, 0.02, 5.4), "sag": 0.12},
-			{"start": Vector3(x - 3.2, 0.35, 5.9), "end": Vector3(x - 1.2, 0.02, 5.2), "sag": 0.14},
-			{"start": Vector3(x - 3.2, 0.4, 5.9), "end": Vector3(x - 0.2, 1.3, 3.0), "sag": 0.5},
+			{"start": Vector3(x - 1.0, 0.4, 4.0), "end": Vector3(x - 0.35, 0.04, 3.62), "sag": 0.1},
+			{"start": Vector3(x - 1.0, 0.4, 4.0), "end": Vector3(x - 0.5, 0.04, 3.42), "sag": 0.12},
+			{"start": Vector3(x - 1.0, 0.44, 4.0), "end": Vector3(x - 1.55, 0.02, 3.25), "sag": 0.16},
 		],
 		"radius": 0.016, "radial_segments": 8, "length_segments": 28, "spread": 0.04,
 		"material": red, "u_scale": 2.4,
 	}, "IpsLeads"))
 
-	# 4. the reactor feed: a single thick conduit-cable, the labelled one
+	# 4. the reactor feed: a thick conduit-cable from the reactor housing on the
+	# north wall down to the platform cradle — its actual source, a 3.5 m run inside
+	# the assembly bay. The earlier version started on the east wall and crossed the
+	# whole room at chest height, which cut the electronics bench in half.
 	var feed: MeshInstance3D = gen.make_node({
-		"start": Vector3(x - 0.4, 1.4, 2.4), "end": Vector3(0.0, 0.42, -2.2),
-		"sag": 1.1, "slack": 0.4, "sideways": 0.6, "radius": 0.03,
+		"start": Vector3(1.45, 1.75, -4.75), "end": Vector3(0.05, 0.5, -1.55),
+		"sag": 0.35, "slack": 0.25, "sideways": 0.3, "radius": 0.03,
 		"radial_segments": 12, "length_segments": 44, "material": holo, "u_scale": 4.0,
 		"taper": 0.96,
 	}, "ReactorFeed")
 	add_child(feed)
 	_feed_stats = gen.last_stats.duplicate()
 
-	# 5. hanging runs along the ceiling beams, sagged and spaced
-	for i: int in range(5):
-		var z: float = -structure.half_l + 1.6 + float(i) * 2.6
+	# 5. hanging runs along the ceiling, sagged and spaced. Three runs at 3 m
+	# rather than five at 2.6 m: the room is 10.5 m long, not 16.5 m.
+	for i: int in range(3):
+		var z: float = -3.0 + float(i) * 3.0
 		var hang: MeshInstance3D = gen.make_hang(
 			Vector3(-structure.half_w + 0.4, structure.height - 0.28, z),
 			Vector3(structure.half_w - 0.4, structure.height - 0.32, z + 0.3),
-			1.06, 0.009, [sleeve, blue, yellow, sleeve, holo][i], 30)
+			1.06, 0.009, [sleeve, blue, yellow][i], 30)
 		hang.name = "CeilingRun%d" % i
 		add_child(hang)
 
-	# 6. the loose jumper cables a workshop always has, draped over the shelf
+	# 6. the loose jumper cables a workshop always has, draped over the shelf edge
 	add_child(gen.make_hang(
-		Vector3(-structure.half_w + 0.6, 1.9, 0.6),
-		Vector3(-structure.half_w + 1.4, 0.98, 1.2), 1.35, 0.007, blue, 24))
+		Vector3(-structure.half_w + 0.5, 1.55, -0.5),
+		Vector3(-structure.half_w + 1.1, 0.9, 0.1), 1.35, 0.007, blue, 24))
 	add_child(gen.make_hang(
-		Vector3(structure.half_w - 0.5, 1.85, 2.0),
-		Vector3(structure.half_w - 1.6, 0.94, 2.3), 1.4, 0.006, yellow, 24))
+		Vector3(structure.half_w - 0.5, 1.6, 2.6),
+		Vector3(structure.half_w - 1.4, 0.93, 2.9), 1.4, 0.006, yellow, 24))
 
 
 var _bundle_stats: Dictionary = {}
@@ -991,6 +948,31 @@ var _feed_stats: Dictionary = {}
 
 func cable_stats() -> Dictionary:
 	return {"bundle": _bundle_stats, "reactor_feed": _feed_stats}
+
+
+func dressing_breakdown() -> Dictionary:
+	## Counters for the documentation: how the placements divide between the
+	## authored areas, the wall racks and the seeded procedural layouts, and how
+	## efficient the rejection sampler actually was. Read from `placed` rather than
+	## hand-counted, so the number in the thesis is the number the build made.
+	var procedural: int = 0
+	var racks: int = 0
+	for key: String in placed:
+		if key.begins_with("~procedural:"):
+			procedural += int(placed[key])
+		elif key.begins_with("~rack:"):
+			racks += int(placed[key])
+	var eff_sum: float = 0.0
+	for s: Dictionary in _layout_stats:
+		eff_sum += float(s.get("efficiency", 0.0))
+	return {
+		"total": placed_count,
+		"authored": placed_count - procedural - racks,
+		"procedural": procedural,
+		"racks": racks,
+		"layout_groups": _layout_stats.size(),
+		"sampler_efficiency": eff_sum / maxf(float(_layout_stats.size()), 1.0),
+	}
 
 
 # ===========================================================================
@@ -1220,49 +1202,36 @@ func _crate_tag_spec(short: String, detail: String) -> Dictionary:
 # ===========================================================================
 
 func _ambience_props() -> void:
-	## Objects that exist to be looked at rather than used: the tea corner, the
-	## hanging gamcha, the sack pile, the newspaper underfoot.
-	var half_l: float = structure.half_l
-	_place("tea_glass", Vector3(-2.2, 0.72, 7.3))
-	_place("tea_glass", Vector3(-1.9, 0.72, 7.5))
-	_place("flask", Vector3(-2.5, 0.72, 7.1))
-	_place("muri_tin", Vector3(-1.6, 0.72, 7.0))
-	_place("biscuit_tin", Vector3(-2.8, 0.72, 6.8))
-	_place("newspaper_fold", Vector3(-1.4, 0.02, 6.2))
-	_place("newspaper_fold", Vector3(2.0, 0.02, 5.0))
-	_place("towel_hanging", Vector3(-3.0, structure.height - 0.55, 2.4), Vector3(0.0, 0.2, 0.0), {"length": 0.8})
-	_place("towel_hanging", Vector3(2.6, structure.height - 0.6, 4.8), Vector3(0.0, -0.3, 0.0), {"length": 0.7})
-	_place("sack", Vector3(-4.2, 0.0, -6.4), Vector3(0.0, 0.7, 0.0))
-	_place("sack", Vector3(-4.0, 0.42, -6.0), Vector3(0.0, -0.3, 0.0), {"scale": 0.85})
-	_place("water_bucket", Vector3(4.4, 0.0, 7.2))
-	_place("cup_brush", Vector3(4.1, 0.02, 7.0))
-	_place("soap_dish", Vector3(-5.4, 0.02, 7.4))
-	_place("comb", Vector3(-5.1, 0.02, 7.2))
-	_place("plastic_bag_roll", Vector3(-6.0, 1.9, 4.0))
-	_place("shelf_label", Vector3(-6.1, 1.4, 0.6), Vector3(0.0, PI * 0.5, 0.0))
-	_place("shelf_label", Vector3(6.1, 1.4, 2.0), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("hook_nail", Vector3(-6.1, 2.1, 6.8), Vector3(0.0, PI * 0.5, 0.0))
-	_place("photo_frame", Vector3(-6.0, 1.9, 7.6), Vector3(0.0, PI * 0.5, 0.0))
-	_place("clip_board", Vector3(6.0, 1.9, 5.6), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("gas_cylinder", Vector3(-5.6, 0.0, -6.8))
-	_place("pallet", Vector3(5.2, 0.0, -6.2))
-	_place("crate_stack", Vector3(5.2, 0.18, -6.2), Vector3(0.0, 0.6, 0.0), {"count": 3})
-	_place("cable_reel", Vector3(-5.8, 0.0, -4.0))
-	_place("steel_drum", Vector3(5.6, 0.0, -3.0))
-	_place("scrap_bin", Vector3(-5.2, 0.0, -2.0))
-	_place("bicycle", Vector3(5.0, 0.0, 7.6), Vector3(0.0, 2.4, 0.0))
-	_place("wheel_motorcycle", Vector3(-3.4, 0.3, -7.0), Vector3(0.0, 0.4, PI * 0.5))
-	_place("tyre", Vector3(3.2, 0.28, -7.2), Vector3(0.0, -0.3, PI * 0.5))
-	_place("hand_drill", Vector3(-4.6, 0.98, 2.2))
-	_place("impact_driver", Vector3(4.2, 0.94, 2.6))
-	_place("cutting_torch", Vector3(-4.9, 0.0, 4.4))
-	_place("tool_chest", Vector3(-4.8, 0.0, 0.2), Vector3(0.0, 0.4, 0.0), {"width": 0.5})
-	_place("radio", Vector3(4.6, 0.96, 6.6))
-	_place("wall_clock", Vector3(6.05, 2.5, 6.4), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("poster", Vector3(-6.05, 2.4, -3.0), Vector3(0.0, PI * 0.5, 0.0), {"variant": 3})
-	_place("poster", Vector3(6.05, 2.3, -4.6), Vector3(0.0, -PI * 0.5, 0.0), {"variant": 4})
-	_place("wall_calendar", Vector3(6.05, 2.35, 0.6), Vector3(0.0, -PI * 0.5, 0.0))
-	_place("ceiling_fan", Vector3(0.0, structure.height - 0.2, 5.2), Vector3.ZERO, {"radius": 0.6, "drop": 0.46})
-	_place("fluorescent_battlement", Vector3(0.0, structure.height - 0.35, 6.4), Vector3(0.0, PI * 0.5, 0.0), {"length": 1.6})
-	_place("bulb_hanging", Vector3(3.6, structure.height - 0.35, -5.6), Vector3.ZERO, {"drop": 1.0})
-	_place("pedestal_fan", Vector3(-2.0, 0.0, -6.6), Vector3(0.0, 1.0, 0.0))
+	## Objects that exist to be looked at rather than used. Cut from forty-odd to
+	## fifteen: the old list ran to z = 7.6, a metre past this room's north wall,
+	## and it duplicated objects the areas now place themselves — two wall
+	## calendars, two ceiling fans, three loose tyres, a second bicycle.
+	var x: float = structure.half_w
+	# the ceiling fixtures the World A circuit is aimed at. The mechanical bench's
+	# batten is placed by _area_mechanical(); these are the other three zones.
+	var tubes: Array = [
+		Vector3(1.9, structure.height - 0.3, 1.6),
+		Vector3(0.0, structure.height - 0.32, 3.5),
+		Vector3(-1.9, structure.height - 0.3, 3.9),
+	]
+	for i: int in range(tubes.size()):
+		_place("fluorescent_battlement", tubes[i], Vector3(0.0, PI * 0.5, 0.0), {"length": 1.2})
+	# the wet-weather line: two towels on the rope that crosses the room
+	_place("towel_hanging", Vector3(-1.2, 2.92, 2.16), Vector3(0.0, 0.2, 0.0), {"length": 0.62})
+	_place("towel_hanging", Vector3(0.6, 2.9, 2.28), Vector3(0.0, -0.3, 0.0), {"length": 0.5})
+	# newspaper pages that blew off the bench
+	_place("newspaper_fold", Vector3(-0.9, 0.02, 3.35), Vector3(0.0, 0.6, 0.0))
+	_place("newspaper_fold", Vector3(1.4, 0.02, 0.4), Vector3(0.0, 2.1, 0.0))
+	# the wall clock over the shutter, and the photograph of the first bench
+	_place("wall_clock", Vector3(x - 0.02, 2.5, 4.55), Vector3(0.0, -PI * 0.5, 0.0))
+	_place("hook_nail", Vector3(-x + 0.02, 1.78, 0.3), Vector3(0.0, PI * 0.5, 0.0))
+	_place("photo_frame", Vector3(-x + 0.03, 1.68, 0.3), Vector3(0.0, PI * 0.5, 0.0))
+	# the polythene bag roll on the top store plank (y = 1.725 + 0.014), and the
+	# radio, drill and driver on the mechanical shelf's second plank, both on
+	# measured plank heights rather than somewhere near them
+	_place("plastic_bag_roll", Vector3(-3.92, 1.739, -3.62), Vector3(0.0, 0.2, 0.0))
+	_place("radio", Vector3(-3.86, 0.881, -0.72), Vector3(0.0, 0.35, 0.0))
+	_place("hand_drill", Vector3(-3.88, 0.881, -1.08), Vector3(0.0, 0.3, 0.0))
+	_place("impact_driver", Vector3(-3.86, 0.881, -1.42), Vector3(0.0, -0.4, 0.0))
+	# the brush by the bucket at the drain, where the floor gets washed down
+	_place("cup_brush", Vector3(3.45, 0.02, 4.62))

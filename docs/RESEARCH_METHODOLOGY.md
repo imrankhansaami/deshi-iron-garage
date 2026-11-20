@@ -210,9 +210,9 @@ The traceability is explicit:
 | Five terms in the core | `shaders/energy_core.gdshader` |
 | Parallel-transport framing | `CableGenerator.parallel_transport_frames()` |
 | Bundling saves draw calls | `CableGenerator.generate_bundle()` — one `SurfaceTool`, one `commit()` |
-| Seven shadow casters of 31 lights | `GarageEnvironment` registers 31; the bench reports the caster count |
+| Seven shadow casters of 30 lights | `GarageEnvironment` registers 30; the bench reports the caster count |
 | Shutter drives the daylight | `GarageEnvironment.set_shutter_influence()`, called from `GarageWorld._process()` |
-| 352 props, 174 kinds | `GarageWorld.build_report()` |
+| 175 props, 130 kinds | `GarageWorld.build_report()` |
 | Screen content reads the simulation | `ScreenContent._snapshot()`, called by every screen and every panel |
 
 Anything that is a **limitation** is listed in `README.md` §10 and `docs/GRAPHICS_ALGORITHMS.md` §9,

@@ -114,8 +114,8 @@ This is stated as a limitation in the README and in `docs/EXPERIMENTS.md`.
 The identity comes from the environment rather than from flags or signage volume. Specifically:
 
 - **Architecture**: corrugated tin gable on welded trusses with a ridge vent; brick outer skin with a
-  plaster inner skin so corners show the correct material on each face; a painted dado band; a loft
-  with a bamboo ladder; a five-way switchboard with a weather-proof gland.
+  plaster inner skin so corners show the correct material on each face; a painted dado band; a
+  four-way switchboard with a weather-proof gland.
 - **Vernacular objects**: rickshaw chassis with a canopy and painted decorative panel; wire-spoked
   wheels; a tea stall cart with a gas burner and glasses; a tubewell bucket; a muri tin; a gamcha
   towel on a nail; chappals by the door; a cot with a woven rope bed; a plastic chair; a gas cylinder.
@@ -137,10 +137,10 @@ recorded in `docs/ASSET_LICENSES.md`.
 |---|---|
 | First-person controller | WASD, mouse look, sprint, crouch-walk, gravity, jump, distance-driven head bob, material-aware footsteps |
 | Interaction | Raycast focus with a bounding-box reticle, contextual prompts, E to operate, F to inspect |
-| Interactable stations | 53 registered, across 20 behaviour kinds |
+| Interactable stations | 34 registered, across 20 behaviour kinds |
 | Power | 4 circuits, sequential energisation, tube strike simulation, live circuit isolation from the MCB row |
 | Workstation | 6-section `Control`-built interface reading live simulation state, with a POST → login → ready boot |
-| In-world screens | 11 screen meshes, 6 live `SubViewport`s, temperature-graded CRT and LCD glass shader |
+| In-world screens | 5 screen meshes, 5 live `SubViewport`s, temperature-graded CRT and LCD glass shader |
 | Hologram | Interactive raise/lower, 6 live shader parameters exposed in the graphics bench |
 | Energy core | Interactive activation, 6 parameters exposed, drives its own light and the suit optics |
 | Assembly | 3 modules, 14 parts, one Tween chain, deck lift, arm choreography, core ignition |
@@ -162,7 +162,7 @@ Six documents expand this; the short version of what was built and where:
 | Energy-core emissive shader | `shaders/energy_core.gdshader` | Custom |
 | Procedural cable geometry: catenary path, parallel-transport sweep, bundling | `scripts/procedural/cable_generator.gd` | Custom |
 | Interactive lighting as four switchable circuits | `scripts/garage/garage_environment.gd` | Extended |
-| Procedural prop generation: 4 catalogues, 174 kinds | `scripts/procedural/props_*.gd` | Custom |
+| Procedural prop generation: 4 catalogues, 130 kinds | `scripts/procedural/props_*.gd` | Custom |
 | Runtime audio synthesis: 22 sounds, no library | `scripts/procedural/audio_synth.gd` | Custom |
 | Display glass, holographic floor, machined metal, cable sleeve | `shaders/*.gdshader` | Custom |
 
@@ -188,10 +188,10 @@ assembly sequence. That is the localisation requirement, implemented as configur
 
 On Intel UHD 620 at 1600×900, Forward+:
 
-- Garage build: **10.6 s** (280 ms of it surface synthesis for the first surface, 5.8 s structure,
-  4.2 s dressing 352 props)
+- Garage build: **10.4 s** (5.8 s structure, 4.0 s dressing for 169 placements; 8.7 s of the total is
+  surface synthesis, spread across both steps)
 - Medium preset: **40–55 fps**, SDFGI/SSR/volumetric fog off
 - High preset: **18–26 fps**, all global-illumination features on
-- 31 lights, 7 of them shadow casters, 6 live screen viewports
+- 30 lights, 7 of them shadow casters, 5 live screen viewports
 
 `docs/EXPERIMENTS.md` holds the per-experiment tables and the exact configuration for each row.

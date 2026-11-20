@@ -154,10 +154,12 @@ static func crt_monitor(f: PropFactory, o: Dictionary) -> Node3D:
 	back.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 	root.add_child(back)
 	# the curved tube face: a squashed sphere, the only honest approximation of a
-	# shadow-mask envelope without importing a model. It protrudes by design.
-	var face: MeshInstance3D = ShapeKit.sphere(w * 0.62, f.ML.glass_screen(), 18, "Screen")
-	face.position = Vector3(0.0, h * 0.52, -d * 0.5 + cab_d + 0.012)
-	face.scale = Vector3(1.0, 0.82, 0.30)
+	# shadow-mask envelope without importing a model. It was r = 0.62·w and bulged
+	# wider than its own cabinet, so it read as a green ball on the desk; scaled to
+	# the cabinet and flattened, it now reads as the glass of a CRT.
+	var face: MeshInstance3D = ShapeKit.sphere(w * 0.5, f.ML.glass_screen(), 18, "Screen")
+	face.position = Vector3(0.0, h * 0.52, -d * 0.5 + cab_d + 0.008)
+	face.scale = Vector3(1.0, 0.84, 0.22)
 	root.add_child(face)
 	# the bezel frames the face rather than covering it
 	var bezel_top: MeshInstance3D = ShapeKit.box(Vector3(w * 0.98, h * 0.12, 0.03), case_mat, "BezelTop")

@@ -39,11 +39,14 @@ godot --path .
 
 # or run directly
 godot --path . res://scenes/main/main_menu.tscn
+
+# or jump straight to the garage, skipping the title screen
+godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 352 props,
-portals and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
-**10.6 s**, reported on screen step by step and written to a log.
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 175 props,
+screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
+**10.4 s**, reported on screen step by step and written to a log.
 
 On first run the quality preset is `high`, which raises texture resolution and enables SDFGI, SSR and
 volumetric fog. If the machine struggles, `medium` halves the surface work and turns off the
@@ -53,9 +56,10 @@ global-illumination features; the Settings panel switches it live.
 
 Dropping an empty file named `capture.flag` next to `project.godot` puts the world into verification
 mode: it drives the whole twelve-step progression, then parks the camera at twelve fixed viewpoints
-and writes a PNG plus a luminance histogram for each, then quits. This is how the screenshots in
-`captures/` and the tables in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and
-has no effect without the flag file.
+and writes a PNG plus a luminance histogram for each, then quits. The files land in `user://captures/`
+(`%APPDATA%\Godot\app_userdata\Deshi Iron Garage\captures\` on Windows), which is how the screenshots
+quoted in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and has no effect without
+the flag file.
 
 ---
 
@@ -111,9 +115,9 @@ The garage is one room holding two visual registers, and the contrast between th
 **World A — the Bangladeshi workshop.** Corrugated tin gable roof on welded trusses, brick and
 plaster walls with a painted dado, a wooden bench scarred through to the grain, a pegboard of
 hanging tools, a split single-cylinder motorcycle engine, a wire-spoked rickshaw wheel, a stripped
-tube frame, a chain-hoist, tea glasses and a flask, a wall calendar with Bengali month names, an
-IPS battery rack, a second-hand desktop with its side panel missing, an opened CRT with the anode
-still attached.
+tube frame, an overhead gantry rail, tea glasses and a flask, a wall calendar with Bengali month
+names, an IPS battery rack, a second-hand desktop with its side panel missing, an opened CRT with the
+anode still attached.
 
 **World B — the laboratory the student built inside it.** A circular assembly stage with a lifting
 segmented deck, four two-axis manipulators built from motorcycle forks and servo boxes, a reactor
@@ -147,11 +151,11 @@ geometry, not asserted in text.
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **352 props in 174 distinct kinds** in 4.2 s.
+  prop catalogues build **175 props in 130 distinct kinds** in 4.0 s.
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.
-- **Seeded procedural layout.** Eight placement groups distribute small clutter by rejection
+- **Seeded procedural layout.** Four placement groups distribute small clutter by rejection
   sampling against a minimum spacing and the authored furniture's bounding boxes, so the garage is
   identical on every run and the screenshots are comparable.
 - **An original exosuit** of fourteen named parts with a documented home transform each, designed
@@ -168,7 +172,7 @@ geometry, not asserted in text.
 - A workstation interface built from Godot `Control` nodes only — no screenshots, no browser windows —
   with six sections that genuinely read the simulation (assembly stage, module inventory, blueprint
   positions, derived diagnostics, circuit states, a 200-line system log).
-- The eleven screens in the world are live `SubViewport`s sampled by the display-glass shader and
+- The five screens in the world are live `SubViewport`s sampled by the display-glass shader and
   refreshed at 12 Hz, so the monitors are showing the game's actual state, not a baked image.
 - Animated assembly: one auditable `Tween` chain — deck plates rise, arms sweep, modules fly in,
   fourteen parts attach in a fixed order, the core ignites, the optics light.
@@ -203,13 +207,13 @@ in-world graphics bench. These are the numbers the application reports about its
 
 | Measurement | Value |
 |---|---|
-| Full garage build | 10.6 s |
-| Surface synthesis, first 256 px surface | 280 ms |
-| Props built | 352 (174 kinds) |
-| Interactive stations | 53 |
-| Registered lights | 31 (of which shadow casters: 7) |
-| Live screen SubViewports | 6 |
-| Mesh cache | 3458 hits, 1386 misses |
+| Full garage build | 10.4 s |
+| Surface synthesis, first 256 px surface | 272 ms |
+| Props built | 175 (130 kinds) |
+| Interactive stations | 34 |
+| Registered lights | 30 (of which shadow casters: 7) |
+| Live screen SubViewports | 5 |
+| Mesh cache | 1684 hits, 1044 misses |
 | Sustained frame rate, medium preset | 40–55 fps |
 | Sustained frame rate, high preset | 18–26 fps |
 
@@ -257,9 +261,10 @@ scripts/
   player/                   # Player
   ui/                       # Hud, BenchmarkPanel, MainMenu
 tests/
-  validate_scripts.gd       # headless compile check for all 37 scripts
+  validate_scripts.gd       # headless compile check for all 38 scripts
   timing_probe.gd           # measures surface synthesis at three resolutions
   introspect.gd             # engine API introspection, used during development
+  dump_floor.gd             # headless scene inspector: names what a capture shows
 docs/                       # eight thesis documents
 ```
 
@@ -295,8 +300,8 @@ Stated plainly, because a thesis is worth less without it:
   trade-off is measured in Experiment 5 rather than hidden.
 - **Surface synthesis is single-threaded GDScript arithmetic.** The noise *fields* are generated in
   C++ by `FastNoiseLite`, but the per-texel compositing loop is interpreted, and it dominates load
-  time at 280 ms per 256 px surface. Moving that loop to a compute shader is the single largest
-  available optimisation and was not done.
+  time at 272 ms per 256 px surface — 8.7 s of the 10.4 s build. Moving that loop to a compute
+  shader is the single largest available optimisation and was not done.
 - **Bengali text is baked through the engine's text stack, not hand-shaped.** This is the correct
   approach and produces correct conjuncts, but it means a Bengali string's first appearance costs a
   `SubViewport` render, which is why sign bakes are asynchronous.

@@ -521,7 +521,17 @@ func _tab_cables(box: VBoxContainer) -> void:
 	box.add_child(host)
 	_cable_probe_root = Node3D.new()
 	_cable_probe_root.name = "CableProbe"
+	# The probe is demonstration geometry for this panel: a five-wire bundle. As a
+	# Node3D under a Control it does not inherit any 2D transform, so it was
+	# rendering in the middle of the garage at (0, 0.9, 0) all the time — the dark
+	# bundle hanging over the walkway in the assembly captures. It is only visible
+	# while the panel is.
+	_cable_probe_root.visible = false
+	_cable_probe_root.position = Vector3(0.0, 1.6, 3.9)
 	host.add_child(_cable_probe_root)
+	visibility_changed.connect(func() -> void:
+		if _cable_probe_root != null:
+			_cable_probe_root.visible = visible)
 	_cable_params = {
 		"length_segments": 24, "radial_segments": 8, "radius": 0.018,
 		"sag": 0.35, "slack": 0.0, "bundle": true,
@@ -580,6 +590,7 @@ func _regen_cable() -> void:
 	mi.mesh = mesh
 	mi.material_override = mat
 	_cable_probe_root.add_child(mi)
+	_cable_probe_root.visible = visible
 	_probe_stats = gen.last_stats
 	_report_cable()
 

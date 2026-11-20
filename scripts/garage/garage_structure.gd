@@ -17,14 +17,14 @@ extends Node3D
 ##     but only the shell does. Props carry their own, so the physics world stays
 ##     at roughly a dozen static bodies instead of four hundred.
 
-const WALL_THICKNESS: float = 0.28
-const ROOF_PITCH: float = 0.38          # radians, ~22 degrees
-const TRUSS_SPACING: float = 2.2
-const COLUMN_SECTION: float = 0.24
+const WALL_THICKNESS: float = 0.26
+const ROOF_PITCH: float = 0.42
+const TRUSS_SPACING: float = 2.0
+const COLUMN_SECTION: float = 0.2
 
-var width: float = 13.0
-var length: float = 16.5
-var height: float = 4.6
+var width: float = 8.5
+var length: float = 10.5
+var height: float = 3.4
 var ML: MaterialLibrarySingleton
 var props: PropFactory
 var baker: SignageBaker
@@ -32,10 +32,13 @@ var rng: RandomNumberGenerator
 
 ## Interior extents, exposed so the dressing and lighting passes can share one
 ## coordinate convention instead of recomputing it.
-var half_w: float = 6.5
-var half_l: float = 8.25
-var shutter_width: float = 3.6
-var shutter_height: float = 3.0
+var half_w: float = 4.25
+var half_l: float = 5.25
+## The opening is sized to the building rather than to a car: a single-leaf shop
+## shutter in a garage this small is about 2.6 m wide and 2.25 m high, which is
+## wide enough to wheel a motorcycle through and no wider.
+var shutter_width: float = 2.6
+var shutter_height: float = 2.25
 
 
 func setup(material_library: MaterialLibrarySingleton, prop_factory: PropFactory, signage: SignageBaker) -> void:
@@ -98,29 +101,27 @@ func _build_floor() -> void:
 		spot.rotation.y = rng_floor.randf_range(0.0, TAU)
 		spot.set_meta("floor_kind", "concrete")
 		add_child(spot)
-	# the painted walkway from the shutter to the assembly platform. Narrowed from
-	# 1.5 m and desaturated: at full hazard yellow and that width it dominated the
-	# overhead capture and read as decoration rather than as a floor marking.
-	var lane: MeshInstance3D = ShapeKit.box(Vector3(1.05, 0.005, 7.4), ML.walkway_paint(), "WalkLane")
-	lane.position = Vector3(0.0, 0.003, 3.4)
+	# the painted walkway from the shutter to the assembly platform, and the drain
+	# in front of it. Both are scaled to the new extents: a 7.4 m lane in a 10.5 m
+	# room would run from the shutter to the back wall with nothing at either end.
+	var lane: MeshInstance3D = ShapeKit.box(Vector3(0.95, 0.005, 5.2), ML.walkway_paint(), "WalkLane")
+	lane.position = Vector3(0.0, 0.003, 2.5)
 	lane.set_meta("floor_kind", "concrete")
 	add_child(lane)
 	for i: int in range(2):
-		var edge: MeshInstance3D = ShapeKit.box(Vector3(0.05, 0.006, 7.4), ML.walkway_paint(), "LaneEdge%d" % i)
-		edge.position = Vector3(0.55 * (1.0 if i == 0 else -1.0), 0.004, 3.4)
+		var edge: MeshInstance3D = ShapeKit.box(Vector3(0.05, 0.006, 5.2), ML.walkway_paint(), "LaneEdge%d" % i)
+		edge.position = Vector3(0.5 * (1.0 if i == 0 else -1.0), 0.004, 2.5)
 		add_child(edge)
-	# the drainage channel across the front of the shop
-	var channel: MeshInstance3D = ShapeKit.box(Vector3(width - 0.6, 0.02, 0.22), ML.steel_dark(), "DrainChannel")
-	channel.position = Vector3(0.0, 0.005, half_l - 1.1)
+	var channel: MeshInstance3D = ShapeKit.box(Vector3(width - 0.5, 0.02, 0.2), ML.steel_dark(), "DrainChannel")
+	channel.position = Vector3(0.0, 0.005, half_l - 0.85)
 	add_child(channel)
-	var grate: MeshInstance3D = ShapeKit.box(Vector3(width - 0.6, 0.012, 0.2), ML.tread_plate(), "Grate")
+	var grate: MeshInstance3D = ShapeKit.box(Vector3(width - 0.5, 0.012, 0.18), ML.tread_plate(), "Grate")
 	grate.position = channel.position + Vector3(0.0, 0.012, 0.0)
 	add_child(grate)
-	# expansion joints, because a slab this size always has them
-	for i: int in range(3):
-		var joint: MeshInstance3D = ShapeKit.box(Vector3(0.03, 0.006, length - 0.4), ML.steel_dark(), "Joint%d" % i)
-		joint.position = Vector3(-3.4 + float(i) * 3.4, 0.004, 0.4)
-		add_child(joint)
+	# one expansion joint down the centre of the slab
+	var joint: MeshInstance3D = ShapeKit.box(Vector3(0.03, 0.006, length - 0.4), ML.steel_dark(), "Joint")
+	joint.position = Vector3(0.0, 0.004, 0.3)
+	add_child(joint)
 
 
 # ===========================================================================
@@ -128,48 +129,46 @@ func _build_floor() -> void:
 # ===========================================================================
 
 func _build_plinth_and_courtyard() -> void:
-	var plinth_h: float = 0.32
-	var plinth: MeshInstance3D = ShapeKit.box(Vector3(width + 1.6, plinth_h, length + 4.0), ML.surface("concrete_block", {"uv_scale": Vector3(3.0, 3.0, 3.0)}), "Plinth")
-	plinth.position = Vector3(0.0, -plinth_h * 0.5 - 0.02, 0.8)
+	var plinth_h: float = 0.3
+	var plinth: MeshInstance3D = ShapeKit.box(Vector3(width + 1.3, plinth_h, length + 3.2), ML.surface("concrete_block", {"uv_scale": Vector3(3.0, 3.0, 3.0)}), "Plinth")
+	plinth.position = Vector3(0.0, -plinth_h * 0.5 - 0.02, 0.7)
 	add_child(plinth)
 	# courtyard ground outside the shutter, packed earth
-	var yard: MeshInstance3D = ShapeKit.box(Vector3(width + 6.0, 0.1, 6.0), ML.surface("packed_earth", {"uv_scale": Vector3(4.0, 4.0, 4.0)}), "Courtyard")
-	yard.position = Vector3(0.0, -0.2, half_l + 3.6)
+	var yard: MeshInstance3D = ShapeKit.box(Vector3(width + 5.0, 0.1, 4.6), ML.surface("packed_earth", {"uv_scale": Vector3(4.0, 4.0, 4.0)}), "Courtyard")
+	yard.position = Vector3(0.0, -0.19, half_l + 2.8)
 	yard.set_meta("floor_kind", "earth")
 	add_child(yard)
 	var yard_col := StaticBody3D.new()
 	yard_col.name = "YardBody"
-	yard_col.add_child(ShapeKit.col_box(Vector3(width + 6.0, 0.1, 6.0)))
+	yard_col.add_child(ShapeKit.col_box(Vector3(width + 5.0, 0.1, 4.6)))
 	yard_col.position = yard.position
 	add_child(yard_col)
 	# the boundary wall to the south and the neighbour's wall to the east
-	var boundary: Node3D = props.build("exterior_facade", {"width": 8.0})
-	boundary.position = Vector3(0.0, 0.0, half_l + 5.6)
+	var boundary: Node3D = props.build("exterior_facade", {"width": 6.5})
+	boundary.position = Vector3(0.0, 0.0, half_l + 4.4)
 	boundary.rotation.y = PI
 	add_child(boundary)
-	var neighbour: MeshInstance3D = ShapeKit.box(Vector3(0.3, 3.4, length + 4.0), ML.plaster(), "NeighbourWall")
-	neighbour.position = Vector3(half_w + 3.4, 1.7, 0.6)
+	var neighbour: MeshInstance3D = ShapeKit.box(Vector3(0.3, 3.0, length + 3.0), ML.plaster(), "NeighbourWall")
+	neighbour.position = Vector3(half_w + 2.9, 1.5, 0.5)
 	add_child(neighbour)
 	var neighbour2: MeshInstance3D = neighbour.duplicate() as MeshInstance3D
-	neighbour2.position = Vector3(-half_w - 3.4, 1.7, 0.6)
+	neighbour2.position = Vector3(-half_w - 2.9, 1.5, 0.5)
 	neighbour2.name = "NeighbourWallB"
 	add_child(neighbour2)
-	# a few exterior props so the approach is not empty
+	# exterior props. Reduced from five to three: at 8.5 m of frontage, a drum, a
+	# tea cart and an antenna are an approach; five objects crowd it.
 	var drum: Node3D = props.build("steel_drum", {})
-	drum.position = Vector3(half_w - 1.2, 0.0, half_l + 2.2)
+	drum.position = Vector3(half_w - 1.2, 0.0, half_l + 1.8)
 	add_child(drum)
-	var pole: Node3D = props.build("bamboo_pole", {})
-	pole.position = Vector3(-half_w + 0.8, 0.0, half_l + 3.0)
-	add_child(pole)
 	var bench: Node3D = props.build("tea_stall_box", {})
-	bench.position = Vector3(-half_w + 2.6, 0.0, half_l + 3.4)
+	bench.position = Vector3(-half_w + 2.0, 0.0, half_l + 2.6)
 	bench.rotation.y = 0.4
 	add_child(bench)
 	var antenna: Node3D = props.build("roof_antenna", {})
-	antenna.position = Vector3(half_w - 1.0, height + 0.4, -half_l + 2.0)
+	antenna.position = Vector3(half_w - 1.0, height + 0.3, -half_l + 1.6)
 	add_child(antenna)
 	var meter: Node3D = props.build("meter_box", {})
-	meter.position = Vector3(half_w - 1.4, 1.9, half_l + 0.1)
+	meter.position = Vector3(half_w - 1.2, 1.75, half_l + 0.1)
 	meter.rotation.y = -PI * 0.5
 	add_child(meter)
 
@@ -245,22 +244,23 @@ func _wall_segment(center: Vector3, size: Vector3, inward: Vector3, outer: Stand
 # ===========================================================================
 
 func _build_columns() -> void:
+	## Four columns, not six. A 8.5 x 10.5 m bay needs mid-span support at one
+	## point along each long wall; anything more turns a small workshop into a
+	## colonnade and eats the floor area the props need.
 	var mat: StandardMaterial3D = ML.surface("concrete_block", {"uv_scale": Vector3(1.0, 3.0, 1.0)})
 	var steel_col: StandardMaterial3D = ML.steel_dark()
 	var positions: Array[Vector3] = [
-		Vector3(-half_w + 0.35, 0.0, -half_l + 2.0),
-		Vector3(half_w - 0.35, 0.0, -half_l + 2.0),
-		Vector3(-half_w + 0.35, 0.0, 0.0),
-		Vector3(half_w - 0.35, 0.0, 0.0),
-		Vector3(-half_w + 0.35, 0.0, half_l - 2.0),
-		Vector3(half_w - 0.35, 0.0, half_l - 2.0),
+		Vector3(-half_w + 0.3, 0.0, -half_l + 2.2),
+		Vector3(half_w - 0.3, 0.0, -half_l + 2.2),
+		Vector3(-half_w + 0.3, 0.0, half_l - 2.4),
+		Vector3(half_w - 0.3, 0.0, half_l - 2.4),
 	]
 	for i: int in range(positions.size()):
 		var p: Vector3 = positions[i]
 		var col: MeshInstance3D = ShapeKit.box(Vector3(COLUMN_SECTION, height, COLUMN_SECTION), mat, "Column%02d" % i)
 		col.position = p + Vector3(0.0, height * 0.5, 0.0)
 		add_child(col)
-		var cap: MeshInstance3D = ShapeKit.box(Vector3(COLUMN_SECTION + 0.08, 0.06, COLUMN_SECTION + 0.08), steel_col, "Cap")
+		var cap: MeshInstance3D = ShapeKit.box(Vector3(COLUMN_SECTION + 0.07, 0.055, COLUMN_SECTION + 0.07), steel_col, "Cap")
 		cap.position = p + Vector3(0.0, height - 0.03, 0.0)
 		add_child(cap)
 		var base: MeshInstance3D = cap.duplicate() as MeshInstance3D
@@ -414,13 +414,13 @@ func _build_shutter_frame() -> void:
 
 
 func _build_window_openings() -> void:
-	## Two windows: one above the electronics bench (the light that motivates the
-	## cool zone) and a small ventilator high on the north wall. Each is a hole in
-	## the wall skin, a frame, a grille and a glass pane.
+	## Two windows now, not three. At 3.4 m headroom a high north-wall ventilator
+	## would sit in the roof pitch, so the light comes from the two side windows:
+	## one over the electronics bench (which motivates the cool zone) and one over
+	## the mechanical bench.
 	var openings: Array = [
-		{"pos": Vector3(half_w - 0.02, 2.05, 3.4), "size": Vector3(0.3, 1.15, 1.7), "yaw": 0.0, "bars": true},
-		{"pos": Vector3(-half_w + 0.02, 2.35, -2.6), "size": Vector3(0.3, 0.9, 1.4), "yaw": 0.0, "bars": true},
-		{"pos": Vector3(2.2, 3.3, -half_l + 0.02), "size": Vector3(1.2, 0.7, 0.3), "yaw": 0.0, "bars": false},
+		{"pos": Vector3(half_w - 0.02, 1.95, 2.3), "size": Vector3(0.28, 0.95, 1.5), "yaw": 0.0, "bars": true},
+		{"pos": Vector3(-half_w + 0.02, 2.05, 2.3), "size": Vector3(0.28, 0.85, 1.3), "yaw": 0.0, "bars": true},
 	]
 	for i: int in range(openings.size()):
 		var o: Dictionary = openings[i]
@@ -454,6 +454,7 @@ func _build_window_openings() -> void:
 				root.add_child(head)
 		# glass
 		var pane: MeshInstance3D = ShapeKit.box(Vector3(sz.x * 0.5, sz.y * 0.92, sz.z * 0.92), ML.glass_smoky(), "Pane")
+		pane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(pane)
 		# security bars, the reason the windows read as Bangladesh immediately
 		if bool(o.get("bars", false)):
@@ -477,80 +478,43 @@ func _build_window_openings() -> void:
 # ===========================================================================
 
 func _build_interior_details() -> void:
-	# the partition between the assembly bay and the store room
-	var partition: MeshInstance3D = ShapeKit.box(Vector3(0.12, 2.6, 4.4), ML.plaster(), "Partition")
-	partition.position = Vector3(half_w - 2.4, 1.3, -half_l + 2.4)
-	add_child(partition)
-	var part_col := StaticBody3D.new()
-	part_col.name = "PartitionBody"
-	part_col.add_child(ShapeKit.col_box(Vector3(0.12, 2.6, 4.4)))
-	part_col.position = partition.position
-	add_child(part_col)
-	# the mezzanine loft above the store room, reached by a ladder
-	var loft: MeshInstance3D = ShapeKit.box(Vector3(3.4, 0.1, 4.0), ML.plywood(), "Loft")
-	loft.position = Vector3(half_w - 1.9, 2.7, -half_l + 2.2)
-	add_child(loft)
-	for i: int in range(4):
-		var post: MeshInstance3D = ShapeKit.box(Vector3(0.1, 2.7, 0.1), ML.teak(), "LoftPost")
-		post.position = Vector3(
-			half_w - 1.9 + (1.6 if i % 2 == 0 else -1.6) * 0.95,
-			1.35,
-			-half_l + 2.2 + (2.0 if i < 2 else -2.0) * 0.9,
-		)
-		add_child(post)
-	var rail: MeshInstance3D = ShapeKit.box(Vector3(3.3, 0.06, 0.06), ML.teak(), "LoftRail")
-	rail.position = Vector3(half_w - 1.9, 3.1, -half_l + 0.3)
-	add_child(rail)
-	# the ladder
-	var ladder := Node3D.new()
-	ladder.name = "LoftLadder"
-	ladder.position = Vector3(half_w - 3.3, 0.0, -half_l + 1.2)
-	ladder.rotation.x = -0.22
-	add_child(ladder)
-	for s: int in range(2):
-		var stringer: MeshInstance3D = ShapeKit.box(Vector3(0.05, 3.0, 0.05), ML.teak(), "Stringer")
-		stringer.position = Vector3(0.2 * (1.0 if s == 0 else -1.0), 1.5, 0.0)
-		ladder.add_child(stringer)
-	for r: int in range(9):
-		var rung: MeshInstance3D = ShapeKit.cyl(0.022, 0.44, ML.surface("bamboo"), 8, Vector3i(1, 0, 0), "Rung")
-		rung.position = Vector3(0.0, 0.28 + float(r) * 0.3, 0.0)
-		ladder.add_child(rung)
-	# the ceiling beam the fan and the lights hang from
-	var beam: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.16, length - 1.0), ML.teak(), "CeilingBeam")
-	beam.position = Vector3(0.0, height - 0.12, 0.0)
-	add_child(beam)
-	var beam2: MeshInstance3D = beam.duplicate() as MeshInstance3D
-	beam2.position = Vector3(-3.6, height - 0.12, 0.0)
-	beam2.name = "CeilingBeamL"
-	add_child(beam2)
-	var beam3: MeshInstance3D = beam.duplicate() as MeshInstance3D
-	beam3.position = Vector3(3.6, height - 0.12, 0.0)
-	beam3.name = "CeilingBeamR"
-	add_child(beam3)
+	## The previous interior had a partition wall, a mezzanine loft with four posts
+	## and a nine-rung bamboo ladder. In a 13 x 16.5 m bay those read as a working
+	## building; in 8.5 x 10.5 m at 3.4 m headroom they would consume a third of the
+	## volume and leave nowhere to stand. What a small single-room workshop actually
+	## has instead is ceiling beams, one hanging line, and everything else on the
+	## walls and floor — which is also what the reference photographs show.
+	#
+	# two ceiling beams rather than three, spanning the short axis
+	for i: int in range(2):
+		var beam: MeshInstance3D = ShapeKit.box(Vector3(0.14, 0.14, width - 0.5), ML.teak(), "CeilingBeam%d" % i)
+		beam.rotation.y = PI * 0.5
+		beam.position = Vector3(0.0, height - 0.11, -1.7 + float(i) * 3.4)
+		add_child(beam)
 	# the rope line across the room for towels and rags
 	var rope: MeshInstance3D = ShapeKit.hose(
-		Vector3(-half_w + 0.4, height - 0.5, 2.2), Vector3(half_w - 0.4, height - 0.55, 3.0),
-		0.008, 0.35, ML.thread_material(), "ClothesLine")
+		Vector3(-half_w + 0.35, height - 0.42, 2.0), Vector3(half_w - 0.35, height - 0.46, 2.5),
+		0.008, 0.28, ML.thread_material(), "ClothesLine")
 	add_child(rope)
-	# the drain outside and the puddle
-	var puddle: MeshInstance3D = ShapeKit.disc_flat(1.4, 0.004, ML.water(), "Puddle")
-	puddle.position = Vector3(1.6, -0.14, half_l + 2.4)
+	# The shelf-bracket pair on the west wall is gone: it was two 0.22 m bars with
+	# no board between them, and in the smaller room the store shelf now occupies
+	# the wall they were on.
+	# the drain outside and one puddle, because a courtyard in Dhaka has one
+	var puddle: MeshInstance3D = ShapeKit.disc_flat(1.1, 0.004, ML.water(), "Puddle")
+	puddle.position = Vector3(1.3, -0.14, half_l + 2.0)
 	add_child(puddle)
-	var puddle2: MeshInstance3D = ShapeKit.disc_flat(0.9, 0.004, ML.water(), "Puddle2")
-	puddle2.position = Vector3(-2.8, -0.14, half_l + 3.6)
-	add_child(puddle2)
 
 
 func area_volumes() -> Array:
-	## The five named areas of Section 6, as Area3D volumes in the "garage_areas"
-	## group. The player tests its position against these for objective and
-	## ambience switching, so they overlap deliberately at the thresholds.
+	## Six named areas. `store` is gone: in a single-room workshop this size there is
+	## no separate store to name, and the shelves are simply the north-west corner of
+	## the same room. The volumes deliberately overlap at their thresholds so the
+	## player's area attribution never gaps as they walk through a doorway.
 	return [
-		{"name": "entrance", "pos": Vector3(0.0, 1.5, half_l - 1.6), "size": Vector3(shutter_width + 1.6, 3.0, 3.4)},
-		{"name": "mechanical", "pos": Vector3(-half_w * 0.55, 1.5, 1.6), "size": Vector3(width * 0.42, 3.2, length * 0.62)},
-		{"name": "electronics", "pos": Vector3(half_w * 0.6, 1.5, 3.2), "size": Vector3(width * 0.34, 3.2, length * 0.42)},
-		{"name": "assembly", "pos": Vector3(0.0, 1.8, -2.2), "size": Vector3(7.2, 3.6, 7.4)},
-		{"name": "testing", "pos": Vector3(1.6, 1.5, -half_l + 2.0), "size": Vector3(5.6, 3.0, 4.0)},
-		{"name": "store", "pos": Vector3(half_w - 1.9, 1.5, -half_l + 2.2), "size": Vector3(3.6, 3.0, 4.4)},
-		{"name": "exterior", "pos": Vector3(0.0, 1.5, half_l + 3.4), "size": Vector3(width + 6.0, 3.4, 6.4)},
+		{"name": "entrance", "pos": Vector3(0.0, 1.4, half_l - 1.3), "size": Vector3(shutter_width + 1.4, 2.8, 2.8)},
+		{"name": "mechanical", "pos": Vector3(-half_w * 0.6, 1.4, 1.8), "size": Vector3(width * 0.5, 2.8, length * 0.56)},
+		{"name": "electronics", "pos": Vector3(half_w * 0.6, 1.4, 1.8), "size": Vector3(width * 0.5, 2.8, length * 0.56)},
+		{"name": "assembly", "pos": Vector3(0.0, 1.5, -1.6), "size": Vector3(width * 0.9, 3.0, length * 0.52)},
+		{"name": "testing", "pos": Vector3(1.9, 1.4, -half_l + 1.7), "size": Vector3(4.2, 2.8, 3.4)},
+		{"name": "exterior", "pos": Vector3(0.0, 1.4, half_l + 3.0), "size": Vector3(width + 5.0, 3.2, 5.6)},
 	]

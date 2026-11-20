@@ -48,10 +48,10 @@ to catch the first.
     ├── SignageBaker             (Node)     bakes SignCanvas specs to textures; owns live SubViewports
     ├── Runtime                  (Node)     GarageRuntime: power, shutter, fans, screens, core, assembly
     ├── Garage                   (Node3D)   GarageStructure: floor, walls, columns, roof, shutter frame
-    ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 31 lights, dust, rain
-    ├── Dressing                 (Node3D)   GarageDressing: 352 props, 53 stations, cables, signage
+    ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 30 lights, dust, rain
+    ├── Dressing                 (Node3D)   GarageDressing: 175 props, 34 stations, cables, signage
     │
-    ├── area volumes ×7          (Area3D)   named rooms; group "garage_areas"
+    ├── area volumes ×6          (Area3D)   named rooms; group "garage_areas"
     ├── Player                   (CharacterBody3D)
     │   ├── CollisionShape3D                capsule, sized from head height
     │   └── Camera3D
@@ -65,8 +65,8 @@ to catch the first.
     └── Objectives               (Node)     ObjectiveDirector
 ```
 
-Seven named `Area3D` volumes back the player's location tracking: `entrance`, `mechanical`,
-`electronics`, `assembly`, `testing`, `store`, `exterior`. They deliberately overlap at thresholds.
+Six named `Area3D` volumes back the player's location tracking: `entrance`, `mechanical`,
+`electronics`, `assembly`, `testing`, `exterior`. They deliberately overlap at thresholds.
 The player tests its own position against them rather than relying on `area_entered` signals, because
 those fire inconsistently when the player spawns *inside* a volume, which would make the first
 objective flicker on load.
@@ -81,12 +81,12 @@ progress.
 
 | Step | What it does | Measured (UHD 620) |
 |---|---|---|
-| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 280 ms for one 256 px surface |
-| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, windows | 5 834 ms |
-| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 31 lights in 4 circuits, dust, rain | 32 ms |
-| 3 | `GarageDressing.dress()` — 5 areas, 8 procedural layout groups, 3 wall racks, cables, signage | 4 195 ms |
+| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 272 ms for one 256 px surface |
+| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, windows | 5 807 ms |
+| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 30 lights in 4 circuits, dust, rain | 39 ms |
+| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage | 4 038 ms |
 | 4 | Area volumes | — |
-| 5 | Live `SubViewport`s for 6 screens, attached to their materials | 77 ms |
+| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 75 ms |
 | 6 | Player, camera, ray, reticle, collision, capsule sizing | 26 ms |
 | 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 178 ms |
 | 8 | `_apply_restored_state()` — replays a saved run with `instant = true` | — |
@@ -161,7 +161,7 @@ per texel into colour/roughness/metallic/occlusion/height, pack to RGB8 byte buf
 tangent-space normal by Sobel gradient on the wrapped height field, upload in one
 `Image::create_from_data` per channel. See `docs/GRAPHICS_ALGORITHMS.md` §2.
 
-**`shape_kit.gd`** — the primitive composition layer, and the reason 352 props is affordable. Two
+**`shape_kit.gd`** — the primitive composition layer, and the reason 175 props is affordable. Two
 ideas: a mesh cache keyed on dimensions so forty spanners share one mesh, and true generators (lathe
 from a profile, gear from tooth count and module, tube sweep, coil, chain, plate) for the shapes that
 are not primitives. Also `shape_aabb_local()`, `area_aabb()` and `node_bounds()`, which exist because
@@ -359,9 +359,10 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 
 | Mechanism | What it covers |
 |---|---|
-| `tests/validate_scripts.gd` | Loads and compiles all 37 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
+| `tests/validate_scripts.gd` | Loads and compiles all 38 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
 | `tests/timing_probe.gd` | Measures one surface at 256/384/512 px. The instrumentation that established the texture budget. |
 | `tests/introspect.gd` | Engine API introspection. Used to pin exact signatures when they were uncertain rather than guessing. |
+| `tests/dump_floor.gd` | Builds the world headless and lists every node within a radius of a floor point, with generated cables reported by their mesh bounds and material colour. Written to name the unidentified objects in a capture from the scene graph instead of guessing. |
 | Capture harness | Boots the real renderer, drives the full progression, writes 12 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
 | Graphics bench | Self-measurement at runtime, exportable to CSV, with a fixed-camera capture at each configuration. |
 

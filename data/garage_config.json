@@ -3,7 +3,7 @@
   "presets": {
     "deshi_garage": {
       "label": "Dhaka town workshop",
-      "dimensions": { "width": 13.0, "length": 16.5, "height": 4.6 },
+      "dimensions": { "width": 8.5, "length": 10.5, "height": 3.4 },
       "wall_style": "brick_cement",
       "roof_style": "corrugated_tin",
       "floor_style": "worn_concrete",
@@ -13,11 +13,11 @@
       "subtitle_english": "OWN TECHNOLOGY, OWN STRENGTH",
       "exterior_tint": "#9c8f7a",
       "rain_default": true,
-      "street_props": ["rickshaw_frame", "bicycle", "tubewell_bucket", "tea_stall_box"]
+      "street_props": ["bicycle", "tubewell_bucket", "tea_stall_box"]
     },
     "sylhet_workshop": {
       "label": "Sylhet hill-side garage",
-      "dimensions": { "width": 12.0, "length": 15.0, "height": 4.2 },
+      "dimensions": { "width": 8.0, "length": 10.0, "height": 3.2 },
       "wall_style": "stone_cement",
       "roof_style": "corrugated_tin",
       "floor_style": "worn_concrete",
@@ -26,11 +26,11 @@
       "subtitle_bangla": "নিজের প্রযুক্তি, নিজের শক্তি",
       "exterior_tint": "#7d8b6f",
       "rain_default": true,
-      "street_props": ["bicycle", "tea_stall_box", "bamboo_pole"]
+      "street_props": ["bicycle", "bamboo_pole"]
     },
     "rural_workshop": {
       "label": "Village repair shed",
-      "dimensions": { "width": 11.0, "length": 13.0, "height": 3.8 },
+      "dimensions": { "width": 7.5, "length": 9.0, "height": 3.0 },
       "wall_style": "tin_sheet",
       "roof_style": "corrugated_tin",
       "floor_style": "packed_earth",
@@ -43,7 +43,7 @@
     },
     "industrial_bay": {
       "label": "Small industrial bay",
-      "dimensions": { "width": 15.0, "length": 18.0, "height": 6.0 },
+      "dimensions": { "width": 10.0, "length": 12.0, "height": 4.2 },
       "wall_style": "concrete_block",
       "roof_style": "steel_truss",
       "floor_style": "sealed_concrete",
@@ -57,21 +57,21 @@
   },
   "sightlines": {
     "entrance_to_assembly": true,
-    "assembly_platform_radius": 2.6,
-    "player_start": [0.0, 1.1, 11.4]
+    "assembly_platform_radius": 1.45,
+    "player_start": [0.0, 1.1, 8.6]
   },
   "lighting": {
-    "ambient_energy": 0.35,
-    "daylight_energy": 2.4,
+    "ambient_energy": 0.22,
+    "daylight_energy": 2.2,
     "fluorescent_color": "#ffe6bd",
     "desk_lamp_color": "#fff0d0",
     "holo_color": "#57e6ff",
     "core_color": "#7cf3ff",
-    "exposure": 1.05
+    "exposure": 0.95
   },
   "performance_targets": {
     "minimum_fps": 45,
     "target_fps": 60,
-    "max_shadow_lights": 4
+    "max_shadow_lights": 3
   }
 }
