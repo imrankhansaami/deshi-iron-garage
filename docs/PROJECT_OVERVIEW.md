@@ -149,6 +149,8 @@ recorded in `docs/ASSET_LICENSES.md`.
 | Mouse carrying | Every prop under ~0.8 m can be picked up, rotated and set down with the mouse; placement settles onto the surface under the aim (bench tops, shelves, the platform deck, the floor) and right click returns a thing to where it came from |
 | Lab wall | Six honour plaques for Bangladeshi/Bengali scientists and one inventions board, engraved in Bangla from `data/scientists.json` and `data/inventions.json` through the same sign baker as every other sign, plus `F` inspection text for each |
 | National corner | The national flag on a courtyard pole — the official construction (2:3, disc at 9/20 length, radius L/5) with a cloth shader that waves it — and a big brass ৫ টাকা display coin leaning on its plinth; both are inspectable, neither is real currency |
+| Auto-opening gate | The shutter's presence sensor rolls the curtain up as anyone approaches the courtyard — it starts most of the way down and the room wakes up as it lifts. It can no longer be lowered |
+| Always-on bulb | One bare bulb over the walk lane is wired ahead of the switchboard to the incoming line, outside every switchable circuit: the room is never quite black, even at the start |
 | Adaptive resolution | The render scale moves inside 0.55–0.85 to hold the frame rate on the machine at hand; off during any measurement (F6, `perf.flag`, capture mode) so numbers stay comparable |
 | Realism layer | 10 projected grime decals from one generated texture (under machinery, below wall fixtures), the author's supplied workshop banner inside, and a generated "IMRAN'S GARAGE" street banner over the facade |
 | Save / load | Full run state persisted; Continue replays it against a fresh build with no boot animation |
@@ -194,10 +196,12 @@ assembly sequence. That is the localisation requirement, implemented as configur
 
 On Intel UHD 620 at 1600×900, Forward+:
 
-- Garage build: **10.4 s** (5.8 s structure, 4.0 s dressing for 169 placements; 8.7 s of the total is
-  surface synthesis, spread across both steps)
-- Medium preset: **40–55 fps**, SDFGI/SSR/volumetric fog off
-- High preset: **18–26 fps**, all global-illumination features on
-- 30 lights, 7 of them shadow casters, 5 live screen viewports
+- Garage build: **12.5 s** in the final capture run (6.5 s structure, 5.3 s dressing for 181
+  placements; the same build measured 11.1 s the run before — machine load moves it; most of the
+  total is surface synthesis, spread across both steps)
+- Medium preset: 40–55 fps measured before the preset retune — SDFGI and volumetric fog off, SSR on,
+  five shadow casters; the retune cut a further 13–27 ms of CPU frame time (`docs/EXPERIMENTS.md` §7.5)
+- High preset: 18–26 fps measured before the retune, all global-illumination features on, seven casters
+- 31 lights, 7 of them shadow casters, 5 live screen viewports
 
 `docs/EXPERIMENTS.md` holds the per-experiment tables and the exact configuration for each row.

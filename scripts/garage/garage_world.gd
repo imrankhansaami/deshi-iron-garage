@@ -43,12 +43,23 @@ var director: ObjectiveDirector
 var carry: CarrySystem
 var build_ms: Dictionary = {}
 var build_complete: bool = false
+var _gate_auto_pending: bool = false
+var _resume_run: bool = false           # a persisted run existed when the scene loaded
+var _resume_shutter_open: bool = false  # ...and its gate was already open
 var _live_specs: Dictionary = {}
 
 
 func _ready() -> void:
 	# the run starts here, not in the menu, so "Start", "Continue" and the tour
 	## all share one build path and one loading readout
+	# snapshot the run that arrived with this scene. The build itself writes to
+	# GameState (step 6b opens the gate's logical state, the objective director then
+	# flags the run as started), so a restore keyed on GameState *during* the build
+	# cannot tell a continued run from states this build just set — it used to see
+	# its own step-6b shutter_open and snap a fresh run's curtain fully open before
+	# the auto-open could roll it (found by probe, see EXPERIMENTS 7.6).
+	_resume_run = GameState.has_started
+	_resume_shutter_open = GameState.shutter_open
 	_show_loading()
 	material_library = MaterialLibrary
 	material_library.ensure_built()
@@ -133,16 +144,17 @@ func _build() -> void:
 	_build_player()
 	build_ms["player"] = float(Time.get_ticks_msec() - t0)
 
-	# 6b. the garage runs open ----------------------------------------------
-	## The curtain is up from the first frame and the shutter station can no
-	## longer lower it: the project's author asked for a workshop you can simply
-	## walk into. This also settles the daylight shafts, the fog gradient and the
-	## first objective, all of which read this one state — the objective chain
-	## evaluates at director.start() below and sees the shutter already satisfied.
-	runtime.animate_shutter(true, 0.01)
-	runtime.shutter_open_amount = 1.0
-	runtime._apply_shutter(1.0)
+	# 6b. the gate opens by itself -------------------------------------------
+	## The curtain starts mostly down and rolls up on its own the moment anything
+	## moves in the courtyard: the player spawns three metres from it, so the
+	## workshop opens for them as they arrive, with the daylight shafts and the fog
+	## coupling growing as the curtain lifts. It cannot be lowered again — the
+	## shutter station only checks it — so "always open" still holds. The state is
+	## true from the first frame, so the objective chain and the save agree.
+	runtime.shutter_open_amount = 0.34
+	runtime._apply_shutter(0.34)
 	GameState.shutter_open = true
+	_gate_auto_pending = true
 
 	# 6c. the carry system ---------------------------------------------------
 	## Built after the dressing (it indexes every carryable prop) and after the
@@ -296,6 +308,8 @@ func _process(delta: float) -> void:
 		_perf_process(delta)
 	elif _capturing:
 		_capture_process(delta)
+	if _gate_auto_pending:
+		_gate_auto_check()
 	if not build_complete:
 		return
 	if tour_active:
@@ -383,9 +397,13 @@ func _apply_restored_state() -> void:
 	## Replays the persisted run against the freshly built world. Every system is
 	## set with instant=true so a loaded game does not play the whole boot
 	## animation on the main menu's "Continue".
-	if not GameState.has_started:
+	##
+	## Keyed on the snapshot taken in _ready(), not on GameState as it stands here:
+	## by this point the build has already written GameState itself (6b sets
+	## shutter_open), so reading it back made a fresh run replay its own build.
+	if not _resume_run:
 		return
-	if GameState.shutter_open:
+	if _resume_shutter_open:
 		runtime.shutter_open_amount = 1.0
 		runtime._apply_shutter(1.0)
 	if GameState.power_on:
@@ -552,6 +570,34 @@ func _apply_capture_profile() -> void:
 		player.set_ui_owned(true)
 
 
+func _gate_auto_check() -> void:
+	## The presence sensor by the gate: anything within seven metres of the shutter
+	## rolls it up. The player spawns three and a half metres away, so this fires the
+	## moment the build hands over control — the shop opening for whoever walks up,
+	## which is also the first thing the brief's reveal describes. It waits for
+	## build_complete so the notification lands on a HUD that exists and the roll is
+	## visible rather than buried in the load. The harnesses roll the curtain
+	## themselves, so they are skipped rather than raced.
+	if not build_complete:
+		return
+	if player == null or runtime == null or runtime.shutter_node == null:
+		return
+	if _capturing or _perf_mode:
+		_gate_auto_pending = false
+		return
+	if runtime.shutter_open_amount >= 0.999:
+		# a continued run restores the curtain fully up; nothing to roll
+		_gate_auto_pending = false
+		return
+	if player.global_position.distance_to(runtime.shutter_node.global_position) > 7.0:
+		return
+	_gate_auto_pending = false
+	runtime.animate_shutter(true, 2.4)
+	runtime.sys_log("GATE: presence sensor tripped — rolling up")
+	_log_to_disk("gate: auto-open fired")
+	EventBus.notification_requested.emit("the gate rolls up as you arrive", "info")
+
+
 # ===========================================================================
 # guided tour
 # ===========================================================================
@@ -565,7 +611,7 @@ var _tour_cam: Camera3D
 ## Rewritten for the 8.5 x 10.5 m plan: the old path walked a 16 m room, and half
 ## of its waypoints are now behind the north wall or inside the counter.
 const TOUR_PATH: Array = [
-	{"pos": Vector3(0.0, 1.8, 8.2), "look": Vector3(0.0, 2.2, 5.3), "dwell": 2.4, "caption": "the shutter, half open"},
+	{"pos": Vector3(0.0, 1.8, 8.2), "look": Vector3(0.0, 2.2, 5.3), "dwell": 2.4, "caption": "the gate rolls up as you arrive"},
 	{"pos": Vector3(0.0, 1.7, 4.0), "look": Vector3(-4.0, 1.5, 3.4), "dwell": 2.6, "caption": "entrance and switchboard"},
 	{"pos": Vector3(-1.8, 1.6, 2.2), "look": Vector3(-3.9, 1.05, 1.7), "dwell": 3.0, "caption": "the mechanical bench"},
 	{"pos": Vector3(-2.2, 1.6, -0.6), "look": Vector3(-3.9, 0.9, -1.8), "dwell": 2.6, "caption": "salvaged engine stock"},
@@ -659,6 +705,8 @@ const CAP_SHOTS: Array = [
 	{"name": "12_lab_wall", "pos": Vector3(1.1, 1.8, 0.7), "look": Vector3(4.2, 1.85, -1.15)},
 	# the courtyard's national corner, framed so the coin's face reads
 	{"name": "13_courtyard", "pos": Vector3(0.4, 1.75, 9.35), "look": Vector3(2.9, 1.6, 7.8)},
+	# the always-on bulb over the walk lane: the one light the switchboard cannot cut
+	{"name": "14_walk_lane", "pos": Vector3(2.7, 1.75, 1.7), "look": Vector3(0.0, 2.42, 2.62)},
 ]
 
 var _capturing: bool = false

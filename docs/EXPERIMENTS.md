@@ -39,7 +39,7 @@ transfer.
   `CableGenerator.last_stats`, `GarageDressing.layout_stats()`.
 
 **Reproducibility controls.** Fixed seed 1337 for prop generation; a per-group seed for each
-procedural layout; per-surface seeds derived by hash; fourteen fixed camera transforms; 30 frames of
+procedural layout; per-surface seeds derived by hash; fifteen fixed camera transforms; 30 frames of
 warm-up discarded before every measurement.
 
 **Known weakness.** Godot 4.7 exposes no GPU timestamp query. All per-pass costs below are
@@ -377,45 +377,47 @@ performance work.
 
 | Step | Time | Share | What dominates |
 |---|---|---|---|
-| Surface synthesis (first surface) | 272 ms | 2.6% | the per-texel loop |
-| Structure — floor, walls, columns, roof, shutter, windows | 5 807 ms | 55.6% | mesh generation, collision shapes, and the surfaces it requests |
-| Environment — sky, `WorldEnvironment`, 30 lights, dust, rain | 39 ms | 0.4% | negligible |
-| Dressing — 180 placements, 45 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag and coin | 4 634 ms | 42.2% | prop construction, station wiring, and its surfaces |
-| Screens — 5 live `SubViewport`s and their materials | 75 ms | 0.7% | — |
-| Player — camera, ray, reticle, collision | 31 ms | 0.3% | — |
-| Interface — HUD, 10 panels, objective director | 182 ms | 1.7% | — |
-| **Total** | **10 444 ms** | **100%** | |
+| Surface synthesis (first surface) | 283 ms | 2.3% | the per-texel loop |
+| Structure — floor, walls, columns, roof, shutter, windows | 6 510 ms | 52.2% | mesh generation, collision shapes, and the surfaces it requests |
+| Environment — sky, `WorldEnvironment`, 31 lights, dust, rain | 43 ms | 0.3% | negligible |
+| Dressing — 181 placements, 45 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulb | 5 290 ms | 42.4% | prop construction, station wiring, and its surfaces |
+| Screens — 5 live `SubViewport`s and their materials | 98 ms | 0.8% | — |
+| Player — camera, ray, reticle, collision | 41 ms | 0.3% | — |
+| Interface — HUD, 10 panels, objective director | 208 ms | 1.7% | — |
+| **Total** | **12 473 ms** | **100%** | |
 
 **Dressing breakdown, `GarageDressing.dressing_breakdown()`**
 
 | | |
 |---|---|
-| Props placed by the dressing pass | 178 |
-| Props built in total (includes module payloads and suit parts) | 184 |
-| Distinct prop kinds | 132 |
-| Authored placements | 146 |
+| Props placed by the dressing pass | 181 |
+| Props built in total (includes module payloads and suit parts) | 187 |
+| Distinct prop kinds | 134 |
+| Authored placements | 149 |
 | Procedural placements | 22 (4 groups: 6 + 5 + 6 + 5) |
 | Wall-rack placements | 10 |
-| Mesh cache hits / misses | 1 768 / 1 114 |
+| Mesh cache hits / misses | 1 772 / 1 123 |
 | Rejection-sampler efficiency | 46% of attempts produce a placement |
 
-The counts above are from the shipped build. The per-step times in the table above are from one
-representative run on a quiet machine; they drift by a few hundred milliseconds run to run, and by
-about 20% if something else is using the laptop at the same time — which is worth stating rather
-than pretending the machine is a benchmark rig.
+The counts above are from the shipped build. The per-step times are from the final capture run of
+the day, which was not a quiet machine: the same garage measured 11 086 ms twenty minutes earlier, so
+treat absolute milliseconds as load-dependent — they drift by about 20% when something else is using
+the laptop — and the shares as the finding. This is worth stating rather than pretending the machine
+is a benchmark rig.
 
-**Finding 7.1 — surface synthesis is 83% of the wall clock.** The first surface costs 272 ms in step
-0; the other 33 are synthesised lazily inside the structure and dressing steps. 8 698 ms of the
-10 444 ms total is texture work — so the largest single lever left is moving that per-texel loop to a
-compute shader, not reducing geometry. The earlier build of a 13 × 16.5 m room measured 71%; the
-share rose when the room shrank, because the texture cost is per *surface*, not per cubic metre.
+**Finding 7.1 — surface synthesis is ~77% of the wall clock.** The first surface costs 283 ms in step
+0; the other 33 are synthesised lazily inside the structure and dressing steps. At ≈ 280 ms per
+surface that is ≈ 9.6 s of the 12 473 ms total — so the largest single lever left is moving that
+per-texel loop to a compute shader, not reducing geometry. The earlier build of a 13 × 16.5 m room
+measured 71%; the share rose when the room shrank, because the texture cost is per *surface*, not per
+cubic metre.
 
-**Finding 7.2 — mesh caching is what makes 184 props affordable.** 1 114 distinct meshes serve 178
-placed props through 1 768 hits. Without the cache every spanner, capacitor and bolt would allocate
+**Finding 7.2 — mesh caching is what makes 187 props affordable.** 1 123 distinct meshes serve 181
+placed props through 1 772 hits. Without the cache every spanner, capacitor and bolt would allocate
 its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
 is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 
-**Finding 7.3 — environment setup is free; environment *rendering* is not.** Building 30 lights, the
+**Finding 7.3 — environment setup is free; environment *rendering* is not.** Building 31 lights, the
 sky, the SDFGI configuration and two particle systems costs 39 ms. *Rendering* SDFGI costs 9.5 ms per
 frame. Setup cost and runtime cost are unrelated here, which is worth knowing when choosing what to
 add.
@@ -482,6 +484,29 @@ loop, their *difference* is meaningful while their absolute values are inflated 
 frame rates belong to an interactive session: the in-app graphics bench (F6) reports them, which is
 how the 40–55 fps medium / 18–26 fps high figures elsewhere in this document were taken.
 
+### 7.6 Two bugs the auto-open probe found
+
+The auto-opening gate needed only a proximity check to roll the curtain, but verifying it exposed two
+defects that had shipped inside the always-open build, both invisible to the compile validator and to
+the capture histograms:
+
+**A restore that replayed its own build.** `_apply_restored_state()` replayed a persisted run by
+reading `GameState` *after* the build had finished — but the build writes `GameState` itself (step 6b
+sets `shutter_open`, the objective director flips `has_started`). A probe on a *deleted save* showed it
+plainly: one frame after `ready`, `open=1.000` with the curtain already snapped fully up, so the new
+auto-open could never roll it. Fixed by snapshotting the incoming run in `_ready()` and keying the
+replay on that snapshot — a continued run still restores instantly; a fresh run keeps its own state.
+
+**A curtain that rolled while leaving a grille behind.** `_apply_shutter()` moves the children named
+`Slat*`. The nineteen decorative ribs, the bottom rail and the handle were *curtain* children too, and
+were never in that set: the curtain rolled up correctly — the probe showed the slat span travelling
+`y = 0.80 → 2.03 m` into a compact coil at the opening head — while the open doorway stayed barred by
+stationary strips that read as a security grille. Fixed by parenting each rib to its own slat and the
+rail and handle to the lowest slat, so the whole assembly travels together.
+
+Both were found by instrumenting the *state*, not the image: the curtain's numbers were correct in both
+cases, and only the joint reading of numbers and pixels located the faults.
+
 ---
 
 ## 8. Summary of measured results
@@ -512,16 +537,22 @@ how the 40–55 fps medium / 18–26 fps high figures elsewhere in this document
 11. The per-texel composition loop is the surface-synthesis bottleneck, not the noise generation;
     moving from 512 px to 256 px halved the load time with no visible loss because tiling hides the
     missing resolution. (§1.1)
-12. Mesh caching at 1.6:1 reuse is what makes 180 props affordable. (§7.2)
+12. Mesh caching at 1.6:1 reuse is what makes 181 props affordable. (§7.2)
 13. Two-thirds of the total build is structure and dressing geometry. (§7.4)
+14. A state the build writes itself cannot be used to audit the build: the restore replay read
+    `GameState` back and re-applied the still-running build's own writes, killing the new auto-open on
+    every fresh run. Snapshot the incoming state at scene load. (§7.6)
+15. Decorative children of an animated assembly must ride the moving part: nineteen ribs parented to
+    the curtain instead of their slats left a permanent grille across the open doorway while every
+    state read "open". (§7.6)
 
 **Process findings**
 
-14. A rotation that is correct for one use of a mesh type is not a property of the mesh type: 61 torus
+16. A rotation that is correct for one use of a mesh type is not a property of the mesh type: 61 torus
     sites were inverted by copying a wheel's orientation to rings that encircle a vertical axis.
-15. A compile validator that loads every script headless caught every error class before it could be
+17. A compile validator that loads every script headless caught every error class before it could be
     mistaken for a rendering problem, including a cyclic type dependency between two classes.
-16. Three separate geometry bugs — the torus winding, the stretched texture tiling, and a CRT screen
+18. Three separate geometry bugs — the torus winding, the stretched texture tiling, and a CRT screen
     contained inside its own cabinet — all compiled cleanly and were only visible in a render. **Early
     rendering is a debugging technique, not a final step.**
 

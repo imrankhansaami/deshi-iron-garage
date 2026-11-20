@@ -100,7 +100,7 @@ of the surface key plus a fixed base, so a surface is byte-identical across runs
 at the same resolution. Rain, dust and footstep variation use separate seeds so changing one cannot
 perturb another.
 
-**Fixed camera positions.** Fourteen declared transforms, used by both the capture harness and the
+**Fixed camera positions.** Fifteen declared transforms, used by both the capture harness and the
 graphics bench. This is what makes two screenshots comparable between code revisions.
 
 **Fixed warm-up.** Every measurement run discards 30 frames before sampling and then takes three
@@ -210,9 +210,9 @@ The traceability is explicit:
 | Five terms in the core | `shaders/energy_core.gdshader` |
 | Parallel-transport framing | `CableGenerator.parallel_transport_frames()` |
 | Bundling saves draw calls | `CableGenerator.generate_bundle()` — one `SurfaceTool`, one `commit()` |
-| Seven shadow casters of 30 lights | `GarageEnvironment` registers 30; the bench reports the caster count |
+| Seven shadow casters of 31 lights | `GarageEnvironment` registers 31; the bench reports the caster count |
 | Shutter drives the daylight | `GarageEnvironment.set_shutter_influence()`, called from `GarageWorld._process()` |
-| 186 props built, 134 kinds | `GarageWorld.build_report()` |
+| 187 props built, 134 kinds | `GarageWorld.build_report()` |
 | Screen content reads the simulation | `ScreenContent._snapshot()`, called by every screen and every panel |
 | The A/B performance harness | `GarageWorld._perf_process()` (`perf.flag`), reported in `docs/EXPERIMENTS.md` §7.5 |
 
@@ -254,6 +254,6 @@ change was committed.
 
 **Instrumentation over assertion.** Every time a claim was about to be made, the first attempt was to
 make it measurable. "The build is fast enough" became per-step timings. "The lighting looks good"
-became fourteen fixed shots with luminance histograms. "The cables are efficient" became
+became fifteen fixed shots with luminance histograms. "The cables are efficient" became
 `last_stats` with a triangle count and a draw-call count. Where a thing could not be measured it is
 labelled as a judgement.

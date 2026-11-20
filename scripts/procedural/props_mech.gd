@@ -1312,20 +1312,29 @@ static func rolling_shutter(f: PropFactory, o: Dictionary) -> Node3D:
 	curtain.name = "Curtain"
 	root.add_child(curtain)
 	var slat_mat: StandardMaterial3D = f.ML.paint_blue(0.6)
+	var first_slat: MeshInstance3D = null
 	for i: int in range(count):
 		var slat: MeshInstance3D = ShapeKit.box(Vector3(width, slat_h * 0.94, 0.022), slat_mat, "Slat%03d" % i)
 		slat.position = Vector3(0.0, slat_h * (float(i) + 0.5), 0.0)
 		curtain.add_child(slat)
+		if first_slat == null:
+			first_slat = slat
+		# the rib rides on its slat. These used to be curtain children, and the
+		# scrub in GarageRuntime only moves nodes named Slat*: the curtain rolled
+		# correctly but the ribs stayed put, leaving the open doorway permanently
+		# barred by nineteen decorative strips — a grille nobody could explain.
 		var rib: MeshInstance3D = ShapeKit.box(Vector3(width, 0.012, 0.012), f.ML.steel(), "Rib")
-		rib.position = Vector3(0.0, slat_h * (float(i) + 0.5) + slat_h * 0.45, 0.014)
+		rib.position = Vector3(0.0, slat_h * 0.45, 0.014)
 		rib.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		curtain.add_child(rib)
+		slat.add_child(rib)
+	# the sill rail and handle hang off the lowest slat, so they travel with the
+	# curtain too: the rail is the last thing off the opening and the first back
 	var rail: MeshInstance3D = ShapeKit.box(Vector3(width + 0.02, 0.12, 0.06), f.ML.paint_yellow(), "BottomRail")
-	rail.position = Vector3(0.0, 0.06, 0.02)
-	curtain.add_child(rail)
+	rail.position = Vector3(0.0, 0.06 - slat_h * 0.5, 0.02)
+	first_slat.add_child(rail)
 	var handle: MeshInstance3D = ShapeKit.cyl(0.014, 0.3, f.ML.steel(), 8, Vector3i(1, 0, 0), "Handle")
-	handle.position = Vector3(0.0, 0.02, 0.08)
-	curtain.add_child(handle)
+	handle.position = Vector3(0.0, 0.02 - slat_h * 0.5, 0.08)
+	first_slat.add_child(handle)
 	root.add_child(ShapeKit.col_box(Vector3(width + 0.2, height + 0.4, 0.2)))
 	root.set_meta("curtain_path", "Curtain")
 	root.set_meta("slat_count", count)

@@ -10,7 +10,7 @@ records exactly what came from where, and under what terms.
 
 | Category | Count | Origin | Licence |
 |---|---|---|---|
-| 3D meshes | 1 123 distinct, 180 placed | **Generated at runtime** by `ShapeKit` and the prop catalogues | Original work, same licence as the source |
+| 3D meshes | 1 123 distinct, 181 placed | **Generated at runtime** by `ShapeKit` and the prop catalogues | Original work, same licence as the source |
 | Texture images | 34 surface sets × 3 channels = 102 images | **Synthesised at runtime** by `TextureFactory` | Original work |
 | Supplied photograph | 1 image (127 KB) | **Provided by the project's author** — the workshop banner hung on the north wall | Author's own work, used with the author's permission |
 | Audio | 22 clips | **Synthesised at runtime** by `AudioSynth` | Original work |
@@ -33,7 +33,7 @@ Two mechanisms are used:
 
 **Engine primitives, parameterised.** Godot's `BoxMesh`, `CylinderMesh`, `SphereMesh`, `TorusMesh`,
 `PlaneMesh` and `CapsuleMesh` are configured per prop and cached by dimensions. 1 123 distinct
-configured meshes serve 180 placed props through 1 770 cache hits in the shipped room.
+configured meshes serve 181 placed props through 1 772 cache hits in the shipped room.
 
 **Geometry generated from parameters.** Where a primitive is insufficient, the mesh is built with
 `SurfaceTool` or `ArrayMesh` from parameters:

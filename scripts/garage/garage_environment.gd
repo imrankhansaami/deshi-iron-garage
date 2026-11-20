@@ -35,6 +35,7 @@ var env: Environment
 var sun: DirectionalLight3D
 var sky: Sky
 var skylight: OmniLight3D
+var always_on: OmniLight3D
 var dust: GPUParticles3D
 var rain: GPUParticles3D
 var rain_sound: AudioStreamPlayer
@@ -209,6 +210,22 @@ func _build_daylight() -> void:
 	skylight.shadow_enabled = false
 	add_child(skylight)
 	runtime.register_light(skylight, 0, &"daylight", 0.85)
+	# the one interior light the switchboard cannot cut: a caged bulb over the walk
+	# lane, wired ahead of the main switch to the incoming supply. It is on circuit
+	# 0 — the daylight circuit that set_power never touches — so the room is never
+	# black, even before the player has found the switchboard. The visible bulb is
+	# placed by GarageDressing._ambience_props() at the same coordinates.
+	always_on = OmniLight3D.new()
+	always_on.name = "AlwaysOnBulb"
+	always_on.position = Vector3(0.0, 2.5, 2.6)
+	always_on.light_color = Color("ffd9a0")
+	always_on.light_energy = 1.5
+	always_on.omni_range = 6.5
+	always_on.omni_attenuation = 1.5
+	always_on.light_indirect_energy = 0.35
+	always_on.shadow_enabled = false
+	add_child(always_on)
+	runtime.register_light(always_on, 0, &"always_on", 1.5)
 	# the two window shafts: spots aimed into the room, gated on the shutter so the
 	# shafts strengthen when the curtain goes up. Both windows now sit at z = 2.3,
 	# one over each bench, so both shafts rake in at the same angle.

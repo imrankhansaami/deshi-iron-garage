@@ -153,17 +153,19 @@ func _primary(player: Node) -> void:
 		return
 	match kind:
 		Kind.SHUTTER:
-			# The garage runs open. This action can no longer lower the curtain —
-			# it only guarantees it is up, because the workshop is meant to be
-			# walked into (see GarageWorld build step 6b). The daylight shafts and
-			# the volumetric fog read the same state, so they stay at full.
+			# The garage runs open, and the gate opens by itself: the presence
+			# sensor rolls the curtain up as anyone approaches (see GarageWorld
+			# build steps 6b and _gate_auto_check), and this action only guarantees
+			# it is up — it can no longer lower it, because the workshop is meant
+			# to be walked into. The daylight shafts and the volumetric fog read
+			# the same state, so they stay at full.
 			if not GameState.shutter_open:
 				GameState.shutter_open = true
 				runtime.animate_shutter(true)
 				EventBus.shutter_state_changed.emit(true)
 				runtime.sys_log("SHUTTER OPEN")
 			else:
-				EventBus.notification_requested.emit("the curtain is chained up — the garage runs open", "info")
+				EventBus.notification_requested.emit("it opens itself now — the sensor over the lintel does the work", "info")
 			AudioBank.play("latch", -8.0)
 		Kind.SWITCHBOARD:
 			runtime.set_power(not runtime.power_on)

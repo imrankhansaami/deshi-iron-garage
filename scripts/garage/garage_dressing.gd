@@ -183,9 +183,9 @@ func _area_entrance() -> void:
 		runtime.setup_shutter(shutter)
 		_station(shutter, Station.Kind.SHUTTER, Vector3.ZERO, {
 			"area": "entrance", "title": "Rolling shutter",
-			"desc": "The corrugated curtain that keeps the monsoon out. It is chained up these days: the workshop runs open, because the inventor works late and customers come when they come.",
-			"lore": "The slats are individual geometry, and the curtain is coupled to the daylight — with it up, the shafts and the volumetric fog stand at full strength all day.",
-			"spec": [["mechanism", "manual chain drive"], ["curtain", "20 slats"], ["travel", "2.25 m"], ["state", "chained open"]],
+			"desc": "The corrugated curtain that keeps the monsoon out. It rolls up by itself now: the presence sensor over the lintel, lifted off a dead security lamp, trips as soon as anything crosses the courtyard.",
+			"lore": "The slats are individual geometry, and the curtain is coupled to the daylight — as it lifts, the shafts and the volumetric fog strengthen with it.",
+			"spec": [["mechanism", "manual chain drive"], ["sensor", "salvaged PIR on the lintel"], ["curtain", "20 slats"], ["travel", "2.25 m"]],
 			"prompt": "Press E to check the shutter", "sfx": "latch", "distance": 4.0,
 		})
 	# the signboard over the shutter. Raised from 2.78 to 2.95: at 2.78 its bottom
@@ -1486,6 +1486,15 @@ func _ambience_props() -> void:
 	## and it duplicated objects the areas now place themselves — two wall
 	## calendars, two ceiling fans, three loose tyres, a second bicycle.
 	var x: float = structure.half_w
+	# the always-on bulb over the walk lane: it is wired to the incoming supply, so
+	# it burns whether or not the switchboard is up (its light is registered on the
+	# incoming circuit in GarageEnvironment._build_daylight()). The shared prop
+	# ships its glass unlit, so the bulb mesh is given an emissive material of its
+	# own — otherwise "always on" would be a dark bulb with a lamp-lit floor.
+	var always_on: Node3D = _place("bulb_hanging", Vector3(0.0, structure.height - 0.25, 2.6), Vector3.ZERO, {"drop": 0.55})
+	var always_on_glass: MeshInstance3D = always_on.get_node_or_null("Bulb") as MeshInstance3D
+	if always_on_glass != null:
+		always_on_glass.material_override = ML.bulb_material(Color("ffd9a0"), 6.0)
 	# the ceiling fixtures the World A circuit is aimed at. The mechanical bench's
 	# batten is placed by _area_mechanical(); these are the other three zones.
 	var tubes: Array = [

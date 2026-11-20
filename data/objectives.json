@@ -1,5 +1,5 @@
 [
-  { "id": "open_shutter", "text": "Roll the shutter open", "hint": "The shutter is half down. Look at it and press E.", "trigger": "shutter" },
+  { "id": "open_shutter", "text": "Roll the shutter open", "hint": "The gate's presence sensor rolls the curtain up as you arrive — nothing to press.", "trigger": "shutter" },
   { "id": "restore_power", "text": "Restore workshop power", "hint": "The main switchboard is locked out. Inspect the IPS bank beside it.", "trigger": "power" },
   { "id": "boot_computer", "text": "Bring the workstation online", "hint": "Press the tower's power switch, then wait for the boot sequence.", "trigger": "computer" },
   { "id": "read_notebook", "text": "Read the inventor's notebook", "hint": "The notebook lies open on the mechanical bench. Press F to inspect closely.", "trigger": "notebook" },

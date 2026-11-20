@@ -48,9 +48,9 @@ godot --path . res://scenes/main/main_menu.tscn
 godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 186 props,
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 187 props,
 screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
-**10.4 s**, reported on screen step by step and written to a log.
+**≈ 11–12 s** — it moves with machine load — reported on screen step by step and written to a log.
 
 On first run the quality preset is `high`, which raises texture resolution and enables SDFGI, SSR and
 volumetric fog. If the machine struggles, `medium` halves the surface work and turns off the
@@ -59,7 +59,7 @@ global-illumination features; the Settings panel switches it live.
 ### Capture / verification mode
 
 Dropping an empty file named `capture.flag` next to `project.godot` puts the world into verification
-mode: it drives the whole twelve-step progression, then parks the camera at fourteen fixed viewpoints
+mode: it drives the whole twelve-step progression, then parks the camera at fifteen fixed viewpoints
 and writes a PNG plus a luminance histogram for each, then quits. The files land in `user://captures/`
 (`%APPDATA%\Godot\app_userdata\Deshi Iron Garage\captures\` on Windows), which is how the screenshots
 quoted in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and has no effect without
@@ -103,10 +103,11 @@ recognised but not yet usable — an unpowered monitor, or a module you have not
 ## 4. The objective chain
 
 Defined in `data/objectives.json`, evaluated by `ObjectiveDirector`, and advanced by events rather
-than by polling, so doing things out of order never strands the player. The garage runs open — the
-shutter is chained up at the start and can no longer be lowered — so the chain begins at step 2.
+than by polling, so doing things out of order never strands the player. The garage opens itself — the
+gate's presence sensor rolls the curtain up as you arrive, and it can no longer be lowered — so the
+chain begins at step 2.
 
-1. ~~Roll the shutter open~~ (satisfied at start: the workshop runs open)
+1. ~~Roll the shutter open~~ (satisfied at start: the gate rolls itself up as you arrive)
 2. Restore workshop power at the main switchboard
 3. Bring the workstation online
 4. Read the inventor's notebook
@@ -158,8 +159,11 @@ geometry, not asserted in text.
   radial spokes, thresholded arc filaments, fresnel shell); holographic floor projection; CRT/LCD
   display glass with chroma split, scanlines and a refresh band; machined metal with emissive seams
   and edge wear; cable sleeve with weave ribs and a dust ramp.
-- **A lighting rig in four switchable circuits** over one shadow-casting daylight source, with the
-  shutter position continuously driving the daylight shafts and the volumetric fog density. The
+- **A lighting rig in four switchable circuits** over one shadow-casting daylight source, plus one
+  **always-on bulb over the walk lane** wired ahead of the switchboard on the incoming line — the
+  room is never black, even before power is restored. The shutter position continuously drives the
+  daylight shafts and the volumetric fog density — the gate opens by itself as anyone approaches the
+  courtyard, and the room visibly wakes up as it lifts. The
   expensive features are preset tiers — SDFGI and the fog are off below the high preset, and the
   shadow budget drops from seven casters to five or three — while an **adaptive-resolution
   controller** moves the render scale inside 0.55–0.85 to hold a comfortable frame rate on whatever
@@ -171,7 +175,7 @@ geometry, not asserted in text.
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **186 props in 134 distinct kinds** in 4.1 s.
+  prop catalogues build **187 props in 134 distinct kinds** in 4.1 s.
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.
@@ -235,13 +239,13 @@ in-world graphics bench. These are the numbers the application reports about its
 
 | Measurement | Value |
 |---|---|
-| Full garage build | 10.4 s |
-| Surface synthesis, first 256 px surface | 272 ms |
-| Props placed | 180 (186 built, 134 kinds) |
+| Full garage build | ≈ 11–12 s (12.5 s in the final capture run, 11.1 s the run before) |
+| Surface synthesis, first 256 px surface | ≈ 280 ms |
+| Props placed | 181 (187 built, 134 kinds) |
 | Interactive stations | 45 |
-| Registered lights | 30 (of which shadow casters: 7) |
+| Registered lights | 31 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1770 hits, 1123 misses |
+| Mesh cache | 1772 hits, 1123 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Adaptive resolution | on by default: render scale 0.55–0.85, ±0.05 per second, holding worst-case frames under 24 ms |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |
@@ -334,7 +338,7 @@ Stated plainly, because a thesis is worth less without it:
   trade-off is measured in Experiment 5 rather than hidden.
 - **Surface synthesis is single-threaded GDScript arithmetic.** The noise *fields* are generated in
   C++ by `FastNoiseLite`, but the per-texel compositing loop is interpreted, and it dominates load
-  time at 272 ms per 256 px surface — 8.7 s of the 10.4 s build. Moving that loop to a compute
+  time at ≈ 280 ms per 256 px surface — 8.5–9 s of an ≈ 11 s build. Moving that loop to a compute
   shader is the single largest available optimisation and was not done.
 - **Bengali text is baked through the engine's text stack, not hand-shaped.** This is the correct
   approach and produces correct conjuncts, but it means a Bengali string's first appearance costs a
