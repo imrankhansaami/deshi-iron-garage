@@ -29,6 +29,8 @@ static func register(f: PropFactory) -> void:
 	f.generators["wall_clock"] = wall_clock
 	f.generators["wall_banner"] = wall_banner
 	f.generators["wall_plaque"] = wall_plaque
+	f.generators["flag_pole"] = flag_pole
+	f.generators["big_coin"] = big_coin
 	f.generators["poster"] = poster
 	f.generators["notebook"] = notebook
 	f.generators["pen"] = pen
@@ -805,6 +807,99 @@ static func wall_plaque(f: PropFactory, o: Dictionary) -> Node3D:
 		var bar_v: MeshInstance3D = ShapeKit.box(Vector3(0.022, h + 0.026, 0.022), f.ML.teak(), "FrameV")
 		bar_v.position = Vector3((w * 0.5 + 0.008) * (1.0 if i == 0 else -1.0), h * 0.5, -0.006)
 		root.add_child(bar_v)
+	return root
+
+
+static func flag_pole(f: PropFactory, o: Dictionary) -> Node3D:
+	## The national flag on a courtyard pole. The cloth is a subdivided plane the
+	## flag shader waves; the pattern is baked by _signage() through the SignCanvas,
+	## at the official construction: a bottle-green field, a red disc whose centre
+	## sits 9/20 of the length from the hoist with a radius of 1/5 the length. The
+	## pole, finial and base are physical; the flag itself casts no shadow (a moving
+	## caster is not worth a shadow pass for a cloth this small).
+	var h: float = float(o.get("height", 5.6))
+	var flag_w: float = float(o.get("flag_width", 0.9))
+	var flag_h: float = flag_w * 0.667
+	var root := Node3D.new()
+	root.name = "FlagPole"
+	var pole: MeshInstance3D = ShapeKit.cyl(0.045, h, f.ML.steel(), 12, Vector3i(0, 1, 0), "Pole")
+	pole.position = Vector3(0.0, h * 0.5, 0.0)
+	root.add_child(pole)
+	var finial: MeshInstance3D = ShapeKit.sphere(0.075, f.ML.brass(), 12, "Finial")
+	finial.position = Vector3(0.0, h + 0.05, 0.0)
+	root.add_child(finial)
+	var base: MeshInstance3D = ShapeKit.cyl(0.16, 0.18, f.ML.surface("concrete_block"), 12, Vector3i(0, 1, 0), "Base")
+	base.position = Vector3(0.0, 0.09, 0.0)
+	root.add_child(base)
+	var tie: MeshInstance3D = ShapeKit.torus(0.07, 0.008, f.ML.thread_material(), 12, 6, "Cleat")
+	tie.position = Vector3(0.0, h * 0.42, 0.0)
+	tie.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	root.add_child(tie)
+	# the cloth: hoist edge at the pole, fly edge away from it (+X)
+	var flag: MeshInstance3D = ShapeKit.plane(
+		Vector2(flag_w, flag_h),
+		f.ML.shader_material("res://shaders/flag.gdshader", {}),
+		"Flag", 24)
+	flag.position = Vector3(flag_w * 0.5 + 0.05, h - flag_h * 0.5 - 0.12, 0.0)
+	flag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(flag)
+	# the two ties that actually hold it to the pole
+	for i: int in range(2):
+		var loop: MeshInstance3D = ShapeKit.torus(0.055, 0.007, f.ML.thread_material(), 10, 5, "HoistTie")
+		loop.position = Vector3(0.02, flag.position.y + flag_h * (0.42 if i == 0 else -0.42), 0.0)
+		loop.rotation = Vector3(0.0, PI * 0.5, 0.0)
+		loop.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(loop)
+	# the pole is solid: a landmark you can walk into and feel
+	var body := StaticBody3D.new()
+	body.name = "PoleBody"
+	body.add_child(ShapeKit.col_cyl(0.07, h))
+	root.add_child(body)
+	return root
+
+
+static func big_coin(f: PropFactory, o: Dictionary) -> Node3D:
+	## A big display coin leaning on its plinth, the sort of thing a shop puts by
+	## its gate. The body is a brass cylinder; both faces are blank discs that
+	## _signage() bakes (front: বাংলাদেশ, a shapla and ৫ টাকা; back: the
+	## denomination in three lines). It is a display piece, not currency, and the
+	## inspection text says exactly that.
+	var r: float = float(o.get("radius", 0.42))
+	var root := Node3D.new()
+	root.name = "BigCoin"
+	# the plinth behind it, which the coin leans against
+	var plinth: MeshInstance3D = ShapeKit.box(Vector3(r * 1.5, 0.30, 0.16), f.ML.surface("concrete_block"), "Plinth")
+	plinth.position = Vector3(0.0, 0.15, -0.11)
+	root.add_child(plinth)
+	var coin := Node3D.new()
+	coin.name = "Coin"
+	coin.position = Vector3(0.0, 0.30 + r + 0.01, 0.0)
+	# stand the disc up: the cylinder's axis goes from +Y (natural) to +Z, with a
+	# nine-hundredth-of-a-radian lean back onto the plinth
+	coin.rotation.x = PI * 0.5 - 0.09
+	root.add_child(coin)
+	var body: MeshInstance3D = ShapeKit.cyl(r, 0.055, f.ML.brass(), 48, Vector3i(0, 1, 0), "Body")
+	coin.add_child(body)
+	# the rim band circles the cylinder's circumference, which is TorusMesh's
+	# native plane once the coin is stood up — no extra rotation
+	var rim: MeshInstance3D = ShapeKit.torus(r - 0.012, 0.014, f.ML.brass(), 48, 8, "Rim")
+	coin.add_child(rim)
+	# the faces: ShapeKit.disc_flat lies in XZ; inside this group (rotated x=+90
+	# degrees) a disc above the coin's centre ends up facing +Z, toward the street
+	var front: MeshInstance3D = ShapeKit.disc_flat(r * 0.97, 0.006, f.ML.brass(), "Front")
+	front.position = Vector3(0.0, 0.031, 0.0)
+	front.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	coin.add_child(front)
+	var back: MeshInstance3D = ShapeKit.disc_flat(r * 0.97, 0.006, f.ML.brass(), "Back")
+	back.position = Vector3(0.0, -0.031, 0.0)
+	back.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	coin.add_child(back)
+	# solid presence on the ground
+	var body_col := StaticBody3D.new()
+	body_col.name = "CoinBody"
+	body_col.add_child(ShapeKit.col_box(Vector3(r * 2.0, 0.30 + r * 2.0, 0.4)))
+	body_col.position = Vector3(0.0, (0.30 + r * 2.0) * 0.5, 0.0)
+	root.add_child(body_col)
 	return root
 
 

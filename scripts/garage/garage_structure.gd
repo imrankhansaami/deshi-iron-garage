@@ -156,12 +156,13 @@ func _build_plinth_and_courtyard() -> void:
 	neighbour2.name = "NeighbourWallB"
 	add_child(neighbour2)
 	# exterior props. Reduced from five to three: at 8.5 m of frontage, a drum, a
-	# tea cart and an antenna are an approach; five objects crowd it.
+	# tea cart and an antenna are an approach; five objects crowd it. They stand on
+	# the packed earth at y = -0.14, the courtyard's real surface.
 	var drum: Node3D = props.build("steel_drum", {})
-	drum.position = Vector3(half_w - 1.2, 0.0, half_l + 1.8)
+	drum.position = Vector3(half_w - 1.2, -0.14, half_l + 1.8)
 	add_child(drum)
 	var bench: Node3D = props.build("tea_stall_box", {})
-	bench.position = Vector3(-half_w + 2.0, 0.0, half_l + 2.6)
+	bench.position = Vector3(-half_w + 2.0, -0.14, half_l + 2.6)
 	bench.rotation.y = 0.4
 	add_child(bench)
 	var antenna: Node3D = props.build("roof_antenna", {})

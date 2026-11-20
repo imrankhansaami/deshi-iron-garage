@@ -532,6 +532,8 @@ func _preload_capture_profile() -> void:
 	GameState.settings["bloom"] = true
 	GameState.settings["ssao"] = true
 	GameState.settings["shadows"] = true
+	# a measurement must not be steered by the adaptive-resolution controller
+	GameState.settings["adaptive_resolution"] = false
 
 
 func _apply_capture_profile() -> void:
@@ -655,6 +657,8 @@ const CAP_SHOTS: Array = [
 	# the scientists' corner on the east wall of the lab: the plaques and the
 	# inventions board are the newest content and deserve a fixed viewpoint
 	{"name": "12_lab_wall", "pos": Vector3(1.1, 1.8, 0.7), "look": Vector3(4.2, 1.85, -1.15)},
+	# the courtyard's national corner, framed so the coin's face reads
+	{"name": "13_courtyard", "pos": Vector3(0.4, 1.75, 9.35), "look": Vector3(2.9, 1.6, 7.8)},
 ]
 
 var _capturing: bool = false
@@ -948,6 +952,9 @@ func _perf_force_shipped_settings() -> void:
 	GameState.settings["bloom"] = true
 	GameState.settings["ssao"] = true
 	GameState.settings["shadows"] = true
+	# the controller would move the render scale mid-sample; a measurement has to
+	# hold still (the adaptive system is what the F6 bench shows live)
+	GameState.settings["adaptive_resolution"] = false
 	environment.apply_quality()
 	if runtime.rain != null:
 		runtime.rain.emitting = true

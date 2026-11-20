@@ -30,7 +30,7 @@ const BOB_AMOUNT: float = 0.021
 @export var sprint_multiplier: float = 1.75
 @export var jump_height: float = 0.42
 @export var gravity_scale: float = 1.0
-@export var mouse_sensitivity: float = 0.0022
+@export var mouse_sensitivity: float = 0.0032
 @export var invert_y: bool = false
 @export var fov: float = 78.0
 @export var head_height: float = 1.68
@@ -78,7 +78,7 @@ func _ready() -> void:
 
 func _load_settings() -> void:
 	var s: Dictionary = GameState.settings
-	mouse_sensitivity = float(s.get("mouse_sensitivity", 0.0022))
+	mouse_sensitivity = float(s.get("mouse_sensitivity", 0.0032))
 	invert_y = bool(s.get("invert_y", false))
 	walk_speed = float(s.get("walk_speed", 3.4))
 	sprint_multiplier = float(s.get("sprint_multiplier", 1.75))

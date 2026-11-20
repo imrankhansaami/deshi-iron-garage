@@ -756,6 +756,10 @@ func _run_current() -> void:
 	if _running:
 		return
 	_running = true
+	# hold the render scale still while sampling: the adaptive-resolution
+	# controller would otherwise move it between passes and blur the comparison
+	var adaptive_was: bool = bool(GameState.settings.get("adaptive_resolution", true))
+	GameState.settings["adaptive_resolution"] = false
 	var index: int = experiment_tabs.current_tab
 	_active_experiment = index
 	_log_line("experiment %d started" % (index + 1))
@@ -783,6 +787,7 @@ func _run_current() -> void:
 			pass_i, samples[-1].fps, samples[-1].frame_ms, samples[-1].draw_calls])
 	_samples.append_array(samples)
 	_running = false
+	GameState.settings["adaptive_resolution"] = adaptive_was
 	_log_line("experiment %d complete  (%d samples)" % [index + 1, samples.size()])
 
 

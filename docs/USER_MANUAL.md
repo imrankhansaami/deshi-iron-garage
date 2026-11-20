@@ -28,7 +28,7 @@ godot --path . res://scenes/main/garage_world.tscn
 ```
 
 The first launch builds the garage and shows real progress: surface synthesis, then the shell, the
-lighting rig, 178 props, the screens and finally the interface. On a machine with integrated graphics
+lighting rig, 186 props, the screens and finally the interface. On a machine with integrated graphics
 this takes around 10 seconds; on a discrete GPU it will be considerably faster. The build time is also
 written to `user://captures/build.log`.
 
@@ -146,6 +146,16 @@ poster — press **F** and you get a panel with a description, a specification t
 history written in the inventor's voice. **Roughly nine in ten props carry real text.** This is the
 main reward for looking closely, and it is where most of the Bangladeshi detail lives.
 
+### Picking things up with the mouse
+
+Anything smaller than about 0.8 m can be picked up, carried and set down: tools, tins, tea glasses,
+stools, tyres, crates, the clutter on the benches and the floor. Look at a thing and a translucent
+cyan box appears around it with the line `LEFT CLICK — PICK UP`; left click takes it, the wheel spins
+it, left click again settles it onto the surface under your aim — bench top, shelf, crate lid, the
+platform deck, the floor — and right click puts it back exactly where it came from. Nothing can be
+dropped into geometry, nothing can be lost, and the object leans into your turns with a smoothed
+follow rather than snapping to the crosshair.
+
 ### The holographic design table
 
 `E` on the table raises a cyan schematic of the suit. The miniature is built from the *same* part
@@ -212,8 +222,11 @@ three gauges, six toggle levers and a mushroom emergency stop, a portrait diagno
 
 **Outside.** Step back out through the shutter — it is chained open. There is a courtyard with a tea
 stall cart, a bicycle, a rickshaw wheel, a roof antenna, and a neighbour's wall. Puddles on the
-packed earth, and a gold-on-navy street banner over the left pier: **IMRAN'S GARAGE**, with the shop's
-Bangla name underneath.
+packed earth, a gold-on-navy street banner over the left pier reading **IMRAN'S GARAGE** with the
+shop's Bangla name underneath, and by the gate the national corner: the **flag of Bangladesh** on
+its pole — bottle green, the red disc at nine-twentieths of the length with a radius of one-fifth,
+waving in a cloth shader — and a big brass **৫ টাকা display coin** leaning on its plinth. Press `F`
+on either; the coin's text is honest that it is an ornament, not money.
 
 **The Bengal wall.** Above the instrument bench: six plaques for জগদীশ চন্দ্র বসু, সত্যেন্দ্রনাথ বসু,
 কুদরত-এ-খুদা, কাজী মোতাহার হোসেন, জামাল নজরুল ইসলাম and মাকসুদুল আলম, under a header reading
@@ -279,21 +292,27 @@ Reachable from the pause menu or from the main menu.
 
 | Setting | Effect |
 |---|---|
-| **quality preset** | `low` (128 px surfaces, no SSAO/SSR/SDFGI/fog, no MSAA) · `medium` (256 px, SSAO + SSR, 2× MSAA) · `high` (384 px, everything, 4× MSAA) |
+| **quality preset** | `low` (128 px surfaces, no SSAO/SSR/SDFGI/fog, 3 shadow casters) · `medium` (256 px, SSAO + SSR + light shafts, no SDFGI, 5 casters) · `high` (384 px, everything including SDFGI, 7 casters) |
 | bloom | emissive objects spill light; the energy core loses most of its presence without it |
 | ambient occlusion | contact shadows; without it every prop appears to float slightly |
-| shadows | the seven shadow-casting lights |
+| shadows | the shadow-casting lights, capped by the preset's budget |
 | rain | rain on the tin roof, visually and audibly |
+
+**Adaptive resolution** runs on top of whichever preset you pick, and it is how the build avoids lag
+on a machine it was not tuned for: once a second it looks at the worst steady frame and moves the
+render scale inside 0.55–0.85 — smaller when frames run long, back up when there is headroom — with
+the picture upscaled by FSR 2 throughout. You never need to touch it; it switches itself off during
+any measurement (the F6 bench, the perf harness, capture mode) so those numbers stay comparable.
 
 **Audio** — master, ambience, effects and interface volumes, independently. Ambience carries the rain,
 the street, the mains hum and the fans; effects carries tools, servos and the core; interface carries
 the UI blips. The mains hum is a synthesised 50 Hz stack, which is the actual supply frequency in
 Bangladesh.
 
-**Speed** — `medium` is the recommended preset on integrated graphics: it disables SDFGI, SSR and
-volumetric fog and reaches 40–55 fps, at the cost of the energy core no longer spilling onto the wall
-behind it. The default is `high`, which is 18–26 fps on integrated graphics and looks considerably
-better.
+**Speed** — `medium` is the recommended preset on integrated graphics: it drops the SDFGI cascades,
+keeps the light shafts, and leans on adaptive resolution, which is what makes it the comfortable
+choice. The default is `high`, which keeps everything including the global illumination and lets
+adaptive resolution find whatever the machine can hold.
 
 ---
 

@@ -1,5 +1,5 @@
 class_name CarrySystem
-extends Node
+extends Node3D
 ## Pick up and put down the garage's small things, entirely with the mouse.
 ##
 ## **Why the selection is a ray against AABBs, not a physics query.** Every prop
@@ -22,7 +22,7 @@ extends Node
 ## click puts it back exactly where it was. No dragging, no physics fighting, no
 ## way to lose an object.
 
-const PICK_RANGE: float = 3.2
+const PICK_RANGE: float = 3.6
 const MAX_CARRY_SIZE: float = 0.8        # largest dimension a thing may have
 const HOLD_CLEARANCE: float = 0.22       # how far below the camera's aim it floats
 const FOLLOW_RATE: float = 14.0          # exponential smoothing rate
@@ -38,6 +38,8 @@ var _items: Array[Dictionary] = []       # { node, box }
 var _surfaces: Array[Dictionary] = []    # { top, rect, owner }
 var _state: State = State.FREE
 var _target: Node3D = null
+var _target_box: AABB = AABB()
+var _highlight: MeshInstance3D
 var _held: Node3D = null
 var _held_offset: Vector3 = Vector3.ZERO
 var _held_reach: float = 0.8
@@ -54,8 +56,43 @@ func setup(player: Player, dressing: Node3D, structure: GarageStructure) -> void
 	_gather_items(dressing)
 	_gather_surfaces(dressing)
 	_gather_surfaces(structure)
+	_build_highlight()
 	set_process(true)
 	set_process_unhandled_input(true)
+
+
+func _build_highlight() -> void:
+	## The selection box: the same translucent-cyan language as the reticle's focus
+	## volume, so "the mouse can pick this up" is visible without reading the hint
+	## line. Cheaper than outlining a mesh, and it cannot fight the reticle's
+	## bracket material because it is its own material instance.
+	var qm := BoxMesh.new()
+	qm.size = Vector3.ONE
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0.31, 0.85, 1.0, 0.10)
+	mat.emission_enabled = true
+	mat.emission = Color("4fd8ff")
+	mat.emission_energy_multiplier = 0.5
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.resource_name = "carry_highlight"
+	_highlight = MeshInstance3D.new()
+	_highlight.name = "CarryHighlight"
+	_highlight.mesh = qm
+	_highlight.material_override = mat
+	_highlight.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_highlight.visible = false
+	add_child(_highlight)
+
+
+func _show_highlight() -> void:
+	if _target == null or _target_box.size == Vector3.ZERO:
+		_highlight.visible = false
+		return
+	_highlight.visible = true
+	_highlight.global_position = _target_box.get_center()
+	_highlight.scale = _target_box.size + Vector3.ONE * 0.02
 
 
 # ===========================================================================
@@ -130,11 +167,13 @@ func _process(delta: float) -> void:
 		State.FREE:
 			_target = _pick_under_crosshair() if playing else null
 			_set_hint("LEFT CLICK — PICK UP" if _target != null else "")
+			_show_highlight()
 		State.CARRYING:
 			_update_held(delta)
+			_highlight.visible = false
 			_set_hint("LEFT CLICK — PLACE   ·   WHEEL — ROTATE   ·   RIGHT CLICK — PUT BACK" if playing else "")
 		State.SETTLING:
-			pass
+			_highlight.visible = false
 
 
 func _pick_under_crosshair() -> Node3D:
@@ -143,6 +182,7 @@ func _pick_under_crosshair() -> Node3D:
 	var dir: Vector3 = -cam.global_transform.basis.z
 	var best: Node3D = null
 	var best_t: float = PICK_RANGE
+	_target_box = AABB()
 	for entry: Dictionary in _items:
 		var node: Variant = entry.get("node")
 		if not (node is Node3D) or not is_instance_valid(node) or node == _held:
@@ -151,6 +191,7 @@ func _pick_under_crosshair() -> Node3D:
 		if t > 0.0 and t < best_t:
 			best_t = t
 			best = node
+			_target_box = entry.get("box")
 	return best
 
 

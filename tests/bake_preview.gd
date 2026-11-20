@@ -33,6 +33,9 @@ func _run() -> void:
 		})
 	jobs.append({"id": "sci_header", "spec": dressing.call("_corner_header_spec")})
 	jobs.append({"id": "inventions", "spec": dressing.call("_inventions_spec", inventions)})
+	jobs.append({"id": "flag", "spec": dressing.call("_flag_spec")})
+	jobs.append({"id": "coin_front", "spec": dressing.call("_coin_face_spec", true)})
+	jobs.append({"id": "coin_back", "spec": dressing.call("_coin_face_spec", false)})
 	# a wrap probe: the same long sentence at three settings, and the labels'
 	# actual sizes printed afterwards — the fastest way to see what this engine
 	# build does with a width on a plain Label

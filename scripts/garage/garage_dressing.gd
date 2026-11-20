@@ -209,17 +209,38 @@ func _area_entrance() -> void:
 		"spec": [["print", "flex banner, 1.7 m"], ["script", "English + Bengali"], ["hung", "over the left pier"]],
 		"sfx": "", "distance": 5.5,
 	})
-	# the courtyard: three props, because 8.5 m of frontage holds three
-	var bicycle: Node3D = _place("bicycle", Vector3(-half_w + 1.3, 0.0, half_l + 1.9), Vector3(0.0, 0.5, 0.0), {"scale": 0.95})
+	# the courtyard: three props, because 8.5 m of frontage holds three. They stand
+	# on the packed earth at y = -0.14, not on the interior slab height: placing
+	# them at 0 left every courtyard prop hovering 14 cm, which the carry system's
+	# probe exposed when it dropped a crate onto the real ground.
+	var YARD_Y: float = -0.14
+	var bicycle: Node3D = _place("bicycle", Vector3(-half_w + 1.3, YARD_Y, half_l + 1.9), Vector3(0.0, 0.5, 0.0), {"scale": 0.95})
 	_station(bicycle, Station.Kind.PART, Vector3.ZERO, {
 		"area": "exterior", "title": "Workshop bicycle",
 		"desc": "The spare bicycle. It does not belong to anyone in particular and it is used by everyone.",
 		"spec": [["wheels", "26 inch, wire spoked"], ["purpose", "spares and short errands"]],
 		"sfx": "metal_tink", "distance": 2.8,
 	})
-	_place("wheel_rickshaw", Vector3(half_w - 1.1, 0.34, half_l + 1.6), Vector3(0.0, 0.3, 0.0), {"radius": 0.34})
-	_place("crate_stack", Vector3(half_w - 2.0, 0.0, half_l + 2.6), Vector3(0.0, -0.4, 0.0), {"count": 3})
-	_place("scrap_bin", Vector3(-half_w + 2.6, 0.0, half_l + 2.9), Vector3(0.0, 0.9, 0.0), {"w": 0.7, "h": 0.45})
+	_place("wheel_rickshaw", Vector3(half_w - 1.1, YARD_Y + 0.34, half_l + 1.6), Vector3(0.0, 0.3, 0.0), {"radius": 0.34})
+	_place("crate_stack", Vector3(half_w - 2.0, YARD_Y, half_l + 2.6), Vector3(0.0, -0.4, 0.0), {"count": 3})
+	_place("scrap_bin", Vector3(-half_w + 2.6, YARD_Y, half_l + 2.9), Vector3(0.0, 0.9, 0.0), {"w": 0.7, "h": 0.45})
+	# the national corner by the gate: the flag on its pole and the big display
+	# coin leaning on its plinth, nonsense planted by the courtyard wall facing the
+	# camera — see _signage() for the cloth and the two coin faces
+	var flag: Node3D = _place("flag_pole", Vector3(3.6, YARD_Y, half_l + 2.35), Vector3.ZERO, {})
+	_station(flag, Station.Kind.SIGN, Vector3(0.0, 0.2, 0.0), {
+		"area": "exterior", "title": "National flag",
+		"desc": "Bottle green with the red disc of the rising sun, on a pole beside the gate. The disc sits at nine-twentieths of the length from the hoist, its radius one-fifth of the length, exactly as the specification says.",
+		"spec": [["ratio", "10 : 6"], ["disc", "9/20 from hoist, r = L/5"], ["cloth", "0.9 m, weighted at the fly"]],
+		"sfx": "paper", "distance": 4.0,
+	})
+	var coin: Node3D = _place("big_coin", Vector3(2.6, YARD_Y, half_l + 3.1), Vector3(0.0, -0.16, 0.0), {"radius": 0.42})
+	_station(coin, Station.Kind.SIGN, Vector3(0.0, 0.3, 0.0), {
+		"area": "exterior", "title": "Display coin",
+		"desc": "A big brass ৫ টাকা leaning on its plinth — a sign-shop ornament for the gate, not money. The face carries the shapla and the country's name; the back carries the denomination in Bangla and English.",
+		"spec": [["diameter", "0.84 m"], ["face", "shapla and ৫ টাকা"], ["note", "display piece, not legal tender"]],
+		"sfx": "metal_thunk", "distance": 3.4,
+	})
 	_place("sandals", Vector3(-0.7, 0.0, half_l - 0.3), Vector3(0.0, 0.4, 0.0))
 	_place("water_bucket", Vector3(half_w - 0.6, 0.0, half_l - 0.5))
 	# the interior entrance strip
@@ -1143,6 +1164,31 @@ func _signage() -> void:
 		var board_face: MeshInstance3D = board.get_node_or_null("Print") as MeshInstance3D
 		if board_face != null:
 			baker.apply_baked(board_face, _inventions_spec(GameConfig.inventions), "inventions", 0.12, 0.6)
+	# the flag's cloth: the shader samples the baked pattern, so the bake goes to
+	# the shader uniform rather than to a standard material
+	var pole: Node3D = _find_first("FlagPole")
+	if pole != null:
+		var cloth: MeshInstance3D = pole.get_node_or_null("Flag") as MeshInstance3D
+		if cloth != null and cloth.material_override is ShaderMaterial:
+			var cloth_mat: ShaderMaterial = cloth.material_override
+			baker.bake_async(_flag_spec(), "flag_cloth", func(tex: ImageTexture) -> void:
+				cloth_mat.set_shader_parameter("flag_tex", tex))
+	# the display coin's two faces: struck-metal look, so the baked design is given
+	# a metallic response on top rather than left as a flat print
+	var coin: Node3D = _find_first("BigCoin")
+	if coin != null:
+		var coin_root: Node3D = coin.get_node_or_null("Coin") as Node3D
+		if coin_root != null:
+			var front: MeshInstance3D = coin_root.get_node_or_null("Front") as MeshInstance3D
+			if front != null:
+				var mf: StandardMaterial3D = baker.apply_baked(front, _coin_face_spec(true), "coin_front", 0.0, 0.34)
+				mf.metallic = 0.6
+				mf.metallic_specular = 0.55
+			var back_face: MeshInstance3D = coin_root.get_node_or_null("Back") as MeshInstance3D
+			if back_face != null:
+				var mb: StandardMaterial3D = baker.apply_baked(back_face, _coin_face_spec(false), "coin_back", 0.0, 0.34)
+				mb.metallic = 0.6
+				mb.metallic_specular = 0.55
 
 
 func _find_first(name: String) -> Node3D:
@@ -1337,6 +1383,62 @@ func _inventions_spec(items: Array) -> Dictionary:
 		"border": {"color": "#d4af37", "width": 5.0},
 		"layers": layers,
 	}
+
+
+func _flag_spec() -> Dictionary:
+	## The national flag at its official construction: a bottle-green field, a red
+	## disc whose centre sits nine-twentieths of the flag's length from the hoist
+	## with a radius of one-fifth of the length. In a 2:3 weave the "length" is the
+	## 480 px side, so the disc is centred at (216, 160) with r = 96 — not the middle
+	## of the cloth, which is the detail everyone gets wrong.
+	return {
+		"size": Vector2i(480, 320), "transparent": false, "bg": "#006a4e",
+		"layers": [
+			{"type": "circle", "center": Vector2(216, 160), "radius": 96, "color": "#f42a41", "filled": true},
+		],
+	}
+
+
+func _coin_face_spec(front: bool) -> Dictionary:
+	## A display coin's face, drawn in brass tones with an embossed trick: every
+	## element is painted twice, a light copy offset by two pixels under a dark one,
+	## which is enough to read as relief once the material is given a metallic
+	## response. The front carries the shapla and the country's name; the back the
+	## denomination. It is a shop ornament and the inspect text says so.
+	var brass_dark: String = "#6d5426"
+	var brass_mid: String = "#9a7b3a"
+	var brass_light: String = "#cba85f"
+	var layers: Array = [
+		{"type": "rect", "pos": Vector2(0, 0), "sz": Vector2(512, 512), "color": brass_mid},
+		{"type": "circle", "center": Vector2(256, 256), "radius": 244, "color": brass_light, "filled": false, "width": 8.0},
+		{"type": "circle", "center": Vector2(256, 256), "radius": 226, "color": brass_dark, "filled": false, "width": 3.0},
+	]
+	if front:
+		# embossed country name
+		layers.append({"type": "text", "name": "NM2", "pos": Vector2(34, 44), "size": 46, "width": 448, "align": "center", "color": brass_light, "text": "বাংলাদেশ", "font": "bangla"})
+		layers.append({"type": "text", "name": "NM", "pos": Vector2(32, 42), "size": 46, "width": 448, "align": "center", "color": brass_dark, "text": "বাংলাদেশ", "font": "bangla"})
+		# the shapla: a centre petal and two side petals, drawn as eight-point
+		# lenses so they read as leaves rather than diamonds, over two water arcs
+		layers.append({"type": "poly", "points": [Vector2(256, 148), Vector2(246, 188), Vector2(238, 212), Vector2(246, 238), Vector2(256, 270), Vector2(266, 238), Vector2(274, 212), Vector2(266, 188)], "color": brass_light})
+		layers.append({"type": "poly", "points": [Vector2(256, 150), Vector2(247, 189), Vector2(240, 212), Vector2(247, 236), Vector2(256, 266), Vector2(265, 236), Vector2(272, 212), Vector2(265, 189)], "color": brass_dark})
+		layers.append({"type": "poly", "points": [Vector2(206, 184), Vector2(196, 206), Vector2(184, 224), Vector2(196, 240), Vector2(210, 260), Vector2(224, 238), Vector2(232, 220), Vector2(224, 198)], "color": brass_light})
+		layers.append({"type": "poly", "points": [Vector2(208, 186), Vector2(198, 207), Vector2(187, 224), Vector2(198, 239), Vector2(210, 257), Vector2(222, 238), Vector2(229, 220), Vector2(222, 200)], "color": brass_dark})
+		layers.append({"type": "poly", "points": [Vector2(306, 184), Vector2(316, 206), Vector2(328, 224), Vector2(316, 240), Vector2(302, 260), Vector2(288, 238), Vector2(280, 220), Vector2(288, 198)], "color": brass_light})
+		layers.append({"type": "poly", "points": [Vector2(304, 186), Vector2(314, 207), Vector2(325, 224), Vector2(314, 239), Vector2(302, 257), Vector2(290, 238), Vector2(283, 220), Vector2(290, 200)], "color": brass_dark})
+		layers.append({"type": "arc", "center": Vector2(256, 288), "radius": 76, "start": 0.22, "end": 2.92, "color": brass_dark, "width": 3.0})
+		layers.append({"type": "arc", "center": Vector2(256, 300), "radius": 94, "start": 0.32, "end": 2.82, "color": brass_dark, "width": 2.0})
+		# the denomination, embossed
+		layers.append({"type": "text", "name": "VN2", "pos": Vector2(48, 356), "size": 58, "width": 420, "align": "center", "color": brass_light, "text": "৫ টাকা", "font": "bangla"})
+		layers.append({"type": "text", "name": "VN", "pos": Vector2(46, 354), "size": 58, "width": 420, "align": "center", "color": brass_dark, "text": "৫ টাকা", "font": "bangla"})
+		layers.append({"type": "text", "name": "YR", "pos": Vector2(32, 444), "size": 24, "width": 448, "align": "center", "color": brass_dark, "text": "২০১৯", "font": "bangla"})
+	else:
+		layers.append({"type": "text", "name": "B2", "pos": Vector2(36, 96), "size": 220, "width": 440, "align": "center", "color": brass_light, "text": "৫", "font": "bangla"})
+		layers.append({"type": "text", "name": "B1", "pos": Vector2(32, 92), "size": 220, "width": 440, "align": "center", "color": brass_dark, "text": "৫", "font": "bangla"})
+		layers.append({"type": "text", "name": "W2", "pos": Vector2(34, 348), "size": 46, "width": 444, "align": "center", "color": brass_light, "text": "পাঁচ টাকা", "font": "bangla"})
+		layers.append({"type": "text", "name": "W1", "pos": Vector2(32, 346), "size": 46, "width": 444, "align": "center", "color": brass_dark, "text": "পাঁচ টাকা", "font": "bangla"})
+		layers.append({"type": "text", "name": "E", "pos": Vector2(32, 418), "size": 30, "width": 448, "align": "center", "color": brass_dark, "text": "FIVE TAKA", "font": "mono"})
+		layers.append({"type": "text", "name": "D", "pos": Vector2(32, 456), "size": 20, "width": 448, "align": "center", "color": brass_dark, "text": "প্রদর্শনী মুদ্রা", "font": "bangla"})
+	return {"size": Vector2i(512, 512), "transparent": false, "bg": brass_mid, "layers": layers}
 
 
 func _poster_spec(index: int, dream: String, prototype: String) -> Dictionary:

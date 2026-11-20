@@ -50,7 +50,7 @@ to catch the first.
     ├── Carry                    (Node)     CarrySystem: mouse pick-up / place / rotate / put back
     ├── Garage                   (Node3D)   GarageStructure: floor, walls, columns, roof, shutter frame
     ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 30 lights, dust, rain
-    ├── Dressing                 (Node3D)   GarageDressing: 178 props, 43 stations, cables, signage, decals
+    ├── Dressing                 (Node3D)   GarageDressing: 180 props, 45 stations, cables, signage, decals
     │
     ├── area volumes ×6          (Area3D)   named rooms; group "garage_areas"
     ├── Player                   (CharacterBody3D)
@@ -169,7 +169,7 @@ per texel into colour/roughness/metallic/occlusion/height, pack to RGB8 byte buf
 tangent-space normal by Sobel gradient on the wrapped height field, upload in one
 `Image::create_from_data` per channel. See `docs/GRAPHICS_ALGORITHMS.md` §2.
 
-**`shape_kit.gd`** — the primitive composition layer, and the reason 178 props is affordable. Two
+**`shape_kit.gd`** — the primitive composition layer, and the reason 180 props is affordable. Two
 ideas: a mesh cache keyed on dimensions so forty spanners share one mesh, and true generators (lathe
 from a profile, gear from tooth count and module, tube sweep, coil, chain, plate) for the shapes that
 are not primitives. Also `shape_aabb_local()`, `area_aabb()` and `node_bounds()`, which exist because
@@ -350,7 +350,7 @@ and in the capture harness. The rain, the dust and the footsteps use separate se
 one does not perturb another.
 
 **Fixed capture viewpoints.** The capture harness drives the progression to a known state and parks
-the camera at thirteen declared transforms, which is what makes the screenshots in `captures/`
+the camera at fourteen declared transforms, which is what makes the screenshots in `captures/`
 comparable between code revisions. It also reports a luminance histogram per shot: the check that
 matters most is the `black` percentage, because a lighting rig that renders almost nothing still
 produces a screenshot and would otherwise read as success.
@@ -373,7 +373,7 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 | `tests/dump_floor.gd` | Builds the world headless and reports: every node within a radius of a floor point, the dressing's occupancy boxes with their owning stations, per-child bound audits, and a full carry-system exercise — surface heights, a pick-up/place cycle and the put-back path. Written to turn "the screenshot shows something odd" into a named object, and "the carry maths should work" into measured numbers. |
 | Perf harness (`perf.flag`) | Drives the full progression, then samples three fixed viewpoints twice each — shipped settings and the earlier values flipped back at runtime in the same session — and writes a paired A/B table to `user://captures/perf.log`. Its first run is what exposed the shadow-budget bug and the session's 7.5 Hz presentation cap (`docs/EXPERIMENTS.md` §7.5). |
 | `tests/bake_preview.gd` | Renders the lab-wall plate specs (scientists, header, inventions board) to PNGs in `user://captures/`, so Bengali on the wall can be proof-read at full resolution without launching the garage. |
-| Capture harness | Boots the real renderer, drives the full progression, writes 13 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
+| Capture harness | Boots the real renderer, drives the full progression, writes 14 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
 | Graphics bench | Self-measurement at runtime, exportable to CSV, with a fixed-camera capture at each configuration. |
 
 What is **not** tested: there is no unit test suite, no automated interaction test that drives `E`

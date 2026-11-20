@@ -632,7 +632,11 @@ func apply_quality() -> void:
 	env.glow_enabled = bool(GameState.settings.get("bloom", true)) and bool(q.get("bloom", true))
 	env.ssao_enabled = bool(GameState.settings.get("ssao", true)) and bool(q.get("ssao", true))
 	env.ssr_enabled = bool(q.get("reflections", true))
-	env.volumetric_fog_enabled = String(GameState.settings.get("quality", "high")) != "low"
+	# global illumination and the light shafts are preset tiers now, not constants:
+	# medium keeps the shafts but drops the SDFGI cascades, which is most of the
+	# high preset's GPU cost
+	env.sdfgi_enabled = bool(q.get("sdfgi", true))
+	env.volumetric_fog_enabled = bool(q.get("volumetric_fog", true))
 	if dust != null:
 		dust.amount = int(900.0 * float(q.get("particles", 1.0)))
 	if rain != null:
@@ -644,25 +648,106 @@ func apply_quality() -> void:
 	## MSAA setting applies as before. The scaling mode is resolved by label through
 	## EnumRef so a renamed engine enum degrades to bilinear upscaling, not to a
 	## silently wrong mode.
+	_quality_scale = clampf(float(q.get("render_scale", 1.0)), 0.5, 1.0)
+	_apply_render_scale(_quality_scale)
+	var shadows_on: bool = bool(GameState.settings.get("shadows", true))
+	if sun != null:
+		sun.shadow_enabled = shadows_on
+	# Honour each light's designed shadow intent (see GarageRuntime.register_light)
+	# and the preset's shadow budget: the wanted casters are ranked in the order
+	# they matter and only the first N stay on, so "low" keeps the sun and the
+	# core while dropping the bench-task shadows nobody reads.
+	var wanted: Array[Dictionary] = []
+	for entry: Dictionary in runtime.lights:
+		var light: Light3D = entry["node"] as Light3D
+		if not is_instance_valid(light):
+			continue
+		if shadows_on and bool(entry.get("wants_shadow", false)):
+			wanted.append(entry)
+		else:
+			light.shadow_enabled = false
+	wanted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return _shadow_priority(a) < _shadow_priority(b))
+	var budget: int = int(q.get("shadow_budget", 7))
+	for i: int in range(wanted.size()):
+		var light: Light3D = wanted[i]["node"] as Light3D
+		light.shadow_enabled = i < budget
+
+
+func _shadow_priority(entry: Dictionary) -> int:
+	## The order the casters matter in, by the name the rig gave them.
+	var light: Node = entry.get("node")
+	if light == null:
+		return 99
+	var priority: Dictionary = {
+		"Sunlight": 0, "CoreLight": 1, "StandKey": 2, "ShutterGap": 3,
+		"TubeLight0": 4, "TubeLight1": 5, "TaskSpot0": 6,
+	}
+	return int(priority.get(String(light.name), 50))
+
+
+func _apply_render_scale(scale: float) -> void:
 	var vp: Viewport = get_viewport()
-	var scale: float = clampf(float(q.get("render_scale", 1.0)), 0.5, 1.0)
 	vp.scaling_3d_scale = scale
 	if scale < 0.995:
 		vp.scaling_3d_mode = EnumRef.value(vp, "scaling_3d_mode", "FSR 2", 0) as Viewport.Scaling3DMode
 		vp.msaa_3d = Viewport.MSAA_DISABLED
 	else:
 		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-		var msaa: int = int(q.get("msaa", 2))
+		var msaa: int = int(GameConfig.quality().get("msaa", 2))
 		vp.msaa_3d = Viewport.MSAA_DISABLED if msaa == 0 else (
 			Viewport.MSAA_2X if msaa == 1 else Viewport.MSAA_4X)
-	var shadows_on: bool = bool(GameState.settings.get("shadows", true))
-	if sun != null:
-		sun.shadow_enabled = shadows_on
-	# honour each light's designed shadow intent (see GarageRuntime.register_light)
-	for entry: Dictionary in runtime.lights:
-		var light: Light3D = entry["node"] as Light3D
-		if is_instance_valid(light):
-			light.shadow_enabled = shadows_on and bool(entry.get("wants_shadow", false))
+
+
+# ===========================================================================
+# adaptive resolution — "no lag" as a control loop, not a promise
+# ===========================================================================
+## The verification session cannot measure frame rate (see EXPERIMENTS 7.5), but
+## the player's machine can measure it for itself. Once a second this samples the
+## worst steady frame time and moves the render scale inside [0.55, preset scale]
+## to hold a comfortable rate: down 0.05 when frames run longer than 24 ms, up
+## 0.05 when they are faster than 15 ms, with the target band wide enough that it
+## does not oscillate. The user's settings are never written; the F6 bench and the
+## perf harness switch it off so a measurement stays a measurement.
+
+var _quality_scale: float = 1.0
+var _adaptive_scale: float = -1.0
+var _adaptive_accum: float = 0.0
+var _adaptive_frames: int = 0
+var _adaptive_worst: float = 0.0
+
+
+func _process(delta: float) -> void:
+	if env == null or not bool(GameState.settings.get("adaptive_resolution", true)):
+		return
+	if _quality_scale > 0.995:
+		# preset renders at full resolution: nothing to adapt within
+		return
+	if _adaptive_scale < 0.0:
+		_adaptive_scale = _quality_scale
+	_adaptive_accum += delta
+	_adaptive_frames += 1
+	# ignore the compiling/loading spikes: only steady frames count
+	if delta < 0.2:
+		_adaptive_worst = maxf(_adaptive_worst, delta)
+	if _adaptive_accum < 1.0:
+		return
+	var avg: float = _adaptive_accum / maxf(float(_adaptive_frames), 1.0)
+	var worst: float = _adaptive_worst
+	_adaptive_accum = 0.0
+	_adaptive_frames = 0
+	_adaptive_worst = 0.0
+	var before: float = _adaptive_scale
+	if worst > 0.024:
+		_adaptive_scale = maxf(0.55, _adaptive_scale - 0.05)
+	elif avg < 0.015 and _adaptive_scale < _quality_scale:
+		_adaptive_scale = minf(_quality_scale, _adaptive_scale + 0.05)
+	if not is_equal_approx(before, _adaptive_scale):
+		_apply_render_scale(_adaptive_scale)
+
+
+func adaptive_scale() -> float:
+	return _adaptive_scale if _adaptive_scale > 0.0 else _quality_scale
 
 
 func stats() -> Dictionary:

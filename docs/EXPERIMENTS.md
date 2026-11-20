@@ -39,7 +39,7 @@ transfer.
   `CableGenerator.last_stats`, `GarageDressing.layout_stats()`.
 
 **Reproducibility controls.** Fixed seed 1337 for prop generation; a per-group seed for each
-procedural layout; per-surface seeds derived by hash; thirteen fixed camera transforms; 30 frames of
+procedural layout; per-surface seeds derived by hash; fourteen fixed camera transforms; 30 frames of
 warm-up discarded before every measurement.
 
 **Known weakness.** Godot 4.7 exposes no GPU timestamp query. All per-pass costs below are
@@ -380,7 +380,7 @@ performance work.
 | Surface synthesis (first surface) | 272 ms | 2.6% | the per-texel loop |
 | Structure — floor, walls, columns, roof, shutter, windows | 5 807 ms | 55.6% | mesh generation, collision shapes, and the surfaces it requests |
 | Environment — sky, `WorldEnvironment`, 30 lights, dust, rain | 39 ms | 0.4% | negligible |
-| Dressing — 178 placements, 43 stations, 4 layout groups, cables, signage, grime decals, wall plaques | 4 638 ms | 41.3% | prop construction, station wiring, and its surfaces |
+| Dressing — 180 placements, 45 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag and coin | 4 634 ms | 42.2% | prop construction, station wiring, and its surfaces |
 | Screens — 5 live `SubViewport`s and their materials | 75 ms | 0.7% | — |
 | Player — camera, ray, reticle, collision | 31 ms | 0.3% | — |
 | Interface — HUD, 10 panels, objective director | 182 ms | 1.7% | — |
@@ -444,19 +444,22 @@ two spot shadows in the dressing pass that doubled an existing caster for no rea
 
 | Knob | Earlier build | Shipped now | Why |
 |---|---|---|---|
-| SDFGI cascades / coverage | 4 cascades, 12 m → 90 m | 3 cascades, 8 m → 40 m | the room is 10.5 m long; the far cascades sampled space the camera cannot see |
+| SDFGI cascades / coverage | 4 cascades, 12 m → 90 m | 3 cascades, 8 m → 40 m on **high**; **off** on medium and low | the room is 10.5 m long; the far cascades sampled space the camera cannot see, and the cascades are most of the high preset's GPU cost — so they became a tier rather than a constant |
+| Shadow budget | every intended caster | 7 on high, 5 on medium, 3 on low, ranked sun → core → stand key → gap → tubes → task spot | the bench shadow nobody reads is the first thing a slower machine can spare |
 | SSR steps | 24 | 16 | screen-space reflections die before 16 steps on these surfaces |
-| Volumetric fog length | 42 m | 26 m | fog beyond the north wall is invisible |
+| Volumetric fog length | 42 m | 26 m (on for high/medium, off on low) | fog beyond the north wall is invisible |
 | Render scale | 1.0 | 0.85, upscaled by FSR 2.2 | 28% fewer shaded pixels; FSR 2 also replaces MSAA |
 | MSAA | 4× | off while FSR 2 is active | paying for both bought heat, not edges |
-| Shadow atlas (project setting) | 4096 (engine default) | 2048 | halved shadow memory and bandwidth for 7 casters |
+| Shadow atlas (project setting) | 4096 (engine default) | 2048 | halved shadow memory and bandwidth |
 | Default window | maximised (1763 × 900 here) | 1600 × 900 windowed | a maximised window renders whatever the desktop is |
 | Live screen redraw | 960 × 600 per screen | 0.66 scale (≈ 634 × 396) | screens repaint at 12 Hz; their pixels are a real per-frame cost |
+| Adaptive resolution | none | the render scale moves inside 0.55–0.85 to hold the rate: down 0.05 when steady frames run past 24 ms, up 0.05 below 15 ms | this is "no lag" as a control loop rather than a fixed guess, and it adapts to whatever machine the build is on rather than to this one |
 
 **Measurement.** The perf harness (`perf.flag`, `docs/SYSTEM_ARCHITECTURE.md` §9) drives the full
 progression, then samples three fixed viewpoints twice each — once with the shipped knobs, once with
 the earlier values flipped back at runtime, in the same session and at the same camera — so the
-comparison cannot be polluted by machine state drifting between runs:
+comparison cannot be polluted by machine state drifting between runs. The adaptive controller is
+switched off for the duration: a measurement has to hold still.
 
 | View | Shipped, CPU frame time | Earlier knobs | Difference |
 |---|---|---|---|
@@ -509,7 +512,7 @@ how the 40–55 fps medium / 18–26 fps high figures elsewhere in this document
 11. The per-texel composition loop is the surface-synthesis bottleneck, not the noise generation;
     moving from 512 px to 256 px halved the load time with no visible loss because tiling hides the
     missing resolution. (§1.1)
-12. Mesh caching at 1.6:1 reuse is what makes 178 props affordable. (§7.2)
+12. Mesh caching at 1.6:1 reuse is what makes 180 props affordable. (§7.2)
 13. Two-thirds of the total build is structure and dressing geometry. (§7.4)
 
 **Process findings**

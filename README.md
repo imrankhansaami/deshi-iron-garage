@@ -48,7 +48,7 @@ godot --path . res://scenes/main/main_menu.tscn
 godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 178 props,
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 186 props,
 screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
 **10.4 s**, reported on screen step by step and written to a log.
 
@@ -59,7 +59,7 @@ global-illumination features; the Settings panel switches it live.
 ### Capture / verification mode
 
 Dropping an empty file named `capture.flag` next to `project.godot` puts the world into verification
-mode: it drives the whole twelve-step progression, then parks the camera at thirteen fixed viewpoints
+mode: it drives the whole twelve-step progression, then parks the camera at fourteen fixed viewpoints
 and writes a PNG plus a luminance histogram for each, then quits. The files land in `user://captures/`
 (`%APPDATA%\Godot\app_userdata\Deshi Iron Garage\captures\` on Windows), which is how the screenshots
 quoted in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and has no effect without
@@ -159,7 +159,11 @@ geometry, not asserted in text.
   display glass with chroma split, scanlines and a refresh band; machined metal with emissive seams
   and edge wear; cable sleeve with weave ribs and a dust ramp.
 - **A lighting rig in four switchable circuits** over one shadow-casting daylight source, with the
-  shutter position continuously driving the daylight shafts and the volumetric fog density.
+  shutter position continuously driving the daylight shafts and the volumetric fog density. The
+  expensive features are preset tiers — SDFGI and the fog are off below the high preset, and the
+  shadow budget drops from seven casters to five or three — while an **adaptive-resolution
+  controller** moves the render scale inside 0.55–0.85 to hold a comfortable frame rate on whatever
+  machine the build finds itself on (`docs/EXPERIMENTS.md` §7.5).
 - Post-processing: AgX tonemapping, thresholded bloom, SSAO, SSR, SDFGI, volumetric fog, exponential
   distance fog, colour adjustment. Every one of them is a live switch in the graphics bench.
 
@@ -167,7 +171,7 @@ geometry, not asserted in text.
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **178 props in 132 distinct kinds** in 4.1 s.
+  prop catalogues build **186 props in 134 distinct kinds** in 4.1 s.
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.
@@ -233,12 +237,13 @@ in-world graphics bench. These are the numbers the application reports about its
 |---|---|
 | Full garage build | 10.4 s |
 | Surface synthesis, first 256 px surface | 272 ms |
-| Props placed | 178 (184 built, 132 kinds) |
-| Interactive stations | 43 |
+| Props placed | 180 (186 built, 134 kinds) |
+| Interactive stations | 45 |
 | Registered lights | 30 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1768 hits, 1114 misses |
+| Mesh cache | 1770 hits, 1123 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
+| Adaptive resolution | on by default: render scale 0.55–0.85, ±0.05 per second, holding worst-case frames under 24 ms |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |
 
 Full per-experiment tables, with the exact configuration each row was measured under, are in
