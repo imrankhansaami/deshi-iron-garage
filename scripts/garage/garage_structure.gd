@@ -81,17 +81,46 @@ func _build_floor() -> void:
 	col.add_child(cs)
 	col.position = slab.position
 	add_child(col)
-	# the grease paths and the drainage channel every workshop floor has
-	var stain: MeshInstance3D = ShapeKit.box(Vector3(1.4, 0.004, 7.0), ML.oil_stain(), "GreasePath")
-	stain.position = Vector3(-1.2, 0.002, 1.0)
-	stain.set_meta("floor_kind", "concrete")
-	add_child(stain)
+	# Floor wear. The first version laid a 1.4 x 7 m strip of the oil-stain albedo
+	# down the middle of the room, which in the overhead capture read as a black
+	# VOID rather than as a stain: the stain material is 0.18 roughness with a
+	# near-black albedo, so it absorbed the ceiling lights and the floor simply
+	# disappeared. A real workshop floor is not one long spill either — it is many
+	# small patches where machines have dripped, plus a painted walkway. So: small
+	# stains, a painted lane, and the drain.
+	var rng_floor: RandomNumberGenerator = NoiseTools.rng(0x51AB)
+	for i: int in range(14):
+		var spot: MeshInstance3D = ShapeKit.disc_flat(
+			rng_floor.randf_range(0.28, 0.72), 0.004, ML.floor_stain(), "FloorStain%d" % i)
+		spot.position = Vector3(
+			rng_floor.randf_range(-half_w + 0.8, half_w - 0.8), 0.003,
+			rng_floor.randf_range(-half_l + 1.0, half_l - 1.0))
+		spot.rotation.y = rng_floor.randf_range(0.0, TAU)
+		spot.set_meta("floor_kind", "concrete")
+		add_child(spot)
+	# the painted walkway from the shutter to the assembly platform. Narrowed from
+	# 1.5 m and desaturated: at full hazard yellow and that width it dominated the
+	# overhead capture and read as decoration rather than as a floor marking.
+	var lane: MeshInstance3D = ShapeKit.box(Vector3(1.05, 0.005, 7.4), ML.walkway_paint(), "WalkLane")
+	lane.position = Vector3(0.0, 0.003, 3.4)
+	lane.set_meta("floor_kind", "concrete")
+	add_child(lane)
+	for i: int in range(2):
+		var edge: MeshInstance3D = ShapeKit.box(Vector3(0.05, 0.006, 7.4), ML.walkway_paint(), "LaneEdge%d" % i)
+		edge.position = Vector3(0.55 * (1.0 if i == 0 else -1.0), 0.004, 3.4)
+		add_child(edge)
+	# the drainage channel across the front of the shop
 	var channel: MeshInstance3D = ShapeKit.box(Vector3(width - 0.6, 0.02, 0.22), ML.steel_dark(), "DrainChannel")
 	channel.position = Vector3(0.0, 0.005, half_l - 1.1)
 	add_child(channel)
 	var grate: MeshInstance3D = ShapeKit.box(Vector3(width - 0.6, 0.012, 0.2), ML.tread_plate(), "Grate")
 	grate.position = channel.position + Vector3(0.0, 0.012, 0.0)
 	add_child(grate)
+	# expansion joints, because a slab this size always has them
+	for i: int in range(3):
+		var joint: MeshInstance3D = ShapeKit.box(Vector3(0.03, 0.006, length - 0.4), ML.steel_dark(), "Joint%d" % i)
+		joint.position = Vector3(-3.4 + float(i) * 3.4, 0.004, 0.4)
+		add_child(joint)
 
 
 # ===========================================================================

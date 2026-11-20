@@ -519,7 +519,7 @@ func desk_electronics(opts: Dictionary) -> Node3D:
 	var top: MeshInstance3D = ShapeKit.box(Vector3(w, 0.05, d), ML.plywood(), "Top")
 	top.position = Vector3(0.0, h, 0.0)
 	root.add_child(top)
-	var mat: MeshInstance3D = ShapeKit.box(Vector3(w * 0.72, 0.006, d * 0.62), ML.rubber(), "Mat")
+	var mat: MeshInstance3D = ShapeKit.box(Vector3(w * 0.72, 0.006, d * 0.62), ML.esd_mat(), "Mat")
 	mat.position = Vector3(-w * 0.08, h + 0.028, 0.0)
 	root.add_child(mat)
 	for sx: int in range(2):

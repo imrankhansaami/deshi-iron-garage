@@ -400,6 +400,45 @@ func steel_hardened() -> StandardMaterial3D:
 	})
 
 
+## A floor stain, as distinct from oil_stain().
+##
+## Two corrections are baked into this material, both from the overhead capture:
+##   1. oil_stain() is near-black at 0.18 roughness, which is right for a small
+##      puddle under an engine and catastrophic at floor scale: it absorbs the
+##      ceiling lights and the floor reads as a hole.
+##   2. A ShapeKit disc_flat is a SOLID cylinder, not a decal, so its top face is
+##      fully opaque. Transparency has to come from the albedo alpha; setting
+##      `transparency` alone blends nothing, and the stains render as flat black
+##      discs, which is exactly what the first overhead shot showed.
+func floor_stain() -> StandardMaterial3D:
+	return surface("worn_concrete", {
+		"albedo_mix": Color(0.29, 0.25, 0.21, 0.42), "rough_override": 0.52, "metallic_override": 0.0,
+		"transparency": true, "double_sided": true, "no_shadow": true, "normal_scale": 0.2,
+		"uv_scale": Vector3(3.0, 3.0, 3.0),
+	})
+
+
+## The painted walkway from the shutter to the platform. Deliberately narrow and
+## desaturated: hazard yellow at full saturation across a 1.5 m lane dominated the
+## overhead view and read as decoration rather than as a floor marking.
+func walkway_paint() -> StandardMaterial3D:
+	return surface("painted_yellow", {
+		"albedo_mix": Color(0.72, 0.62, 0.28), "rough_override": 0.68, "metallic_override": 0.0,
+		"uv_scale": Vector3(3.0, 3.0, 3.0),
+	})
+
+
+## The anti-static bench mat. Deliberately pattern-free: the rubber surface's
+## panel_lines at 0.6 m per tile produced a legible tile grid across the bench,
+## which read as floor tiling rather than as a mat. A real ESD mat is a fine
+## pebbled sheet, so it carries only the base grain and a satin roughness.
+func esd_mat() -> StandardMaterial3D:
+	return surface("rubber", {
+		"albedo_mix": Color("#2b3038"), "rough_override": 0.56, "metallic_override": 0.0,
+		"no_world_triplanar": true, "uv_scale": Vector3(9.0, 9.0, 9.0), "normal_scale": 0.35,
+	})
+
+
 func thread_material() -> StandardMaterial3D:
 	return surface("newspaper", {"uv_scale": Vector3(2.0, 2.0, 2.0)})
 

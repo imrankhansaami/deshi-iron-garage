@@ -603,12 +603,17 @@ const CAP_SHOTS: Array = [
 	{"name": "02_entrance", "pos": Vector3(0.0, 1.7, 7.2), "look": Vector3(-1.6, 1.5, 2.0)},
 	{"name": "03_mechanical", "pos": Vector3(-2.6, 1.7, 3.4), "look": Vector3(-6.2, 1.3, 2.8)},
 	{"name": "04_engine_parts", "pos": Vector3(-3.6, 1.5, 1.2), "look": Vector3(-5.6, 1.05, 1.5)},
-	{"name": "05_electronics", "pos": Vector3(2.4, 1.7, 4.6), "look": Vector3(5.6, 1.15, 3.6)},
+	{"name": "05_electronics", "pos": Vector3(2.2, 1.45, 3.2), "look": Vector3(5.4, 1.25, 4.1)},
+	{"name": "05b_desk_close", "pos": Vector3(3.6, 1.35, 4.0), "look": Vector3(5.6, 1.2, 4.2)},
 	{"name": "06_assembly_wide", "pos": Vector3(0.0, 2.0, 3.0), "look": Vector3(0.0, 1.4, -2.2)},
 	{"name": "07_suit_close", "pos": Vector3(-1.5, 1.6, -0.4), "look": Vector3(0.0, 1.35, -2.2)},
 	{"name": "08_holo_table", "pos": Vector3(-2.2, 1.6, -2.6), "look": Vector3(-3.6, 1.0, -4.1)},
 	{"name": "09_testing", "pos": Vector3(0.4, 1.7, -5.0), "look": Vector3(2.4, 1.2, -6.4)},
 	{"name": "10_final_garage", "pos": Vector3(0.0, 2.5, 2.2), "look": Vector3(0.0, 1.3, -2.2)},
+	# The overview must be inside the room: a camera at z = 9.2 with half_l = 8.25
+	# sits behind the south wall, which is what the first attempt captured — a full
+	# frame of exterior plaster. Room extents are x ±6.5, z ±8.25.
+	{"name": "11_overview_high", "pos": Vector3(-4.4, 3.7, 6.6), "look": Vector3(1.6, 0.7, -3.0)},
 ]
 
 var _capturing: bool = false
