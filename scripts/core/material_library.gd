@@ -292,6 +292,36 @@ func banner_print(path: String) -> StandardMaterial3D:
 	return m
 
 
+func photo_print(path: String) -> StandardMaterial3D:
+	## A supplied photograph as wall art: the author's pictures, loaded with
+	## Image.load_from_file() like the street banner, so they need no import side
+	## files and a checkout still runs. Cached per path; a missing file degrades to
+	## a blank paper print with a warning rather than breaking the build.
+	var key: String = "photo|" + path
+	if _materials.has(key):
+		return _materials[key]
+	var m := StandardMaterial3D.new()
+	m.roughness = 0.5
+	m.metallic = 0.0
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	m.resource_name = "photo_print"
+	var img: Image = null
+	if FileAccess.file_exists(path):
+		img = Image.load_from_file(path)
+	if img != null and not img.is_empty():
+		m.albedo_texture = ImageTexture.create_from_image(img)
+		# a touch more emission than the banner: photos hang in dim corners
+		m.emission_enabled = true
+		m.emission = Color.WHITE
+		m.emission_energy_multiplier = 0.08
+		m.emission_texture = m.albedo_texture
+	else:
+		push_warning("photo_print: could not load %s, using a paper blank" % path)
+		m.albedo_color = Color(0.86, 0.83, 0.74)
+	_materials[key] = m
+	return m
+
+
 func fabric() -> StandardMaterial3D:
 	return surface("fabric")
 

@@ -36,7 +36,7 @@ is running on.
 ### The garage, in pictures
 
 All frames below are real-time captures taken by the project's own verification harness — the
-seventeen-viewpoint camera set documented in `docs/EXPERIMENTS.md`, driven through the full
+eighteen-viewpoint camera set documented in `docs/EXPERIMENTS.md`, driven through the full
 progression and written with luminance histograms so the build can be checked frame by frame.
 
 |  |  |
@@ -51,6 +51,8 @@ progression and written with luminance histograms so the build can be checked fr
 | The walk lane under an always-on bulb, gate coils at top | The national corner: flag and display coin |
 | <img src="screenshots/12_lab_wall.jpg" width="420"> | <img src="screenshots/15_country_map.jpg" width="420"> |
 | The scientists' corner — six honour plaques and the inventions board | A hand-drawn wall map of Bangladesh, right of the gate |
+| <img src="screenshots/17_photo_wall.jpg" width="420"> | <img src="screenshots/02_entrance.jpg" width="420"> |
+| The owner's photographs above the mechanical bench | Walking in: the gate, the maps, the lit shop |
 
 ---
 
@@ -84,7 +86,7 @@ global-illumination features; the Settings panel switches it live.
 ### Capture / verification mode
 
 Dropping an empty file named `capture.flag` next to `project.godot` puts the world into verification
-mode: it drives the whole twelve-step progression, then parks the camera at seventeen fixed viewpoints
+mode: it drives the whole twelve-step progression, then parks the camera at eighteen fixed viewpoints
 and writes a PNG plus a luminance histogram for each, then quits. The files land in `user://captures/`
 (`%APPDATA%\Godot\app_userdata\Deshi Iron Garage\captures\` on Windows), which is how the screenshots
 quoted in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and has no effect without
@@ -270,11 +272,11 @@ in-world graphics bench. These are the numbers the application reports about its
 |---|---|
 | Full garage build | ≈ 11–12 s (11.5 s in the latest capture run; it moves with machine load) |
 | Surface synthesis, first 256 px surface | ≈ 280 ms |
-| Props placed | 185 (191 built, 134 kinds) |
-| Interactive stations | 47 |
+| Props placed | 191 (197 built, 134 kinds) |
+| Interactive stations | 53 |
 | Registered lights | 37 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1783 hits, 1131 misses |
+| Mesh cache | 1805 hits, 1140 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Adaptive resolution | on by default: render scale 0.55–0.85, ±0.05 per second, holding worst-case frames under 24 ms |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |

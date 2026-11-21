@@ -789,7 +789,9 @@ static func wall_plaque(f: PropFactory, o: Dictionary) -> Node3D:
 	## A small framed wall plaque: teak battens around a plywood back, with a blank
 	## print face the SignageBaker fills. The format used for the inventors' corner
 	## (scientists' plaques and the inventions board) on the lab wall — engraving is
-	## a SignCanvas bake, like every other sign in the room.
+	## a SignCanvas bake, like every other sign in the room. Pass a `photo` path and
+	## the print face carries that image instead: the author's photographs hang in
+	## the same frames as everything else.
 	var w: float = float(o.get("width", 0.30))
 	var h: float = float(o.get("height", 0.38))
 	var root := Node3D.new()
@@ -797,7 +799,9 @@ static func wall_plaque(f: PropFactory, o: Dictionary) -> Node3D:
 	var back: MeshInstance3D = ShapeKit.box(Vector3(w, h, 0.014), f.ML.plywood(), "Back")
 	back.position = Vector3(0.0, h * 0.5, -0.012)
 	root.add_child(back)
-	var print_face: MeshInstance3D = ShapeKit.plane(Vector2(w * 0.96, h * 0.96), f.ML.label_stock(), "Print")
+	var photo: String = String(o.get("photo", ""))
+	var print_mat: Material = f.ML.label_stock() if photo == "" else f.ML.photo_print(photo)
+	var print_face: MeshInstance3D = ShapeKit.plane(Vector2(w * 0.96, h * 0.96), print_mat, "Print")
 	print_face.position = Vector3(0.0, h * 0.5, -0.002)
 	root.add_child(print_face)
 	for i: int in range(2):

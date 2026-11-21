@@ -711,6 +711,8 @@ const CAP_SHOTS: Array = [
 	# the west wall by the door
 	{"name": "15_country_map", "pos": Vector3(2.72, 1.60, 3.35), "look": Vector3(2.70, 1.66, 5.05)},
 	{"name": "16_division_map", "pos": Vector3(-2.6, 1.56, 4.52), "look": Vector3(-4.05, 1.58, 4.55)},
+	# the author's photographs: the row above the mechanical bench
+	{"name": "17_photo_wall", "pos": Vector3(-1.35, 1.60, 1.75), "look": Vector3(-4.05, 2.45, 1.72)},
 ]
 
 var _capturing: bool = false

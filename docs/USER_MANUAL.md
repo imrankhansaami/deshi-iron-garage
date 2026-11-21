@@ -261,6 +261,12 @@ the conjuncts form correctly.
 with construction lines and dimensions, the parts list, a page of design constraints written in the
 inventor's voice, and a short letter. The sketch's dimensions are the ones the stand actually uses.
 
+**The photographs.** The garage keeps the owner's pictures where a working shop keeps them: a framed
+row above the mechanical bench — a Bangladesh Railway locomotive, Ali Amjad's clock in Sylhet, and an
+older batch of students around a half-stripped television — the team photo leaning by the notebook,
+the exosuit concept poster on the wall the assembly stand faces, and a desk flag on the electronics
+bench. `F` on any of them for the story.
+
 ---
 
 ## 7. The graphics bench (`F6`)

@@ -56,6 +56,7 @@ func dress() -> void:
 	_ambience_props()
 	_scientists_corner()
 	_wall_maps()
+	_keepsakes()
 	# last, so it sees crates placed by any area
 	_register_component_crates()
 	# signage after everything: it looks up props by name
@@ -1190,15 +1191,17 @@ func _signage() -> void:
 		var board_face: MeshInstance3D = board.get_node_or_null("Print") as MeshInstance3D
 		if board_face != null:
 			baker.apply_baked(board_face, _inventions_spec(GameConfig.inventions), "inventions", 0.12, 0.6)
-	# the flag's cloth: the shader samples the baked pattern, so the bake goes to
-	# the shader uniform rather than to a standard material
-	var pole: Node3D = _find_first("FlagPole")
-	if pole != null:
-		var cloth: MeshInstance3D = pole.get_node_or_null("Flag") as MeshInstance3D
-		if cloth != null and cloth.material_override is ShaderMaterial:
-			var cloth_mat: ShaderMaterial = cloth.material_override
-			baker.bake_async(_flag_spec(), "flag_cloth", func(tex: ImageTexture) -> void:
-				cloth_mat.set_shader_parameter("flag_tex", tex))
+	# the flag's cloth: the shader samples the baked pattern, so one bake feeds
+	# every flag pole in the scene — the courtyard mast and the desk flag — via
+	# their shader uniforms rather than a standard material
+	var poles: Array = _find_all("FlagPole")
+	poles.append_array(_find_all("DeskFlagPole"))
+	if not poles.is_empty():
+		baker.bake_async(_flag_spec(), "flag_cloth", func(tex: ImageTexture) -> void:
+			for p: Node in poles:
+				var cloth: MeshInstance3D = (p as Node3D).get_node_or_null("Flag") as MeshInstance3D
+				if cloth != null and cloth.material_override is ShaderMaterial:
+					(cloth.material_override as ShaderMaterial).set_shader_parameter("flag_tex", tex))
 	# the display coin's two faces: struck-metal look, so the baked design is given
 	# a metallic response on top rather than left as a flat print
 	var coin: Node3D = _find_first("BigCoin")
@@ -1501,6 +1504,65 @@ func _wall_maps() -> void:
 		"desc": "The division this garage calls home — সুনামগঞ্জ, সিলেট, মৌলভীবাজার and হবিগঞ্জ — drawn with its two rivers, the সুরমা and the কুশিয়ারা, running through it. Same hand and same sketch honesty as the country map across the room.",
 		"spec": [["districts", "4: সুনামগঞ্জ · সিলেট · মৌলভীবাজার · হবিগঞ্জ"], ["rivers", "সুরমা · কুশিয়ারা"], ["honesty", "a line drawing, not survey data"]],
 		"sfx": "paper", "distance": 3.0,
+	})
+
+
+func _keepsakes() -> void:
+	## The author's own pictures, hung where a working garage keeps them: a photo
+	## row above the mechanical bench (the railway, the Sylhet clock tower, the
+	## batch that came before), the team photo leaning by the notebook, the dream
+	## poster on the wall the suit faces, and a desk flag on the electronics bench.
+	## Photographs load through MaterialLibrary.photo_print() — the same
+	## load_from_file path as the street banner, so no import side files — and
+	## docs/ASSET_LICENSES.md records them as author-supplied.
+	var half_w: float = structure.half_w
+	var spin := Vector3(0.0, PI * 0.5, 0.0)
+	var px: float = -half_w + 0.20
+	var photo_row: Array = [
+		{"photo": "res://assets/textures/user/photo_train.jpg", "z": 1.30, "title": "Photo — Bangladesh Railway",
+		 "desc": "A Bangladesh Railway diesel locomotive, blue over cream with the red buffer beam, hung above the bench by someone who rode the Sylhet line to school.",
+		 "spec": [["subject", "BR class 2900 locomotive"], ["place", "a level crossing, Sylhet division"], ["frame", "teak, 0.34 m"]]},
+		{"photo": "res://assets/textures/user/photo_clock.jpg", "z": 1.70, "title": "Photo — Ali Amjad's clock",
+		 "desc": "The red clock tower by the Surma in Sylhet — corrugated iron on a tank of a base, the town's own landmark. It hangs beside its district on the map.",
+		 "spec": [["subject", "Ali Amjad's Clock"], ["place", "Sylhet city"], ["frame", "teak, 0.34 m"]]},
+		{"photo": "res://assets/textures/user/photo_students.jpg", "z": 2.10, "title": "Photo — the batch before",
+		 "desc": "Three students around a half-stripped television, one meter between them, a wall of notes at the left. Everybody learns to fix things on something.",
+		 "spec": [["subject", "a lab batch, earlier years"], ["tools", "analog multimeter, soldering iron, CRT"], ["frame", "teak, 0.34 m"]]},
+	]
+	for p: Dictionary in photo_row:
+		var frame: Node3D = _place("wall_plaque", Vector3(px, 2.42, p["z"]), spin, {"width": 0.34, "height": 0.227, "photo": p["photo"]})
+		_station(frame, Station.Kind.SIGN, Vector3(0.0, 0.11, 0.05), {
+			"area": "mechanical", "title": p["title"], "desc": p["desc"], "spec": p["spec"],
+			"sfx": "paper", "distance": 2.4,
+		})
+	# the team photo, leaning by the notebook on the mechanical bench
+	var team: Node3D = _place("wall_plaque", Vector3(-3.70, 0.985, 2.28), Vector3(-0.12, 0.5, 0.0), {"width": 0.22, "height": 0.293, "photo": "res://assets/textures/user/photo_team.jpg"})
+	_station(team, Station.Kind.SIGN, Vector3(0.0, 0.15, 0.03), {
+		"area": "mechanical", "title": "Photo — the team",
+		"desc": "Three of them at a convocation, lanyards and all. The photo leans against the tool rail where the owner can see it while he works.",
+		"spec": [["subject", "the workshop's people"], ["frame", "teak, 0.22 m, leaning"], ["note", "it is never quite straight"]],
+		"sfx": "paper", "distance": 2.2,
+	})
+	# the dream poster on the north wall, in the clear brick between the shop's
+	# airline banner (x -3.35..-1.35) and the fan ring — two earlier spots sat
+	# behind those two and never showed
+	var dream: Node3D = _place("wall_plaque", Vector3(-0.75, 2.00, -structure.half_l + 0.20), Vector3.ZERO, {"width": 0.62, "height": 0.62, "photo": "res://assets/textures/user/poster_dream.jpg"})
+	_station(dream, Station.Kind.SIGN, Vector3(0.0, 0.31, 0.05), {
+		"area": "assembly", "title": "Poster — the dream",
+		"desc": "A printed concept: the exosuit as it will be — drawn over a blueprint, glowing. It hangs beside the shop's airline banner, on the wall the stand faces, so the suit and its dream look at each other.",
+		"spec": [["medium", "print, 0.62 m"], ["subject", "the exosuit, imagined"], ["pinned", "four drawing pins"]],
+		"sfx": "paper", "distance": 2.8,
+	})
+	# the desk flag on the electronics bench, art shared with the gate's flag.
+	# Named explicitly: a second node called "FlagPole" would be auto-renamed by
+	# Godot on the name collision and the signage pass would miss its cloth.
+	var desk_flag: Node3D = _place("flag_pole", Vector3(3.90, 0.925, 1.10), Vector3(0.0, -0.6, 0.0), {"height": 0.46, "flag_width": 0.24})
+	desk_flag.name = "DeskFlagPole"
+	_station(desk_flag, Station.Kind.SIGN, Vector3(0.0, 0.28, 0.0), {
+		"area": "electronics", "title": "Desk flag",
+		"desc": "The same flag as the one on the courtyard pole, scaled down to desk size — a gift-shop flag with a weighted fly, standing between the keyboard and the scope.",
+		"spec": [["format", "desk flag, 0.24 m"], ["ratio", "10 : 6"], ["note", "same cloth art as the gate flag"]],
+		"sfx": "paper", "distance": 1.6,
 	})
 
 
