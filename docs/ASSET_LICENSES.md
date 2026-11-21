@@ -15,7 +15,7 @@ records exactly what came from where, and under what terms.
 | Photographs (13) | The notice-wall collage, `assets/textures/wall/` | **Wikimedia Commons, CC BY-SA 4.0**, fetched through the Commons API and resized to 480 px | Every file, author and source page is listed below |
 | Texture images | 34 surface sets × 3 channels = 102 images | **Synthesised at runtime** by `TextureFactory` | Original work |
 | Supplied photograph | 1 image (127 KB) | **Provided by the project's author** — the workshop banner hung on the north wall | Author's own work, used with the author's permission |
-| Audio | 22 clips | **Synthesised at runtime** by `AudioSynth` | Original work |
+| Audio | every clip | **Synthesised at runtime** by `AudioSynth` | Original work; no recorded music and no musical instruments anywhere — the ambience is wind, leaves, sparrows, the street and the rain |
 | Shaders | 6 files | Written for this project | Original work |
 | Fonts | 4 families | Google Fonts repository | SIL Open Font License 1.1 |
 | UI icon | 1 SVG | Written for this project | Original work |

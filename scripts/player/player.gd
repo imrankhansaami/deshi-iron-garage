@@ -257,9 +257,17 @@ func _track_step(delta: float, moving: float) -> void:
 		_travelled -= STEP_INTERVAL
 		_step_sign = -_step_sign
 		var pitch: float = (0.94 + _rng.randf_range(0.0, 0.12)) * (1.0 if _step_sign > 0.0 else 1.04)
+		# a real footstep per surface (concrete, the steel deck, packed earth,
+		# planks); the old ping borrowed from the tool bank is retired
 		var floor_name: StringName = _floor_kind()
-		var snd: String = "tool_place" if floor_name == &"metal" else "metal_tink"
-		AudioBank.play_at(snd, global_position + Vector3(0.0, 0.05, 0.0), -10.0, pitch)
+		var snd: String = "step_concrete"
+		if floor_name == &"metal":
+			snd = "step_steel"
+		elif floor_name == &"earth":
+			snd = "step_earth"
+		elif floor_name == &"wood":
+			snd = "step_wood"
+		AudioBank.play_at(snd, global_position + Vector3(0.0, 0.05, 0.0), -8.0, pitch)
 
 
 func _floor_kind() -> StringName:

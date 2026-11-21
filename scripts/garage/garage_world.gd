@@ -44,6 +44,8 @@ var carry: CarrySystem
 var build_ms: Dictionary = {}
 var build_complete: bool = false
 var _gate_auto_pending: bool = false
+var _bird_t: float = 9.0
+var _bird_rng: RandomNumberGenerator = NoiseTools.rng(0xB12D)
 var _resume_run: bool = false           # a persisted run existed when the scene loaded
 var _resume_shutter_open: bool = false  # ...and its gate was already open
 var _live_specs: Dictionary = {}
@@ -179,6 +181,11 @@ func _build() -> void:
 	if _loading != null and is_instance_valid(_loading):
 		_loading.queue_free()
 		_loading = null
+	# base ambience from the first frame: the street beyond the wall and the
+	# courtyard's nature bed — the project's instrument-free music
+	AudioBank.start_bed("street", 2.5)
+	AudioBank.start_bed("nature", 4.0)
+	_bird_t = _bird_rng.randf_range(6.0, 14.0)
 	if GameState.tour_mode:
 		start_tour()
 	EventBus.notification_requested.emit("garage ready", "success")
@@ -314,6 +321,9 @@ func _process(delta: float) -> void:
 		return
 	if tour_active:
 		_tour_step(delta)
+	_bird_t -= delta
+	if _bird_t <= 0.0:
+		_schedule_bird()
 	# the screens redraw at 12 Hz rather than every frame: a SubViewport repaint
 	## is the most expensive per-frame cost in this scene and 12 Hz is
 	## indistinguishable for text
@@ -596,6 +606,17 @@ func _gate_auto_check() -> void:
 	runtime.sys_log("GATE: presence sensor tripped — rolling up")
 	_log_to_disk("gate: auto-open fired")
 	EventBus.notification_requested.emit("the gate rolls up as you arrive", "info")
+
+
+func _schedule_bird() -> void:
+	## Sparse life from the yard: the nature bed carries the wind and the leaves,
+	## and an occasional single call arrives three-dimensionally from past the gate.
+	_bird_t = _bird_rng.randf_range(9.0, 20.0)
+	var pos: Vector3 = Vector3(
+		_bird_rng.randf_range(-3.5, 3.5),
+		_bird_rng.randf_range(2.8, 4.2),
+		structure.half_l + _bird_rng.randf_range(1.2, 3.0))
+	AudioBank.play_at("bird" if _bird_rng.randf() < 0.6 else "bird2", pos, -7.0, _bird_rng.randf_range(0.95, 1.08))
 
 
 # ===========================================================================

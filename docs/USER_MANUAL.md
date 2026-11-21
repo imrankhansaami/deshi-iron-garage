@@ -329,10 +329,12 @@ render scale inside 0.55–0.85 — smaller when frames run long, back up when t
 the picture upscaled by FSR 2 throughout. You never need to touch it; it switches itself off during
 any measurement (the F6 bench, the perf harness, capture mode) so those numbers stay comparable.
 
-**Audio** — master, ambience, effects and interface volumes, independently. Ambience carries the rain,
-the street, the mains hum and the fans; effects carries tools, servos and the core; interface carries
-the UI blips. The mains hum is a synthesised 50 Hz stack, which is the actual supply frequency in
-Bangladesh.
+**Audio** — master, ambience, effects and interface volumes, independently. Ambience carries the
+**nature bed** — wind, leaves and sparrows, the project's music, and deliberately instrument-free:
+there is no recorded music and no musical instrument anywhere in the game — plus the street, the
+rain on the tin, the mains hum and the fans. Effects carries the **surface-aware footsteps**
+(concrete, the steel deck, packed earth), tools, servos and the core; interface carries the UI blips.
+The mains hum is a synthesised 50 Hz stack, which is the actual supply frequency in Bangladesh.
 
 **Speed** — `medium` is the recommended preset on integrated graphics: it drops the SDFGI cascades,
 keeps the light shafts, and leans on adaptive resolution, which is what makes it the comfortable

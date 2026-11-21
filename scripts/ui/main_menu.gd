@@ -27,6 +27,11 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# the project's music, from the title screen on: the courtyard's nature bed.
+	# Instrument-free by construction — wind, leaves and sparrows, synthesised.
+	# Started one frame late so the menu paints before the synth runs.
+	await get_tree().process_frame
+	AudioBank.start_bed("nature", 6.0)
 
 
 func _process(delta: float) -> void:
@@ -142,6 +147,7 @@ The contrast is the point. You do not need an expensive laboratory to start thin
 ·  procedural cable geometry: catenary path, parallel-transport frames, bundling
 ·  procedural prop and layout generation, seeded and reproducible
 ·  runtime-synthesised audio, no external sound packs
+·  instrument-free ambience: wind, leaves, sparrows, the street
 ·  live SubViewport interfaces shaped through the engine's Bengali text stack"""
 	list.add_theme_font_override("font", _font("mono"))
 	list.add_theme_font_size_override("font_size", 14)

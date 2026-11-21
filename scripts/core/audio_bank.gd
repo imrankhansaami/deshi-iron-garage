@@ -44,6 +44,13 @@ const RECIPES: Dictionary = {
 	"shutter": {"synth": "shutter_motor", "args": [2.0], "bus": BUS_EFFECTS, "db": -6.0, "atten": 1.3, "max_dist": 16.0},
 	"weld": {"synth": "weld_crackle", "args": [1.6, 404], "bus": BUS_EFFECTS, "db": -12.0, "atten": 1.8, "max_dist": 8.0},
 	"core_idle": {"synth": "core_idle", "args": [2.5], "bus": BUS_AMBIENCE, "db": -18.0, "atten": 1.4, "max_dist": 12.0},
+	"step_concrete": {"synth": "footstep", "args": [0, 3], "bus": BUS_EFFECTS, "db": -8.0, "atten": 1.8, "max_dist": 4.0},
+	"step_earth": {"synth": "footstep", "args": [1, 5], "bus": BUS_EFFECTS, "db": -8.0, "atten": 1.8, "max_dist": 4.0},
+	"step_steel": {"synth": "footstep", "args": [2, 8], "bus": BUS_EFFECTS, "db": -9.0, "atten": 1.8, "max_dist": 4.0},
+	"step_wood": {"synth": "footstep", "args": [3, 6], "bus": BUS_EFFECTS, "db": -8.0, "atten": 1.8, "max_dist": 4.0},
+	"nature": {"synth": "nature_bed", "args": [7.0, 4242], "bus": BUS_AMBIENCE, "db": -24.0},
+	"bird": {"synth": "bird_call", "args": [0, 9], "bus": BUS_EFFECTS, "db": -9.0, "atten": 1.5, "max_dist": 14.0},
+	"bird2": {"synth": "bird_call", "args": [1, 21], "bus": BUS_EFFECTS, "db": -10.0, "atten": 1.5, "max_dist": 14.0},
 }
 
 var _streams: Dictionary = {}
@@ -172,6 +179,12 @@ func _dispatch(synth_name: String, args: Array) -> AudioStreamWAV:
 			return S.weld_crackle(args[0], args[1])
 		"assembly_complete":
 			return S.assembly_complete(args[0])
+		"footstep":
+			return S.footstep(args[0], args[1])
+		"nature_bed":
+			return S.nature_bed(args[0], args[1])
+		"bird_call":
+			return S.bird_call(args[0], args[1])
 	push_warning("AudioBank: no synth for '%s'" % synth_name)
 	return null
 

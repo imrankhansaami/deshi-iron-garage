@@ -135,6 +135,129 @@ static func _noise(n: int, seed: int) -> PackedFloat32Array:
 	return out
 
 
+## A footstep: a short filtered noise burst over a small body knock. `kind`
+## selects the surface — 0 concrete, 1 packed earth, 2 steel deck, 3 plank — and
+## `seed` varies each step so no two footfalls are identical. The old footstep was
+## a struck-steel ping borrowed from the tool bank; this is an actual foot.
+static func footstep(kind: int = 0, seed: int = 3) -> AudioStreamWAV:
+	var k: int = clampi(kind, 0, 3)
+	var n: int = int(0.22 * RATE) if k != 1 else int(0.28 * RATE)
+	var body_hz: float = float([150.0, 92.0, 430.0, 195.0][k])
+	var cut: float = float([1000.0, 400.0, 2800.0, 760.0][k])
+	var decay: float = float([11.0, 7.5, 13.0, 10.0][k])
+	var noise_amt: float = float([0.8, 1.0, 0.55, 0.85][k])
+	var out: PackedFloat32Array = _noise(n, seed * 17 + k * 131 + 11)
+	for i: int in range(n):
+		var t: float = float(i) / float(RATE)
+		var env: float = exp(-decay * t)
+		out[i] = out[i] * noise_amt * env + sin(TAU * body_hz * t) * 0.5 * env
+	_lowpass(out, cut)
+	_highpass(out, 55.0)
+	_normalise(out, 0.7)
+	return _to_stream(out)
+
+
+## The courtyard's nature bed — the project's music, and deliberately without a
+## single musical instrument: wind through the palms (low-passed noise under two
+## slow swells), leaves (sparse high rustles) and sparrows (chirp motifs, one
+## two-note phrase, a trill). Loop-seamless via a tail crossfade.
+static func nature_bed(size: float = 7.0, seed: int = 4242) -> AudioStreamWAV:
+	var n: int = int(size * RATE)
+	var m: int = int(0.7 * RATE)
+	var total: int = n + m
+	var r: RandomNumberGenerator = NoiseTools.rng(seed)
+	var out: PackedFloat32Array = _noise(total, seed)
+	_lowpass(out, 420.0)
+	_lowpass(out, 420.0)
+	for i: int in range(total):
+		var t: float = float(i) / float(RATE)
+		var lfo: float = 0.58 + 0.26 * sin(TAU * 0.071 * t) + 0.16 * sin(TAU * 0.113 * t + 1.7)
+		out[i] = out[i] * lfo
+	_normalise(out, 0.7)
+	# leaves: sparse high rustles, quiet
+	var i0: int = int(0.1 * RATE)
+	while i0 < total:
+		i0 += int(r.randf_range(0.22, 0.85) * RATE)
+		var ln: int = int(r.randf_range(0.04, 0.1) * RATE)
+		var amp: float = r.randf_range(0.04, 0.13)
+		for j: int in range(mini(ln, total - i0)):
+			out[i0 + j] += r.randf_range(-1.0, 1.0) * amp * exp(-6.0 * float(j) / float(ln))
+	# birds: three motifs, spaced half a second to two apart
+	var b: int = int(0.35 * RATE)
+	while b < total - int(0.9 * RATE):
+		b += int(r.randf_range(0.45, 2.2) * RATE)
+		var style: float = r.randf()
+		if style < 0.55:
+			var at: int = b
+			for c: int in range(r.randi_range(2, 4)):
+				var mlen: int = int(r.randf_range(0.04, 0.08) * RATE)
+				var f0: float = r.randf_range(2400.0, 3300.0)
+				var f1: float = f0 * r.randf_range(1.15, 1.4)
+				for j: int in range(mlen):
+					if at + j >= total:
+						break
+					out[at + j] += sin(TAU * lerpf(f0, f1, float(j) / float(mlen)) * float(j) / float(RATE)) * sin(PI * float(j) / float(mlen)) * 0.14
+				at += mlen + int(r.randf_range(0.04, 0.09) * RATE)
+		elif style < 0.8:
+			for pair: int in range(2):
+				var at2: int = b + pair * int(0.24 * RATE)
+				var mlen2: int = int((0.14 if pair == 0 else 0.17) * RATE)
+				var ff: float = 1500.0 if pair == 0 else 1320.0
+				for j: int in range(mlen2):
+					if at2 + j >= total:
+						break
+					out[at2 + j] += sin(TAU * lerpf(ff, ff * 0.78, float(j) / float(mlen2)) * float(j) / float(RATE)) * sin(PI * float(j) / float(mlen2)) * 0.12
+		else:
+			var mlen3: int = int(0.1 * RATE)
+			for j: int in range(mlen3):
+				if b + j >= total:
+					break
+				var wob: float = sin(TAU * 26.0 * float(j) / float(RATE))
+				out[b + j] += sin(TAU * 3600.0 * float(j) / float(RATE) + wob) * sin(PI * float(j) / float(mlen3)) * 0.09
+	# fold the extra tail over the head: the wrap is continuous, not crossfaded
+	var loop: PackedFloat32Array = PackedFloat32Array()
+	loop.resize(n)
+	for i: int in range(n):
+		if i < m:
+			var k2: float = float(i) / float(m)
+			loop[i] = out[i] * k2 + out[n + i] * (1.0 - k2)
+		else:
+			loop[i] = out[i]
+	_lowpass(loop, 7200.0)
+	_normalise(loop, 0.62)
+	return _to_stream(loop, 0, n)
+
+
+## A single birdcall for 3D placement near the doorway. kind 0 is a sparrow
+## flurry, kind 1 the two-note phrase.
+static func bird_call(kind: int = 0, seed: int = 9) -> AudioStreamWAV:
+	var n: int = int(0.7 * RATE)
+	var out: PackedFloat32Array = PackedFloat32Array()
+	out.resize(n)
+	var r: RandomNumberGenerator = NoiseTools.rng(seed)
+	if kind == 0:
+		var at: int = int(0.05 * RATE)
+		for c: int in range(3):
+			var mlen: int = int(r.randf_range(0.05, 0.08) * RATE)
+			var f0: float = r.randf_range(2500.0, 3400.0)
+			for j: int in range(mlen):
+				if at + j >= n:
+					break
+				out[at + j] += sin(TAU * lerpf(f0, f0 * 1.3, float(j) / float(mlen)) * float(j) / float(RATE)) * sin(PI * float(j) / float(mlen)) * 0.5
+			at += mlen + int(r.randf_range(0.05, 0.1) * RATE)
+	else:
+		for pair: int in range(2):
+			var at2: int = int((0.05 + pair * 0.26) * RATE)
+			var mlen2: int = int(0.16 * RATE)
+			var ff: float = 1450.0 if pair == 0 else 1280.0
+			for j: int in range(mlen2):
+				if at2 + j >= n:
+					break
+				out[at2 + j] += sin(TAU * lerpf(ff, ff * 0.76, float(j) / float(mlen2)) * float(j) / float(RATE)) * sin(PI * float(j) / float(mlen2)) * 0.45
+	_normalise(out, 0.5)
+	return _to_stream(out)
+
+
 # ---------------------------------------------------------------------------
 # Sound recipes. Each returns an AudioStreamWAV.
 # ---------------------------------------------------------------------------

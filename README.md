@@ -263,6 +263,14 @@ phase-locked partial stacks for the 50 Hz mains hum, biquad-filtered impulse tra
 additive ADSR stacks for the completion chord. Three buses (Ambience / Effects / Interface) with
 independent volumes, and 3D voices with distance attenuation and a widening low-pass.
 
+Two banks are newer than the first pass and worth naming: **footsteps**, synthesised per surface —
+concrete, the steel deck, packed earth and the bench planks — played with per-step pitch variation
+(the old placeholder borrowed a struck-steel ping from the tool bank and is retired); and the
+**nature bed**, the project's music, which is deliberately *instrument-free*: wind through the palms
+(two-pass filtered noise under slow swells), leaves, and sparrows — chirp motifs, one two-note
+phrase, a trill — loop-seamless via a tail crossfade, running from the title screen into the garage,
+with occasional single calls placed three-dimensionally out in the yard.
+
 ---
 
 ## 7. Measured performance
