@@ -378,14 +378,14 @@ performance work.
 
 | Step | Time | Share | What dominates |
 |---|---|---|---|
-| Surface synthesis (first surface) | 269 ms | 2.3% | the per-texel loop |
-| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 5 912 ms | 50.5% | mesh generation, collision shapes, and the surfaces it requests |
-| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 37 ms | 0.3% | negligible |
-| Dressing — 192 placements, 54 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs, wall maps, the sign's RGB rig, photographs, the notice wall | 5 187 ms | 44.3% | prop construction, station wiring, and its surfaces |
-| Screens — 5 live `SubViewport`s and their materials | 78 ms | 0.7% | — |
-| Player — camera, ray, reticle, collision | 32 ms | 0.3% | — |
-| Interface — HUD, 10 panels, objective director | 201 ms | 1.7% | — |
-| **Total** | **11 716 ms** | **100%** | |
+| Surface synthesis (first surface) | 275 ms | 2.3% | the per-texel loop |
+| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 5 846 ms | 49.7% | mesh generation, collision shapes, and the surfaces it requests |
+| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 36 ms | 0.3% | negligible |
+| Dressing — 192 placements, 54 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs, wall maps, the sign's RGB rig, photographs, the notice wall, the faked-wear overlays | 5 345 ms | 45.4% | prop construction, station wiring, and its surfaces |
+| Screens — 5 live `SubViewport`s and their materials | 64 ms | 0.5% | — |
+| Player — camera, ray, reticle, collision | 30 ms | 0.3% | — |
+| Interface — HUD, 10 panels, objective director | 166 ms | 1.4% | — |
+| **Total** | **11 762 ms** | **100%** | |
 
 **Dressing breakdown, `GarageDressing.dressing_breakdown()`**
 
@@ -401,10 +401,10 @@ performance work.
 | Rejection-sampler efficiency | 46% of attempts produce a placement |
 
 The counts above are from the shipped build. The per-step times are from the latest capture run;
-the same garage measured 11 509 ms, 11 466 ms, 11 015 ms and 12 473 ms across the day's earlier
-runs, so treat absolute milliseconds as load-dependent — they drift by about 20% when something else
-is using the laptop — and the shares as the finding. This is worth stating rather than pretending the
-machine is a benchmark rig.
+the same garage measured 11 716 ms, 11 509 ms, 11 466 ms, 11 015 ms and 12 473 ms across the day's
+earlier runs, so treat absolute milliseconds as load-dependent — they drift by about 20% when
+something else is using the laptop — and the shares as the finding. This is worth stating rather than
+pretending the machine is a benchmark rig.
 
 **Finding 7.1 — surface synthesis dominates the wall clock.** The first surface costs 262–283 ms across
 runs in step 0; the other 33 are synthesised lazily inside the structure and dressing steps. At

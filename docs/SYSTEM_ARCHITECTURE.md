@@ -82,16 +82,16 @@ progress.
 
 | Step | What it does | Measured (UHD 620) |
 |---|---|---|
-| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 269 ms for one 256 px surface (262–283 across runs) |
-| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 5 912 ms |
-| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 37 ms |
-| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig, the photographs, the notice wall | 5 187 ms |
+| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 275 ms for one 256 px surface (262–283 across runs) |
+| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 5 846 ms |
+| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 36 ms |
+| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig, the photographs, the notice wall, the faked-wear overlays | 5 345 ms |
 | 4 | Area volumes | — |
-| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 78 ms |
-| 6 | Player, camera, ray, reticle, collision, capsule sizing | 32 ms |
-| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 201 ms |
+| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 64 ms |
+| 6 | Player, camera, ray, reticle, collision, capsule sizing | 30 ms |
+| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 166 ms |
 | 8 | `_apply_restored_state()` — replays a saved run with `instant = true` | — |
-| | **total** | **11 716 ms** |
+| | **total** | **11 762 ms** |
 
 Surfaces are synthesised **lazily**, on first request. Loading every recipe up front would cost
 roughly 9.5 s for all 34 at 256 px; the garage actually touches 34 of them, so the saving is in the
@@ -367,12 +367,14 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 
 | Mechanism | What it covers |
 |---|---|
-| `tests/validate_scripts.gd` | Loads and compiles all 43 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
+| `tests/validate_scripts.gd` | Loads and compiles all 45 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
 | `tests/timing_probe.gd` | Measures one surface at 256/384/512 px. The instrumentation that established the texture budget. |
 | `tests/introspect.gd` | Engine API introspection. Used to pin exact signatures when they were uncertain rather than guessing. |
 | `tests/dump_floor.gd` | Builds the world headless and reports: every node within a radius of a floor point, the dressing's occupancy boxes with their owning stations, per-child bound audits, and a full carry-system exercise — surface heights, a pick-up/place cycle and the put-back path. Written to turn "the screenshot shows something odd" into a named object, and "the carry maths should work" into measured numbers. |
 | `tests/carry_audit.gd` | Builds the world headless and prints every candidate the carry system could hold with its true bounding size and the live cap, checks that the fitted things (the gate, the windows, the flag mast, the prototype suit) are absent from the gathered set, and runs pick/place probes on the largest items — the workbench, the bicycle, the holo table — proving each settles onto a real surface and can be put back. The tool that decided the 3.1 m cap. |
 | `tests/walk_in.gd` | Builds the world headless, takes control of the real player and drives it from the spawn into the shop, back out and sideways across the courtyard, printing position, floor contact, stalls and — when stalled — the exact collider being slid against. This is what proved the entrance lip unclimbable, the courtyard boundless, and the gravity-accumulation pinning on slopes (`docs/EXPERIMENTS.md` §7.6). |
+| `tests/overlap_audit.gd` | Builds the world headless and reports which placed props have intersecting world bounding boxes, worst first — the work list behind the placement-clearing pass (bin off the bicycle, sack out of the crate, stool off the rack, towel out of the fan's sweep). AABB nesting makes some pairs legitimate; the tool documents that. |
+| `tests/where_is.gd` | Builds the world headless and prints named props' positions and bounding boxes, so placement clashes are fixed from numbers instead of screenshots. |
 | Perf harness (`perf.flag`) | Drives the full progression, then samples three fixed viewpoints twice each — shipped settings and the earlier values flipped back at runtime in the same session — and writes a paired A/B table to `user://captures/perf.log`. Its first run is what exposed the shadow-budget bug and the session's 7.5 Hz presentation cap (`docs/EXPERIMENTS.md` §7.5). |
 | `tests/bake_preview.gd` | Renders the lab-wall plate specs (scientists, header, inventions board) and the wall maps (Bangladesh, Sylhet) to PNGs in `user://captures/`, so Bengali on a wall can be proof-read at full resolution without launching the garage. |
 | Capture harness | Boots the real renderer, drives the full progression, writes 19 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |

@@ -332,13 +332,15 @@ scripts/
   player/                   # Player
   ui/                       # Hud, BenchmarkPanel, MainMenu
 tests/
-  validate_scripts.gd       # headless compile check for all 43 scripts
+  validate_scripts.gd       # headless compile check for all 45 scripts
   timing_probe.gd           # measures surface synthesis at three resolutions
   introspect.gd             # engine API introspection, used during development
   dump_floor.gd             # headless scene inspector: names what a capture shows
   bake_preview.gd           # bakes signage recipes to PNGs for proof-reading
   carry_audit.gd            # sizes every prop and exercises pick/place headlessly
   walk_in.gd                # drives the real player in, out and across the yard
+  overlap_audit.gd          # lists clashing prop pairs, worst first
+  where_is.gd               # prints named props' positions and boxes
 docs/                       # eight thesis documents
 ```
 

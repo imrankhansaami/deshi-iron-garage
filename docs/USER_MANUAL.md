@@ -267,7 +267,9 @@ older batch of students around a half-stripped television — the team photo lea
 the exosuit concept poster on the wall the assembly stand faces, and a desk flag on the electronics
 bench. At the entrance, a plywood board pins thirteen pictures of the country itself — rickshaws,
 markets, tea gardens, boats, paddy — the community-licensed set whose credits are listed in
-`docs/ASSET_LICENSES.md`. `F` on any of them for the story.
+`docs/ASSET_LICENSES.md`. And the room keeps the marks of work: painted tool outlines on the
+pegboard, chalk notes on the floor, tea rings on the bench top, paper labels on the drawers, a
+sticker here and there. `F` on any of the pictures for the story.
 
 ---
 

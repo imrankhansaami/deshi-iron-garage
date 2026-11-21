@@ -153,6 +153,7 @@ recorded in `docs/ASSET_LICENSES.md`.
 | Shop signboard | Hand-painted tin over the gate, now framed in a chasing **RGB LED strip** (its own shader) with two colour-cycling washes — all on the incoming line, so the board stays bright and the street gets its neon whatever the switchboard does |
 | Keepsakes | The author's own photographs as wall art: a framed row above the mechanical bench (a Bangladesh Railway locomotive, Ali Amjad's clock, a lab batch around a CRT), the team photo leaning by the notebook, the exosuit concept poster on the wall the stand faces, and a desk flag — loaded through the same no-import `photo_print()` path as the street banner |
 | Notice wall | Thirteen community-licensed (CC BY-SA 4.0) photographs of the country — rickshaws, Sadarghat market, a Khulna tea stall, the Sylhet tea gardens, the railway, boats, paddy — pinned crooked to a plywood board on the entrance wall; every file's author and source recorded in `docs/ASSET_LICENSES.md` |
+| Faked wear | Flush overlays and chips that make the room read used: painted tool outlines on the pegboard, chalk dimension notes on the floor, tea rings and an old spill on the bench top, a six-row paper label strip on the component drawers, and a scatter of stickers — no props, no stations, no lights |
 | Auto-opening gate | The shutter's presence sensor rolls the curtain up as anyone approaches the courtyard — it starts most of the way down and the room wakes up as it lifts. It can no longer be lowered |
 | Always-on bulbs | Five bare bulbs — walk lane, both benches, the testing corner, the store — are wired ahead of the switchboard to the incoming line, outside every switchable circuit: the room is never dark, even at the start, and each bulb carries its own light when you pick it up |
 | Entrance | A concrete apron ramps the doorway down to the packed earth so the shop can be walked into and out of without breaking stride, and the courtyard is walled in — walking past the street wall or the neighbour walls stops you instead of dropping you out of the world |
@@ -201,8 +202,8 @@ assembly sequence. That is the localisation requirement, implemented as configur
 
 On Intel UHD 620 at 1600×900, Forward+:
 
-- Garage build: **11.7 s** in the latest capture run (5.9 s structure, 5.2 s dressing for 192
-  placements; the same build has measured 11.0–12.5 s across earlier runs — machine load moves it;
+- Garage build: **11.8 s** in the latest capture run (5.8 s structure, 5.3 s dressing for 192
+  placements; the same build has measured 11.0–13.5 s across earlier runs — machine load moves it;
   most of the total is surface synthesis, spread across both steps)
 - Medium preset: 40–55 fps measured before the preset retune — SDFGI and volumetric fog off, SSR on,
   five shadow casters; the retune cut a further 13–27 ms of CPU frame time (`docs/EXPERIMENTS.md` §7.5)

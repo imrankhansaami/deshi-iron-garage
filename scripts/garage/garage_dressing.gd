@@ -57,6 +57,7 @@ func dress() -> void:
 	_scientists_corner()
 	_wall_maps()
 	_keepsakes()
+	_fake_details()
 	# last, so it sees crates placed by any area
 	_register_component_crates()
 	# signage after everything: it looks up props by name
@@ -248,7 +249,7 @@ func _area_entrance() -> void:
 	})
 	_place("wheel_rickshaw", Vector3(half_w - 1.1, YARD_Y + 0.34, half_l + 1.6), Vector3(0.0, 0.3, 0.0), {"radius": 0.34})
 	_place("crate_stack", Vector3(half_w - 2.0, YARD_Y, half_l + 2.6), Vector3(0.0, -0.4, 0.0), {"count": 3})
-	_place("scrap_bin", Vector3(-half_w + 2.6, YARD_Y, half_l + 2.9), Vector3(0.0, 0.9, 0.0), {"w": 0.7, "h": 0.45})
+	_place("scrap_bin", Vector3(-half_w - 0.25, YARD_Y, half_l + 3.75), Vector3(0.0, 0.9, 0.0), {"w": 0.7, "h": 0.45})
 	# the national corner by the gate: the flag on its pole and the big display
 	# coin leaning on its plinth, nonsense planted by the courtyard wall facing the
 	# camera — see _signage() for the cloth and the two coin faces
@@ -269,7 +270,7 @@ func _area_entrance() -> void:
 	_place("sandals", Vector3(-0.7, 0.0, half_l - 0.3), Vector3(0.0, 0.4, 0.0))
 	_place("water_bucket", Vector3(half_w - 0.6, 0.0, half_l - 0.5))
 	# the interior entrance strip
-	var stool: Node3D = _place("wooden_stool", Vector3(half_w - 1.5, 0.0, half_l - 1.7))
+	var stool: Node3D = _place("wooden_stool", Vector3(half_w - 1.9, 0.0, half_l - 2.1))
 	_station(stool, Station.Kind.EVERYDAY, Vector3.ZERO, {
 		"area": "entrance", "title": "Wooden stool",
 		"desc": "Where the visitor sits while the job is finished. Three legs are original.",
@@ -277,7 +278,7 @@ func _area_entrance() -> void:
 		"sfx": "tool_place",
 	})
 	_place("storage_box", Vector3(-half_w + 1.0, 0.0, half_l - 1.4), Vector3(0.0, 0.3, 0.0))
-	_place("sack", Vector3(-half_w + 1.9, 0.0, half_l - 0.7), Vector3(0.0, 0.6, 0.0), {"scale": 0.85})
+	_place("sack", Vector3(-half_w + 2.55, 0.0, half_l - 0.65), Vector3(0.0, 0.6, 0.0), {"scale": 0.85})
 	_place("bicycle_chain", Vector3(half_w - 0.12, 1.35, 3.75), Vector3(0.0, -PI * 0.5, 1.4), {"links": 14})
 	# the entrance light is the batten _ambience_props() hangs at (0, 3.5): the bare
 	# bulb that used to hang here sat 15 cm from it
@@ -350,7 +351,7 @@ func _area_mechanical() -> void:
 		"spec": [["contents", "steel offcuts"], ["kept since", "first week"]],
 		"sfx": "metal_clank",
 	})
-	_place("motorcycle_frame", Vector3(wall + 0.5, 0.0, -1.95), Vector3(0.0, 0.45, 0.0), {"scale": 0.85})
+	_place("motorcycle_frame", Vector3(wall + 0.57, 0.0, -2.65), Vector3(0.0, 0.45, 0.0), {"scale": 0.85})
 	_place("wheel_rickshaw", Vector3(wall + 0.42, 0.34, -0.55), Vector3(0.0, 0.2, 0.0), {"radius": 0.33})
 	_place("steel_drum", Vector3(-half_w + 0.6, 0.0, -4.3))
 	_place("tyre", Vector3(-half_w + 1.05, 0.26, 3.9), Vector3(0.0, 0.5, PI * 0.5), {"radius": 0.26})
@@ -358,7 +359,7 @@ func _area_mechanical() -> void:
 	# the silencer was on the old 3 m bench; here it leans against the wall
 	_place("silencer", Vector3(-half_w + 0.6, 0.0, 3.4), Vector3(0.0, 0.3, 0.0))
 	_place("brake_drum", Vector3(wall + 0.28, 1.583, -1.3))
-	_place("grindstone", Vector3(-half_w + 0.85, 0.0, 4.45), Vector3(0.0, 0.5, 0.0), {"scale": 0.85})
+	_place("grindstone", Vector3(-half_w + 0.85, 0.0, 3.90), Vector3(0.0, 0.5, 0.0), {"scale": 0.85})
 	_place("plastic_chair", Vector3(-half_w + 1.5, 0.0, 3.55), Vector3(0.0, -0.5, 0.0))
 	_place("biscuit_tin", Vector3(wall + 0.5, 1.583, -1.15))
 	# --- wall fixtures ----------------------------------------------------
@@ -367,7 +368,7 @@ func _area_mechanical() -> void:
 	# danger notice above the board
 	_place("poster", Vector3(wall + 0.01, 2.28, 3.0), Vector3(0.0, PI * 0.5, 0.0), {"variant": 1, "width": 0.36})
 	_place("hook_nail", Vector3(wall + 0.01, 2.0, 4.4), Vector3(0.0, PI * 0.5, 0.0))
-	_place("towel_hanging", Vector3(wall + 0.02, 1.98, 4.4), Vector3(0.0, 0.2, 0.0), {"length": 0.6})
+	_place("towel_hanging", Vector3(wall + 0.02, 1.98, 4.0), Vector3(0.0, 0.2, 0.0), {"length": 0.6})
 	# the frame crate, standing where the frame came off the bench
 	_place("component_crate", Vector3(-2.6, 0.0, 4.35), Vector3(0.0, 0.5, 0.0), {"module": "frame", "width": 0.52})
 	# --- one fan, one tube light -----------------------------------------
@@ -518,7 +519,7 @@ func _area_electronics() -> void:
 	_place("power_strip", Vector3(half_w - 1.3, 0.02, 3.2), Vector3(0.0, -PI * 0.4, 0.0), {"sockets": 4})
 	# one fan, pointing at the scope, because the scope runs hot. Aimed at the
 	# instrument bench 6 m north of it rather than at the old bench at z = 4.2.
-	var fan: Node3D = _place("pedestal_fan", Vector3(half_w - 1.5, 0.0, 4.9), Vector3(0.0, -0.15, 0.0), {"height": 1.0})
+	var fan: Node3D = _place("pedestal_fan", Vector3(half_w - 2.35, 0.0, 4.9), Vector3(0.0, -0.15, 0.0), {"height": 1.0})
 	_station(fan, Station.Kind.FAN_PEDESTAL, Vector3.ZERO, {
 		"area": "electronics", "fan_key": "pedestal", "title": "Pedestal fan",
 		"desc": "The wire-guarded standing fan, aimed at the oscilloscope because the scope runs hot and there is no air conditioning.",
@@ -1580,6 +1581,135 @@ func _keepsakes() -> void:
 	})
 
 
+func _fake_details() -> void:
+	## The painted-on layer that makes a room read as used: tool outlines on the
+	## pegboard, chalk notes on the floor, tea rings and an old spill on the bench
+	## top, paper labels on the component drawers, and a few stickers. All of it is
+	## flush overlays and small quads — no props, no stations, no lights — the
+	## cheap end of faking a lived-in workshop.
+	# 1. painted tool outlines, on the pegboard between the board and the hanging tools
+	var outlines: MeshInstance3D = ShapeKit.plane(Vector2(1.8, 0.85), null, "ToolOutlines")
+	outlines.position = Vector3(-structure.half_w + 0.19, 1.72, 1.7)
+	outlines.rotation = Vector3(0.0, PI * 0.5, 0.0)
+	add_child(outlines)
+	baker.apply_baked(outlines, _tool_outline_spec(), "tool_outlines", 0.0, 0.85)
+	# 2. chalk marks on the floor by the walk lane
+	var chalk: MeshInstance3D = ShapeKit.plane(Vector2(1.6, 0.8), null, "FloorChalk")
+	chalk.position = Vector3(-1.75, 0.012, 0.85)
+	chalk.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+	add_child(chalk)
+	baker.apply_baked(chalk, _chalk_spec(), "floor_chalk", 0.0, 0.9)
+	# 3. bench wear: tea rings, an old spill, scratches — under everything on the top
+	var wear: MeshInstance3D = ShapeKit.plane(Vector2(1.3, 1.3), null, "BenchWear")
+	wear.position = Vector3(-3.89, 0.972, 1.7)
+	wear.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+	add_child(wear)
+	baker.apply_baked(wear, _bench_wear_spec(), "bench_wear", 0.0, 0.9)
+	# 4. paper labels on the component-drawer front (the cabinet is 0.51 m tall)
+	var labels: MeshInstance3D = ShapeKit.plane(Vector2(0.26, 0.32), null, "DrawerLabels")
+	labels.position = Vector3(3.485, 0.27, -0.55)
+	labels.rotation = Vector3(0.0, -PI * 0.5, 0.0)
+	add_child(labels)
+	baker.apply_baked(labels, _drawer_label_spec(), "drawer_labels", 0.0, 0.85)
+	# 5. stickers: small flat quads on cabinets, the bench rail and the wall
+	var stickers: Array = [
+		[Vector3(-3.265, 0.235, 4.50), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.09, 0.06), ML.paint_yellow(), "CkSticker"],
+		[Vector3(-3.955, 1.47, 3.50), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.07, 0.05), ML.led(Color("e2453c"), 0.0), "RedSticker"],
+		[Vector3(-3.525, 0.60, 1.45), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.08, 0.055), ML.paint_blue(0.6), "BlueSticker"],
+		[Vector3(3.50, 0.47, -0.62), Vector3(0.0, -PI * 0.5, 0.0), Vector2(0.10, 0.07), ML.rust(), "RustSticker"],
+	]
+	for s: Array in stickers:
+		var chip: MeshInstance3D = ShapeKit.plane(s[2], s[3], s[4])
+		chip.position = s[0]
+		chip.rotation = s[1]
+		add_child(chip)
+
+
+func _tool_outline_spec() -> Dictionary:
+	## Dark paint silhouettes where the tools hang, the way every workshop paints
+	## the shadow of each tool on its board.
+	var dark: String = "#4a3b2a"
+	var light: String = "#6a5136"
+	return {
+		"size": Vector2i(512, 256), "transparent": true,
+		"layers": [
+			{"type": "rect", "pos": Vector2(60, 90), "sz": Vector2(14, 120), "color": dark},
+			{"type": "rect", "pos": Vector2(38, 64), "sz": Vector2(58, 30), "color": dark},
+			{"type": "circle", "center": Vector2(138, 92), "radius": 19, "color": dark, "filled": true},
+			{"type": "circle", "center": Vector2(138, 92), "radius": 9, "color": "#c9b28a", "filled": true},
+			{"type": "rect", "pos": Vector2(131, 92), "sz": Vector2(14, 110), "color": dark},
+			{"type": "circle", "center": Vector2(214, 96), "radius": 18, "color": dark, "filled": true},
+			{"type": "rect", "pos": Vector2(206, 96), "sz": Vector2(16, 96), "color": dark},
+			{"type": "circle", "center": Vector2(214, 200), "radius": 15, "color": dark, "filled": true},
+			{"type": "poly", "points": [Vector2(268, 148), Vector2(392, 108), Vector2(352, 190)], "color": dark},
+			{"type": "rect", "pos": Vector2(252, 138), "sz": Vector2(34, 38), "color": light},
+			{"type": "rect", "pos": Vector2(420, 82), "sz": Vector2(13, 108), "color": light},
+			{"type": "poly", "points": [Vector2(418, 190), Vector2(435, 190), Vector2(426, 216)], "color": dark},
+			{"type": "rect", "pos": Vector2(415, 60), "sz": Vector2(23, 26), "color": dark},
+			{"type": "line", "from": Vector2(330, 52), "to": Vector2(312, 128), "color": dark, "width": 9.0},
+			{"type": "line", "from": Vector2(358, 52), "to": Vector2(342, 128), "color": dark, "width": 9.0},
+			{"type": "circle", "center": Vector2(318, 136), "radius": 7, "color": dark, "filled": true},
+			{"type": "circle", "center": Vector2(348, 136), "radius": 7, "color": dark, "filled": true},
+		],
+	}
+
+
+func _chalk_spec() -> Dictionary:
+	## The floor notes a builder leaves himself: a dimension, an arrow, a circled
+	## question, a cross where the drain runs. Thin dark strokes on nothing.
+	var ink: String = "#33363d"
+	return {
+		"size": Vector2i(512, 256), "transparent": true,
+		"layers": [
+			{"type": "text", "name": "DIM", "pos": Vector2(30, 24), "size": 40, "color": ink, "text": "২.৪ × ০.৯", "font": "bangla"},
+			{"type": "line", "from": Vector2(30, 96), "to": Vector2(232, 96), "color": ink, "width": 4.0},
+			{"type": "poly", "points": [Vector2(232, 82), Vector2(262, 96), Vector2(232, 110)], "color": ink, "filled": true},
+			{"type": "text", "name": "Q", "pos": Vector2(300, 28), "size": 30, "color": ink, "text": "SUIT MK-I ?", "font": "mono"},
+			{"type": "arc", "center": Vector2(404, 164), "radius": 58, "start": 0.2, "end": 6.1, "color": ink, "width": 4.0},
+			{"type": "line", "from": Vector2(58, 168), "to": Vector2(84, 192), "color": ink, "width": 4.0},
+			{"type": "line", "from": Vector2(84, 168), "to": Vector2(58, 192), "color": ink, "width": 4.0},
+			{"type": "line", "from": Vector2(470, 52), "to": Vector2(470, 224), "color": ink, "width": 3.0},
+			{"type": "line", "from": Vector2(458, 52), "to": Vector2(482, 52), "color": ink, "width": 3.0},
+			{"type": "line", "from": Vector2(458, 224), "to": Vector2(482, 224), "color": ink, "width": 3.0},
+		],
+	}
+
+
+func _bench_wear_spec() -> Dictionary:
+	## Decades of tea: rings, an old oil spill pressed into the grain, scratches.
+	## Square canvas so its orientation on the bench top cannot matter.
+	var ring: String = "#3c2f22"
+	var oil: String = "#2c2118"
+	return {
+		"size": Vector2i(512, 512), "transparent": true,
+		"layers": [
+			{"type": "circle", "center": Vector2(150, 150), "radius": 46, "color": ring, "filled": false, "width": 4.0},
+			{"type": "circle", "center": Vector2(150, 150), "radius": 34, "color": ring, "filled": false, "width": 2.0},
+			{"type": "arc", "center": Vector2(336, 122), "radius": 38, "start": 0.6, "end": 4.4, "color": ring, "width": 3.0},
+			{"type": "circle", "center": Vector2(120, 368), "radius": 42, "color": oil, "filled": true},
+			{"type": "circle", "center": Vector2(172, 392), "radius": 30, "color": oil, "filled": true},
+			{"type": "circle", "center": Vector2(84, 402), "radius": 22, "color": oil, "filled": true},
+			{"type": "arc", "center": Vector2(128, 382), "radius": 62, "start": 3.4, "end": 5.9, "color": "#4a3a2c", "width": 3.0},
+			{"type": "line", "from": Vector2(310, 330), "to": Vector2(452, 356), "color": "#4a3a2c", "width": 2.0},
+			{"type": "line", "from": Vector2(322, 352), "to": Vector2(430, 372), "color": "#4a3a2c", "width": 2.0},
+			{"type": "line", "from": Vector2(300, 396), "to": Vector2(398, 414), "color": "#4a3a2c", "width": 2.0},
+		],
+	}
+
+
+func _drawer_label_spec() -> Dictionary:
+	## Six paper labels taped to the component drawers: IC, R, C, LED, SCR, and the
+	## one drawer nobody has decided about.
+	var names: Array[String] = ["IC", "R", "C", "LED", "SCR", "?"]
+	var layers: Array = []
+	for i: int in range(names.size()):
+		var y: float = 8.0 + float(i) * 50.0
+		layers.append({"type": "rect", "pos": Vector2(10, y), "sz": Vector2(236, 42), "color": "#e9e2d0"})
+		layers.append({"type": "rect", "pos": Vector2(10, y), "sz": Vector2(236, 42), "color": "#8a8066", "filled": false})
+		layers.append({"type": "text", "name": "L%d" % i, "pos": Vector2(20, y + 6), "size": 30, "color": "#2b2b33", "text": names[i], "font": "mono"})
+	return {"size": Vector2i(256, 320), "transparent": true, "layers": layers}
+
+
 func _bangladesh_map_spec() -> Dictionary:
 	## A sketch map of Bangladesh for the entrance wall: the outline traced from
 	## the country's familiar shape — the north border stepping down from the
@@ -1792,8 +1922,8 @@ func _ambience_props() -> void:
 	for i: int in range(tubes.size()):
 		_place("fluorescent_battlement", tubes[i], Vector3(0.0, PI * 0.5, 0.0), {"length": 1.2})
 	# the wet-weather line: two towels on the rope that crosses the room
-	_place("towel_hanging", Vector3(-1.2, 2.92, 2.16), Vector3(0.0, 0.2, 0.0), {"length": 0.62})
-	_place("towel_hanging", Vector3(0.6, 2.9, 2.28), Vector3(0.0, -0.3, 0.0), {"length": 0.5})
+	_place("towel_hanging", Vector3(-0.5, 2.92, 2.16), Vector3(0.0, 0.2, 0.0), {"length": 0.62})
+	_place("towel_hanging", Vector3(1.3, 2.9, 2.28), Vector3(0.0, -0.3, 0.0), {"length": 0.5})
 	# newspaper pages that blew off the bench
 	_place("newspaper_fold", Vector3(-0.9, 0.02, 3.35), Vector3(0.0, 0.6, 0.0))
 	_place("newspaper_fold", Vector3(1.4, 0.02, 0.4), Vector3(0.0, 2.1, 0.0))
