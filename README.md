@@ -8,6 +8,12 @@ for an undergraduate Computer Science and Engineering computer graphics thesis.
 **Target:** 45–60 fps on integrated graphics (Intel UHD 620 measured)
 **Domain:** computer graphics — real-time indoor environment rendering and interaction
 
+<img src="screenshots/01_exterior.jpg" width="100%">
+
+*The workshop from the street. The gate has already rolled itself up — the presence sensor lifts the
+curtain as anything crosses the courtyard. Every pixel in this frame is generated at runtime from
+code: no model packs, no photograph-based textures.*
+
 ---
 
 ## 1. What this is
@@ -26,6 +32,25 @@ thesis.
 It is not a rendering: it is a running application with a first-person controller, twelve objective
 steps, an interactive workstation interface, and a live graphics bench that measures the renderer it
 is running on.
+
+### The garage, in pictures
+
+All frames below are real-time captures taken by the project's own verification harness — the
+seventeen-viewpoint camera set documented in `docs/EXPERIMENTS.md`, driven through the full
+progression and written with luminance histograms so the build can be checked frame by frame.
+
+|  |  |
+|---|---|
+| <img src="screenshots/11_overview_high.jpg" width="420"> | <img src="screenshots/03_mechanical.jpg" width="420"> |
+| The whole room from the mezzanine corner | The mechanical bench and its tool wall |
+| <img src="screenshots/06_assembly_wide.jpg" width="420"> | <img src="screenshots/07_suit_close.jpg" width="420"> |
+| The assembly bay: circular stage, robots, reactor cradle | The prototype exosuit on its stand |
+| <img src="screenshots/05_electronics.jpg" width="420"> | <img src="screenshots/09_testing.jpg" width="420"> |
+| The electronics bench: live screens, salvaged stock | The testing corner and its instrument rack |
+| <img src="screenshots/14_walk_lane.jpg" width="420"> | <img src="screenshots/13_courtyard.jpg" width="420"> |
+| The walk lane under an always-on bulb, gate coils at top | The national corner: flag and display coin |
+| <img src="screenshots/12_lab_wall.jpg" width="420"> | <img src="screenshots/15_country_map.jpg" width="420"> |
+| The scientists' corner — six honour plaques and the inventions board | A hand-drawn wall map of Bangladesh, right of the gate |
 
 ---
 
@@ -351,3 +376,15 @@ Stated plainly, because a thesis is worth less without it:
 - **No GPU timestamp queries.** The project reports frame time, draw calls and primitive counts
   through Godot's documented monitors. Per-pass GPU cost is inferred from the effect of toggling
   passes, which is what Experiment 5 does, and that inference is labelled as such.
+
+---
+
+## 11. Credits and licence
+
+This is an undergraduate thesis project by **Imran Khan**. The repository is public so the work can be
+read and viewed; the code, the procedural generation system and every generated asset are the
+author's original work. `docs/ASSET_LICENSES.md` lists everything third-party — the Godot engine
+(MIT), the Noto Sans Bengali font (SIL Open Font Licence) and the single user-supplied photograph in
+`assets/textures/user/` — each with its licence. Please ask before reusing the work or the imagery.
+
+Built and measured against **Godot 4.7.2 stable** (standard build, Forward+ renderer).
