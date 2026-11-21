@@ -148,6 +148,18 @@ func _gather_items(dressing: Node3D, structure: Node3D) -> void:
 			if maxf(s.x, maxf(s.y, s.z)) > MAX_CARRY_SIZE:
 				continue
 			_items.append({"node": node, "box": box})
+	# the prototype suit's parts, one by one: fourteen pieces, each individually
+	# pickable. The suit ROOT stays excluded — it is the assembly rig — but every
+	# helmet, plate, limb and core can be lifted and set down like anything else.
+	for child2: Node in dressing.get_children():
+		if child2 is Node3D and String((child2 as Node3D).name) == "PrototypeExosuit":
+			for part: Node in (child2 as Node3D).get_children():
+				if not (part is Node3D):
+					continue
+				var pbox: AABB = ShapeKit.node_bounds(part)
+				if pbox.has_volume():
+					_items.append({"node": part, "box": pbox})
+			break
 
 
 func _gather_surfaces(host: Node) -> void:

@@ -50,7 +50,7 @@ to catch the first.
     ├── Carry                    (Node)     CarrySystem: mouse pick-up / place / rotate / put back
     ├── Garage                   (Node3D)   GarageStructure: floor, walls, columns, roof, shutter frame
     ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 37 lights, dust, rain
-    ├── Dressing                 (Node3D)   GarageDressing: 192 props, 54 stations, cables, signage, decals
+    ├── Dressing                 (Node3D)   GarageDressing: 197 props, 59 stations, cables, signage, decals
     │
     ├── area volumes ×6          (Area3D)   named rooms; group "garage_areas"
     ├── Player                   (CharacterBody3D)
@@ -82,16 +82,16 @@ progress.
 
 | Step | What it does | Measured (UHD 620) |
 |---|---|---|
-| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 275 ms for one 256 px surface (262–283 across runs) |
-| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 5 846 ms |
-| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 36 ms |
-| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig, the photographs, the notice wall, the faked-wear overlays | 5 345 ms |
+| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 272 ms for one 256 px surface (262–283 on quiet runs) |
+| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 6 313 ms |
+| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 74 ms |
+| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig, the photographs, the notice wall, the faked-wear overlays, the armour | 6 716 ms |
 | 4 | Area volumes | — |
-| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 64 ms |
-| 6 | Player, camera, ray, reticle, collision, capsule sizing | 30 ms |
-| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 166 ms |
+| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 81 ms |
+| 6 | Player, camera, ray, reticle, collision, capsule sizing | 29 ms |
+| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 170 ms |
 | 8 | `_apply_restored_state()` — replays a saved run with `instant = true` | — |
-| | **total** | **11 762 ms** |
+| | **total** | **13 655 ms** (11 015–13 655 ms across the day, by machine load) |
 
 Surfaces are synthesised **lazily**, on first request. Loading every recipe up front would cost
 roughly 9.5 s for all 34 at 256 px; the garage actually touches 34 of them, so the saving is in the
@@ -169,7 +169,7 @@ per texel into colour/roughness/metallic/occlusion/height, pack to RGB8 byte buf
 tangent-space normal by Sobel gradient on the wrapped height field, upload in one
 `Image::create_from_data` per channel. See `docs/GRAPHICS_ALGORITHMS.md` §2.
 
-**`shape_kit.gd`** — the primitive composition layer, and the reason 198 props is affordable. Two
+**`shape_kit.gd`** — the primitive composition layer, and the reason 203 props is affordable. Two
 ideas: a mesh cache keyed on dimensions so forty spanners share one mesh, and true generators (lathe
 from a profile, gear from tooth count and module, tube sweep, coil, chain, plate) for the shapes that
 are not primitives. Also `shape_aabb_local()`, `area_aabb()` and `node_bounds()`, which exist because

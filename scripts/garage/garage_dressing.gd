@@ -58,6 +58,7 @@ func dress() -> void:
 	_wall_maps()
 	_keepsakes()
 	_fake_details()
+	_armor()
 	# last, so it sees crates placed by any area
 	_register_component_crates()
 	# signage after everything: it looks up props by name
@@ -353,7 +354,9 @@ func _area_mechanical() -> void:
 	})
 	_place("motorcycle_frame", Vector3(wall + 0.57, 0.0, -2.65), Vector3(0.0, 0.45, 0.0), {"scale": 0.85})
 	_place("wheel_rickshaw", Vector3(wall + 0.42, 0.34, -0.55), Vector3(0.0, 0.2, 0.0), {"radius": 0.33})
-	_place("steel_drum", Vector3(-half_w + 0.6, 0.0, -4.3))
+	# the store drum, off the shelf's footprint: at the old spot two-thirds of it
+	# passed through the shelf planks and into the spare gauntlet beside them
+	_place("steel_drum", Vector3(-half_w + 1.1, 0.0, -3.55))
 	_place("tyre", Vector3(-half_w + 1.05, 0.26, 3.9), Vector3(0.0, 0.5, PI * 0.5), {"radius": 0.26})
 	_place("suspension_fork", Vector3(-half_w + 0.42, 0.0, 3.3), Vector3(0.0, 0.0, 0.32))
 	# the silencer was on the old 3 m bench; here it leans against the wall
@@ -1611,18 +1614,55 @@ func _fake_details() -> void:
 	labels.rotation = Vector3(0.0, -PI * 0.5, 0.0)
 	add_child(labels)
 	baker.apply_baked(labels, _drawer_label_spec(), "drawer_labels", 0.0, 0.85)
-	# 5. stickers: small flat quads on cabinets, the bench rail and the wall
+	# 5. stickers: small flat quads on cabinets, legs, jambs and crates
 	var stickers: Array = [
 		[Vector3(-3.265, 0.235, 4.50), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.09, 0.06), ML.paint_yellow(), "CkSticker"],
 		[Vector3(-3.955, 1.47, 3.50), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.07, 0.05), ML.led(Color("e2453c"), 0.0), "RedSticker"],
 		[Vector3(-3.525, 0.60, 1.45), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.08, 0.055), ML.paint_blue(0.6), "BlueSticker"],
 		[Vector3(3.50, 0.47, -0.62), Vector3(0.0, -PI * 0.5, 0.0), Vector2(0.10, 0.07), ML.rust(), "RustSticker"],
+		[Vector3(-3.53, 0.42, 0.80), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.07, 0.05), ML.paint_blue(0.6), "LegSticker"],
+		[Vector3(-3.53, 0.42, 2.60), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.08, 0.05), ML.paint_yellow(), "LegSticker2"],
+		[Vector3(-3.62, 0.95, -1.30), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.06, 0.06), ML.led(Color("35c06a"), 0.0), "ShelfSticker"],
+		[Vector3(-1.42, 1.18, 5.06), Vector3(0.0, PI, 0.0), Vector2(0.08, 0.06), ML.paint_yellow(), "JambSticker"],
+		[Vector3(1.42, 1.18, 5.06), Vector3(0.0, PI, 0.0), Vector2(0.07, 0.05), ML.led(Color("4a6fa5"), 0.0), "JambSticker2"],
+		[Vector3(2.92, 0.50, -3.55), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.09, 0.06), ML.rust(), "DeckSticker"],
+		[Vector3(-2.55, 0.42, 4.86), Vector3(0.0, 0.0, 0.0), Vector2(0.07, 0.05), ML.paint_blue(0.6), "CrateSticker"],
 	]
 	for s: Array in stickers:
 		var chip: MeshInstance3D = ShapeKit.plane(s[2], s[3], s[4])
 		chip.position = s[0]
 		chip.rotation = s[1]
 		add_child(chip)
+	# 6. greasy handprints: on both gate jambs and the bench apron, where hands go
+	var smudges: Array = [
+		[Vector3(-1.42, 1.02, 5.06), Vector3(0.0, PI, 0.0), Vector2(0.24, 0.3)],
+		[Vector3(1.42, 1.02, 5.06), Vector3(0.0, PI, 0.0), Vector2(0.24, 0.3)],
+		[Vector3(-3.53, 0.68, 2.05), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.3, 0.26)],
+	]
+	for sm: Array in smudges:
+		var mark: MeshInstance3D = ShapeKit.plane(sm[2], null, "GreaseMark")
+		mark.position = sm[0]
+		mark.rotation = sm[1]
+		add_child(mark)
+		baker.apply_baked(mark, _smudge_spec(), "grease_mark", 0.0, 0.95)
+	# 7. the paint-test board, on the east wall where the light is good
+	var swatch: MeshInstance3D = ShapeKit.plane(Vector2(0.5, 0.36), null, "PaintSwatches")
+	swatch.position = Vector3(structure.half_w - 0.19, 1.62, 2.55)
+	swatch.rotation = Vector3(0.0, -PI * 0.5, 0.0)
+	add_child(swatch)
+	baker.apply_baked(swatch, _swatch_spec(), "paint_swatches", 0.0, 0.85)
+	# 8. a second chalk patch outside the gate: delivery notes for the yard
+	var yard_chalk: MeshInstance3D = ShapeKit.plane(Vector2(1.2, 0.6), null, "YardChalk")
+	yard_chalk.position = Vector3(-1.3, -0.128, 6.4)
+	yard_chalk.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+	add_child(yard_chalk)
+	baker.apply_baked(yard_chalk, _chalk_spec(1), "yard_chalk", 0.0, 0.9)
+	# 9. desk wear: rings and a solder scorch on the electronics bench
+	var desk_wear: MeshInstance3D = ShapeKit.plane(Vector2(1.0, 1.0), null, "DeskWear")
+	desk_wear.position = Vector3(3.8, 0.927, 1.5)
+	desk_wear.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+	add_child(desk_wear)
+	baker.apply_baked(desk_wear, _bench_wear_spec(), "desk_wear", 0.0, 0.9)
 
 
 func _tool_outline_spec() -> Dictionary:
@@ -1654,10 +1694,25 @@ func _tool_outline_spec() -> Dictionary:
 	}
 
 
-func _chalk_spec() -> Dictionary:
+func _chalk_spec(variant: int = 0) -> Dictionary:
 	## The floor notes a builder leaves himself: a dimension, an arrow, a circled
-	## question, a cross where the drain runs. Thin dark strokes on nothing.
+	## question, a cross where the drain runs. Variant 1 is the yard's set —
+	## delivery notes by the gate. Thin dark strokes on nothing.
 	var ink: String = "#33363d"
+	if variant == 1:
+		return {
+			"size": Vector2i(384, 192), "transparent": true,
+			"layers": [
+				{"type": "text", "name": "G", "pos": Vector2(24, 16), "size": 34, "color": ink, "text": "গেট · ২.৬ m", "font": "bangla"},
+				{"type": "line", "from": Vector2(24, 74), "to": Vector2(150, 74), "color": ink, "width": 4.0},
+				{"type": "poly", "points": [Vector2(150, 62), Vector2(176, 74), Vector2(150, 86)], "color": ink, "filled": true},
+				{"type": "line", "from": Vector2(220, 40), "to": Vector2(340, 40), "color": ink, "width": 3.0},
+				{"type": "line", "from": Vector2(220, 56), "to": Vector2(340, 56), "color": ink, "width": 3.0},
+				{"type": "line", "from": Vector2(220, 72), "to": Vector2(340, 72), "color": ink, "width": 3.0},
+				{"type": "text", "name": "OK", "pos": Vector2(228, 96), "size": 28, "color": ink, "text": "ঠিক আছে", "font": "bangla"},
+				{"type": "arc", "center": Vector2(96, 140), "radius": 34, "start": 0.4, "end": 5.9, "color": ink, "width": 3.0},
+			],
+		}
 	return {
 		"size": Vector2i(512, 256), "transparent": true,
 		"layers": [
@@ -1671,6 +1726,45 @@ func _chalk_spec() -> Dictionary:
 			{"type": "line", "from": Vector2(470, 52), "to": Vector2(470, 224), "color": ink, "width": 3.0},
 			{"type": "line", "from": Vector2(458, 52), "to": Vector2(482, 52), "color": ink, "width": 3.0},
 			{"type": "line", "from": Vector2(458, 224), "to": Vector2(482, 224), "color": ink, "width": 3.0},
+		],
+	}
+
+
+func _smudge_spec() -> Dictionary:
+	## Greasy handprints: overlaid finger streaks and palm dots where hands land
+	## on jambs and rails. Transparent, nearly black, slightly glossy via the
+	## material's roughness.
+	var ink: String = "#1e1a15"
+	return {
+		"size": Vector2i(256, 256), "transparent": true,
+		"layers": [
+			{"type": "line", "from": Vector2(70, 40), "to": Vector2(96, 150), "color": ink, "width": 13.0},
+			{"type": "line", "from": Vector2(100, 34), "to": Vector2(120, 148), "color": ink, "width": 12.0},
+			{"type": "line", "from": Vector2(130, 40), "to": Vector2(142, 146), "color": ink, "width": 11.0},
+			{"type": "line", "from": Vector2(158, 52), "to": Vector2(164, 140), "color": ink, "width": 10.0},
+			{"type": "circle", "center": Vector2(126, 190), "radius": 34, "color": ink, "filled": true},
+			{"type": "circle", "center": Vector2(88, 208), "radius": 12, "color": ink, "filled": true},
+			{"type": "circle", "center": Vector2(170, 206), "radius": 11, "color": ink, "filled": true},
+		],
+	}
+
+
+func _swatch_spec() -> Dictionary:
+	## The paint-test board: smears of every colour the shop mixes, in the order
+	## they were tried, on a scrap of plywood.
+	return {
+		"size": Vector2i(256, 192), "transparent": false, "bg": "#c9b28a",
+		"border": {"color": "#8a7f66", "width": 4.0},
+		"layers": [
+			{"type": "circle", "center": Vector2(42, 44), "radius": 17, "color": "#d4af37", "filled": true},
+			{"type": "circle", "center": Vector2(100, 40), "radius": 17, "color": "#a51f1b", "filled": true},
+			{"type": "circle", "center": Vector2(158, 44), "radius": 17, "color": "#4a6fa5", "filled": true},
+			{"type": "circle", "center": Vector2(216, 42), "radius": 17, "color": "#4f7a3a", "filled": true},
+			{"type": "circle", "center": Vector2(38, 104), "radius": 15, "color": "#4fd8ff", "filled": true},
+			{"type": "circle", "center": Vector2(92, 108), "radius": 15, "color": "#8a5a2b", "filled": true},
+			{"type": "circle", "center": Vector2(148, 104), "radius": 15, "color": "#e8e0cc", "filled": true},
+			{"type": "circle", "center": Vector2(204, 106), "radius": 15, "color": "#2b2b33", "filled": true},
+			{"type": "text", "name": "T", "pos": Vector2(40, 146), "size": 22, "color": "#4a4234", "text": "রঙের নমুনা", "font": "bangla"},
 		],
 	}
 
@@ -1708,6 +1802,50 @@ func _drawer_label_spec() -> Dictionary:
 		layers.append({"type": "rect", "pos": Vector2(10, y), "sz": Vector2(236, 42), "color": "#8a8066", "filled": false})
 		layers.append({"type": "text", "name": "L%d" % i, "pos": Vector2(20, y + 6), "size": 30, "color": "#2b2b33", "text": names[i], "font": "mono"})
 	return {"size": Vector2i(256, 320), "transparent": true, "layers": layers}
+
+
+func _armor() -> void:
+	## The shop's other project: a whole armoured figure on a service base by the
+	## north wall, and its spare plates laid out where they are worked on — a
+	## helmet on the bench, the chest plate on the shelf under it, a gauntlet on
+	## the electronics desk, the other boot on the floor. Red and gold over dark
+	## alloy; an homage in the reference palette and deliberately unbranded, and
+	## every piece is individually pickable with the mouse.
+	var figure: Node3D = _place("armor_figure", Vector3(-1.6, 0.0, -4.55), Vector3(0.0, 0.35, 0.0), {})
+	_station(figure, Station.Kind.SIGN, Vector3(0.0, 1.0, 0.12), {
+		"area": "assembly", "title": "The shop's armour",
+		"desc": "A whole armoured figure on a service base, core lens and eye slits lit — red plates over gold over dark alloy. The shop's own homage build, made here, not a film prop; the core is a cold-cathode tube out of a dead scanner.",
+		"spec": [["height", "1.77 m"], ["palette", "red over gold over alloy"], ["state", "standing test only"]],
+		"sfx": "metal_thunk", "distance": 3.4,
+	})
+	var helmet: Node3D = _place("armor_helmet", Vector3(-3.72, 0.955, 2.55), Vector3(0.0, 0.6, 0.0), {})
+	_station(helmet, Station.Kind.SIGN, Vector3(0.0, 0.14, 0.0), {
+		"area": "mechanical", "title": "Spare helmet",
+		"desc": "The figure's spare head, parked on the bench between jobs. The eye slits are lit even off the stand — a passive tube, no switch.",
+		"spec": [["shell", "red plate over alloy"], ["faceplate", "brushed gold"], ["state", "spare"]],
+		"sfx": "metal_thunk", "distance": 2.2,
+	})
+	var chest: Node3D = _place("armor_chest_plate", Vector3(-3.85, 0.29, 1.6), Vector3(0.0, -0.3, 0.0), {})
+	_station(chest, Station.Kind.SIGN, Vector3(0.0, 0.18, 0.0), {
+		"area": "mechanical", "title": "Spare chest plate",
+		"desc": "A spare chest plate on the bench's lower shelf, core lens fitted and cold. The band across the top is the same gold as the figure's.",
+		"spec": [["lens", "cold-cathode, unlit"], ["plates", "rolled steel, shop-painted"], ["state", "spare"]],
+		"sfx": "metal_thunk", "distance": 2.2,
+	})
+	var gauntlet: Node3D = _place("armor_gauntlet", Vector3(-3.86, 0.70, -4.55), Vector3(0.0, 0.35, 0.0), {})
+	_station(gauntlet, Station.Kind.SIGN, Vector3(0.0, 0.18, 0.0), {
+		"area": "store", "title": "Spare gauntlet",
+		"desc": "A forearm gauntlet on the desk, gold knuckle up, the wrist slit glowing faintly. Somebody has been measuring it against the wrist jig.",
+		"spec": [["shell", "red over alloy"], ["knuckle", "gold"], ["state", "spare"]],
+		"sfx": "metal_tink", "distance": 2.0,
+	})
+	var boot: Node3D = _place("armor_boot", Vector3(-0.9, 0.0, -4.25), Vector3(0.0, 1.2, 0.0), {})
+	_station(boot, Station.Kind.SIGN, Vector3(0.0, 0.1, 0.0), {
+		"area": "assembly", "title": "Spare boot",
+		"desc": "The other boot, left where it was kicked off after the last fitting. Gold toe, red shell, a dark sole that has seen the yard.",
+		"spec": [["toe", "gold"], ["sole", "dark compound"], ["state", "spare"]],
+		"sfx": "metal_tink", "distance": 2.0,
+	})
 
 
 func _bangladesh_map_spec() -> Dictionary:

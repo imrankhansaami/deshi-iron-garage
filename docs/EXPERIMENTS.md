@@ -378,43 +378,43 @@ performance work.
 
 | Step | Time | Share | What dominates |
 |---|---|---|---|
-| Surface synthesis (first surface) | 275 ms | 2.3% | the per-texel loop |
-| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 5 846 ms | 49.7% | mesh generation, collision shapes, and the surfaces it requests |
-| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 36 ms | 0.3% | negligible |
-| Dressing — 192 placements, 54 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs, wall maps, the sign's RGB rig, photographs, the notice wall, the faked-wear overlays | 5 345 ms | 45.4% | prop construction, station wiring, and its surfaces |
-| Screens — 5 live `SubViewport`s and their materials | 64 ms | 0.5% | — |
-| Player — camera, ray, reticle, collision | 30 ms | 0.3% | — |
-| Interface — HUD, 10 panels, objective director | 166 ms | 1.4% | — |
-| **Total** | **11 762 ms** | **100%** | |
+| Surface synthesis (first surface) | 272 ms | 2.0% | the per-texel loop |
+| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 6 313 ms | 46.2% | mesh generation, collision shapes, and the surfaces it requests |
+| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 74 ms | 0.5% | negligible |
+| Dressing — 197 placements, 59 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs, wall maps, the sign's RGB rig, photographs, the notice wall, the faked-wear overlays, the armour | 6 716 ms | 49.2% | prop construction, station wiring, and its surfaces |
+| Screens — 5 live `SubViewport`s and their materials | 81 ms | 0.6% | — |
+| Player — camera, ray, reticle, collision | 29 ms | 0.2% | — |
+| Interface — HUD, 10 panels, objective director | 170 ms | 1.2% | — |
+| **Total** | **13 655 ms** | **100%** | |
 
 **Dressing breakdown, `GarageDressing.dressing_breakdown()`**
 
 | | |
 |---|---|
-| Props placed by the dressing pass | 192 |
-| Props built in total (includes module payloads and suit parts) | 198 |
-| Distinct prop kinds | 134 |
-| Authored placements | 160 |
+| Props placed by the dressing pass | 197 |
+| Props built in total (includes module payloads and suit parts) | 203 |
+| Distinct prop kinds | 140 |
+| Authored placements | 165 |
 | Procedural placements | 22 (4 groups: 6 + 5 + 6 + 5) |
 | Wall-rack placements | 10 |
-| Mesh cache hits / misses | 1 818 / 1 141 |
+| Mesh cache hits / misses | 1 833 / 1 174 |
 | Rejection-sampler efficiency | 46% of attempts produce a placement |
 
 The counts above are from the shipped build. The per-step times are from the latest capture run;
-the same garage measured 11 716 ms, 11 509 ms, 11 466 ms, 11 015 ms and 12 473 ms across the day's
-earlier runs, so treat absolute milliseconds as load-dependent — they drift by about 20% when
+the same garage measured 11 762 ms, 11 716 ms, 11 509 ms and 11 015 ms across quieter runs earlier
+in the day, so treat absolute milliseconds as load-dependent — they drift by about 20% when
 something else is using the laptop — and the shares as the finding. This is worth stating rather than
 pretending the machine is a benchmark rig.
 
-**Finding 7.1 — surface synthesis dominates the wall clock.** The first surface costs 262–283 ms across
-runs in step 0; the other 33 are synthesised lazily inside the structure and dressing steps. At
-≈ 270 ms per surface that is roughly nine seconds of the ≈ 11 s total — so the largest single lever
+**Finding 7.1 — surface synthesis dominates the wall clock.** The first surface costs 262–283 ms on
+quiet runs in step 0; the other 33 are synthesised lazily inside the structure and dressing steps. At
+≈ 270 ms per surface that is roughly nine seconds of the ≈ 11 s build — so the largest single lever
 left is moving that per-texel loop to a compute shader, not reducing geometry. The earlier build of a
 13 × 16.5 m room measured 71%; the share rose when the room shrank, because the texture cost is per
 *surface*, not per cubic metre.
 
-**Finding 7.2 — mesh caching is what makes 198 props affordable.** 1 141 distinct meshes serve 192
-placed props through 1 818 hits. Without the cache every spanner, capacitor and bolt would allocate
+**Finding 7.2 — mesh caching is what makes 203 props affordable.** 1 174 distinct meshes serve 197
+placed props through 1 833 hits. Without the cache every spanner, capacitor and bolt would allocate
 its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
 is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 
@@ -557,7 +557,7 @@ mathematically on the ground — and only the joint reading of numbers and pixel
 11. The per-texel composition loop is the surface-synthesis bottleneck, not the noise generation;
     moving from 512 px to 256 px halved the load time with no visible loss because tiling hides the
     missing resolution. (§1.1)
-12. Mesh caching at 1.6:1 reuse is what makes 198 props affordable. (§7.2)
+12. Mesh caching at 1.6:1 reuse is what makes 203 props affordable. (§7.2)
 13. Two-thirds of the total build is structure and dressing geometry. (§7.4)
 14. A state the build writes itself cannot be used to audit the build: the restore replay read
     `GameState` back and re-applied the still-running build's own writes, killing the new auto-open on

@@ -30,6 +30,11 @@ static func register(f: PropFactory) -> void:
 	f.generators["wall_banner"] = wall_banner
 	f.generators["wall_plaque"] = wall_plaque
 	f.generators["photo_wall"] = photo_wall
+	f.generators["armor_figure"] = armor_figure
+	f.generators["armor_helmet"] = armor_helmet
+	f.generators["armor_chest_plate"] = armor_chest_plate
+	f.generators["armor_gauntlet"] = armor_gauntlet
+	f.generators["armor_boot"] = armor_boot
 	f.generators["flag_pole"] = flag_pole
 	f.generators["big_coin"] = big_coin
 	f.generators["poster"] = poster
@@ -940,6 +945,186 @@ static func photo_wall(f: PropFactory, o: Dictionary) -> Node3D:
 		pin.position = Vector3(px, py + 0.066, 0.002)
 		pin.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(pin)
+	return root
+
+
+static func armor_figure(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The shop's other project, whole: a red-and-gold armoured figure at rest on a
+	## service base, its core lens and eye slits lit. Built entirely from ShapeKit
+	## primitives — an homage in the reference palette, deliberately not branded,
+	## and the station text says as much. Red #a51f1b over gold #c9992f is the
+	## classic pairing; the dark alloy shows between the plates.
+	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
+	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
+	var dark: StandardMaterial3D = f.ML.armor_dark()
+	var glow: StandardMaterial3D = f.ML.led(Color("cfe8ff"), 3.0)
+	var root := Node3D.new()
+	root.name = "ArmorFigure"
+	var base: MeshInstance3D = ShapeKit.cyl(0.3, 0.05, f.ML.steel_dark(), 24, Vector3i(0, 1, 0), "Base")
+	base.position = Vector3(0.0, 0.025, 0.0)
+	root.add_child(base)
+	var glow_ring: MeshInstance3D = ShapeKit.torus(0.27, 0.012, glow, 24, 6, "GlowRing")
+	glow_ring.position = Vector3(0.0, 0.052, 0.0)
+	glow_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(glow_ring)
+	for side: int in [-1, 1]:
+		var x: float = 0.11 * float(side)
+		var thigh: MeshInstance3D = ShapeKit.box(Vector3(0.17, 0.36, 0.2), red, "Thigh")
+		thigh.position = Vector3(x, 0.62, 0.0)
+		root.add_child(thigh)
+		var knee: MeshInstance3D = ShapeKit.cyl(0.075, 0.09, gold, 12, Vector3i(1, 0, 0), "Knee")
+		knee.position = Vector3(x, 0.42, 0.0)
+		root.add_child(knee)
+		var shin: MeshInstance3D = ShapeKit.box(Vector3(0.14, 0.32, 0.17), red, "Shin")
+		shin.position = Vector3(x, 0.25, 0.0)
+		root.add_child(shin)
+		var boot: MeshInstance3D = ShapeKit.box(Vector3(0.19, 0.11, 0.32), gold, "Boot")
+		boot.position = Vector3(x, 0.105, 0.03)
+		root.add_child(boot)
+	var pelvis: MeshInstance3D = ShapeKit.box(Vector3(0.4, 0.15, 0.26), dark, "Pelvis")
+	pelvis.position = Vector3(0.0, 0.84, 0.0)
+	root.add_child(pelvis)
+	var belt: MeshInstance3D = ShapeKit.box(Vector3(0.42, 0.06, 0.28), gold, "Belt")
+	belt.position = Vector3(0.0, 0.93, 0.0)
+	root.add_child(belt)
+	var abdomen: MeshInstance3D = ShapeKit.box(Vector3(0.34, 0.16, 0.24), red, "Abdomen")
+	abdomen.position = Vector3(0.0, 1.02, 0.0)
+	root.add_child(abdomen)
+	var chest: MeshInstance3D = ShapeKit.box(Vector3(0.46, 0.3, 0.28), red, "Chest")
+	chest.position = Vector3(0.0, 1.26, 0.0)
+	root.add_child(chest)
+	var chest_upper: MeshInstance3D = ShapeKit.box(Vector3(0.42, 0.1, 0.26), gold, "ChestUpper")
+	chest_upper.position = Vector3(0.0, 1.44, 0.0)
+	root.add_child(chest_upper)
+	var core_ring: MeshInstance3D = ShapeKit.torus(0.075, 0.014, gold, 20, 6, "CoreRing")
+	core_ring.position = Vector3(0.0, 1.3, 0.15)
+	core_ring.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	root.add_child(core_ring)
+	var core: MeshInstance3D = ShapeKit.cyl(0.06, 0.02, glow, 20, Vector3i(0, 0, 1), "Core")
+	core.position = Vector3(0.0, 1.3, 0.145)
+	root.add_child(core)
+	for side2: int in [-1, 1]:
+		var sx: float = 0.3 * float(side2)
+		var shoulder: MeshInstance3D = ShapeKit.sphere(0.11, gold, 14, "Shoulder")
+		shoulder.position = Vector3(sx, 1.42, 0.0)
+		shoulder.scale = Vector3(1.0, 0.8, 1.0)
+		root.add_child(shoulder)
+		var upper: MeshInstance3D = ShapeKit.box(Vector3(0.13, 0.3, 0.15), red, "UpperArm")
+		upper.position = Vector3(sx + 0.02 * float(side2), 1.2, 0.0)
+		root.add_child(upper)
+		var elbow: MeshInstance3D = ShapeKit.cyl(0.06, 0.08, gold, 12, Vector3i(1, 0, 0), "Elbow")
+		elbow.position = Vector3(sx + 0.02 * float(side2), 1.02, 0.0)
+		root.add_child(elbow)
+		var forearm: MeshInstance3D = ShapeKit.box(Vector3(0.12, 0.28, 0.14), red, "Forearm")
+		forearm.position = Vector3(sx + 0.03 * float(side2), 0.86, 0.0)
+		root.add_child(forearm)
+		var hand: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.12, 0.12), gold, "Hand")
+		hand.position = Vector3(sx + 0.03 * float(side2), 0.68, 0.0)
+		root.add_child(hand)
+	var helmet: MeshInstance3D = ShapeKit.box(Vector3(0.24, 0.22, 0.26), red, "Helmet")
+	helmet.position = Vector3(0.0, 1.66, 0.0)
+	root.add_child(helmet)
+	var faceplate: MeshInstance3D = ShapeKit.box(Vector3(0.2, 0.16, 0.06), gold, "Faceplate")
+	faceplate.position = Vector3(0.0, 1.65, 0.12)
+	root.add_child(faceplate)
+	var jaw: MeshInstance3D = ShapeKit.box(Vector3(0.18, 0.06, 0.1), gold, "Jaw")
+	jaw.position = Vector3(0.0, 1.55, 0.08)
+	root.add_child(jaw)
+	for side3: int in [-1, 1]:
+		var eye: MeshInstance3D = ShapeKit.box(Vector3(0.045, 0.018, 0.012), glow, "Eye")
+		eye.position = Vector3(0.05 * float(side3), 1.68, 0.148)
+		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(eye)
+	return root
+
+
+static func armor_helmet(f: PropFactory, _o: Dictionary) -> Node3D:
+	## A spare helmet, off the figure: the same shell in miniature with its own lit
+	## eyes, waiting on the bench.
+	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
+	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
+	var glow: StandardMaterial3D = f.ML.led(Color("cfe8ff"), 2.6)
+	var root := Node3D.new()
+	root.name = "ArmorHelmet"
+	var skull: MeshInstance3D = ShapeKit.box(Vector3(0.24, 0.22, 0.26), red, "Skull")
+	skull.position = Vector3(0.0, 0.11, 0.0)
+	root.add_child(skull)
+	var faceplate: MeshInstance3D = ShapeKit.box(Vector3(0.2, 0.16, 0.06), gold, "Faceplate")
+	faceplate.position = Vector3(0.0, 0.1, 0.12)
+	root.add_child(faceplate)
+	var jaw: MeshInstance3D = ShapeKit.box(Vector3(0.18, 0.06, 0.1), gold, "Jaw")
+	jaw.position = Vector3(0.0, 0.0, 0.08)
+	root.add_child(jaw)
+	for side: int in [-1, 1]:
+		var eye: MeshInstance3D = ShapeKit.box(Vector3(0.045, 0.018, 0.012), glow, "Eye")
+		eye.position = Vector3(0.05 * float(side), 0.13, 0.148)
+		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(eye)
+	return root
+
+
+static func armor_chest_plate(f: PropFactory, _o: Dictionary) -> Node3D:
+	## A chest plate with its core lens, laid up: the figure's own spare.
+	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
+	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
+	var glow: StandardMaterial3D = f.ML.led(Color("cfe8ff"), 2.4)
+	var root := Node3D.new()
+	root.name = "ArmorChestPlate"
+	var plate: MeshInstance3D = ShapeKit.box(Vector3(0.4, 0.3, 0.22), red, "Plate")
+	plate.position = Vector3(0.0, 0.15, 0.0)
+	root.add_child(plate)
+	var band: MeshInstance3D = ShapeKit.box(Vector3(0.36, 0.06, 0.24), gold, "Band")
+	band.position = Vector3(0.0, 0.27, 0.0)
+	root.add_child(band)
+	var core_ring: MeshInstance3D = ShapeKit.torus(0.06, 0.012, gold, 18, 6, "CoreRing")
+	core_ring.position = Vector3(0.0, 0.15, 0.12)
+	core_ring.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	root.add_child(core_ring)
+	var core: MeshInstance3D = ShapeKit.cyl(0.05, 0.018, glow, 18, Vector3i(0, 0, 1), "Core")
+	core.position = Vector3(0.0, 0.15, 0.115)
+	root.add_child(core)
+	return root
+
+
+static func armor_gauntlet(f: PropFactory, _o: Dictionary) -> Node3D:
+	## A forearm gauntlet: red shell, gold knuckle, a slit of glow at the wrist.
+	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
+	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
+	var glow: StandardMaterial3D = f.ML.led(Color("cfe8ff"), 2.0)
+	var root := Node3D.new()
+	root.name = "ArmorGauntlet"
+	var shell: MeshInstance3D = ShapeKit.box(Vector3(0.14, 0.3, 0.16), red, "Shell")
+	shell.position = Vector3(0.0, 0.15, 0.0)
+	root.add_child(shell)
+	var knuckle: MeshInstance3D = ShapeKit.box(Vector3(0.15, 0.08, 0.17), gold, "Knuckle")
+	knuckle.position = Vector3(0.0, 0.34, 0.0)
+	root.add_child(knuckle)
+	var slit: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.012, 0.012), glow, "Slit")
+	slit.position = Vector3(0.0, 0.02, 0.082)
+	slit.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(slit)
+	return root
+
+
+static func armor_boot(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The spare boot: gold toe over red, a dark sole under.
+	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
+	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
+	var dark: StandardMaterial3D = f.ML.armor_dark()
+	var root := Node3D.new()
+	root.name = "ArmorBoot"
+	var sole: MeshInstance3D = ShapeKit.box(Vector3(0.19, 0.03, 0.33), dark, "Sole")
+	sole.position = Vector3(0.0, 0.015, 0.0)
+	root.add_child(sole)
+	var body: MeshInstance3D = ShapeKit.box(Vector3(0.18, 0.1, 0.3), red, "Body")
+	body.position = Vector3(0.0, 0.08, 0.0)
+	root.add_child(body)
+	var toe: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.08, 0.08), gold, "Toe")
+	toe.position = Vector3(0.0, 0.07, 0.14)
+	root.add_child(toe)
+	var cuff: MeshInstance3D = ShapeKit.box(Vector3(0.17, 0.1, 0.12), red, "Cuff")
+	cuff.position = Vector3(0.0, 0.15, -0.08)
+	root.add_child(cuff)
 	return root
 
 

@@ -10,7 +10,7 @@ records exactly what came from where, and under what terms.
 
 | Category | Count | Origin | Licence |
 |---|---|---|---|
-| 3D meshes | 1 141 distinct, 192 placed | **Generated at runtime** by `ShapeKit` and the prop catalogues | Original work, same licence as the source |
+| 3D meshes | 1 174 distinct, 197 placed | **Generated at runtime** by `ShapeKit` and the prop catalogues | Original work, same licence as the source |
 | Photographs (5) | Wall art from `assets/textures/user/` | **Supplied by the author** for in-world frames | Loaded with `Image.load_from_file()`, no import side files; the locomotive and clock images are also published on Wikimedia Commons — pin their exact licences before wider redistribution |
 | Photographs (13) | The notice-wall collage, `assets/textures/wall/` | **Wikimedia Commons, CC BY-SA 4.0**, fetched through the Commons API and resized to 480 px | Every file, author and source page is listed below |
 | Texture images | 34 surface sets × 3 channels = 102 images | **Synthesised at runtime** by `TextureFactory` | Original work |
@@ -34,8 +34,8 @@ catalogues.
 Two mechanisms are used:
 
 **Engine primitives, parameterised.** Godot's `BoxMesh`, `CylinderMesh`, `SphereMesh`, `TorusMesh`,
-`PlaneMesh` and `CapsuleMesh` are configured per prop and cached by dimensions. 1 141 distinct
-configured meshes serve 192 placed props through 1 818 cache hits in the shipped room.
+`PlaneMesh` and `CapsuleMesh` are configured per prop and cached by dimensions. 1 174 distinct
+configured meshes serve 197 placed props through 1 833 cache hits in the shipped room.
 
 **The notice-wall photographs.** Thirteen files from Wikimedia Commons, fetched through the Commons
 API, each checked to carry a CC BY-SA 4.0 licence before download, then resized to 480 px for the

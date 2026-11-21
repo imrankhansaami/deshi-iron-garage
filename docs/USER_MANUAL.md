@@ -151,9 +151,10 @@ main reward for looking closely, and it is where most of the Bangladeshi detail 
 Just about anything loose can be picked up, carried and set down: tools, tins, tea glasses, stools,
 tyres, drums, crates, chairs, shelves, workbenches, the bicycle, even the holographic table — up to
 3.1 m in any one dimension, and big things are carried by their centre so a workbench floats in front
-of you rather than towering from a point. The few things that stay put are the ones that depend on
-exactly where they are: the gate, the windows, the flag mast, the prototype suit on its stand, the
-building itself and the big fitted pieces (the assembly platform, the cable tray).
+of you rather than towering from a point. **Every part of the prototype suit comes off one by one** —
+helmet, chest, limbs, the core — and so does each piece of the shop's armour project. The few things
+that stay put are the ones that depend on exactly where they are: the gate, the windows, the flag
+mast, the building itself and the big fitted pieces (the assembly platform, the cable tray).
 
 Look at a thing and a translucent
 cyan box appears around it with the line `LEFT CLICK — PICK UP`; left click takes it, the wheel spins
@@ -269,7 +270,9 @@ bench. At the entrance, a plywood board pins thirteen pictures of the country it
 markets, tea gardens, boats, paddy — the community-licensed set whose credits are listed in
 `docs/ASSET_LICENSES.md`. And the room keeps the marks of work: painted tool outlines on the
 pegboard, chalk notes on the floor, tea rings on the bench top, paper labels on the drawers, a
-sticker here and there. `F` on any of the pictures for the story.
+grease handprint on the apron, a paint-test board, stickers — and a whole red-and-gold armoured
+figure on a service base by the north wall, its spare plates laid out where they are worked on.
+`F` on any of the pictures for the story.
 
 ---
 

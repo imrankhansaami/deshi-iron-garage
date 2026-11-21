@@ -109,6 +109,14 @@ func surface(key: String, opts: Dictionary = {}) -> StandardMaterial3D:
 	if opts.has("rough_override"):
 		m.roughness = float(opts["rough_override"])
 		m.roughness_texture = null
+	# --- the gloss pass ------------------------------------------------------
+	# `roughness` multiplies the ORM texture's green channel, so one number makes
+	# every surface in the room glossier without erasing its per-texel variation.
+	# 1.0 was the Godot default; the project now ships shinier — painted steel,
+	# sealed concrete, varnished teak — which also feeds the screen-space
+	# reflections something to catch.
+	if not opts.has("rough_override"):
+		m.roughness = float(opts.get("roughness", 0.58))
 	var has_emission: bool = opts.has("emission") and str(opts.get("emission", "")) != ""
 	if has_emission:
 		m.emission_enabled = true
@@ -318,6 +326,36 @@ func photo_print(path: String) -> StandardMaterial3D:
 	else:
 		push_warning("photo_print: could not load %s, using a paper blank" % path)
 		m.albedo_color = Color(0.86, 0.83, 0.74)
+	_materials[key] = m
+	return m
+
+
+func armor_paint(color: Color) -> StandardMaterial3D:
+	## Painted plate for the shop's armour builds: saturated colour over metal with
+	## a low roughness, so the red and the gold catch the room's lights the way the
+	## reference plates do. Colours come from the callers, not from any film.
+	var key: String = "armor|" + color.to_html()
+	if _materials.has(key):
+		return _materials[key]
+	var m := StandardMaterial3D.new()
+	m.albedo_color = color
+	m.metallic = 0.62
+	m.roughness = 0.24
+	m.resource_name = "armor_paint"
+	_materials[key] = m
+	return m
+
+
+func armor_dark() -> StandardMaterial3D:
+	## The armour's underlayer: bare dark alloy between the plates.
+	var key: String = "armor_dark"
+	if _materials.has(key):
+		return _materials[key]
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("23262b")
+	m.metallic = 0.45
+	m.roughness = 0.42
+	m.resource_name = "armor_dark"
 	_materials[key] = m
 	return m
 
