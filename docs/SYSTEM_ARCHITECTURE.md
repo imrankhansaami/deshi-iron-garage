@@ -50,7 +50,7 @@ to catch the first.
     ├── Carry                    (Node)     CarrySystem: mouse pick-up / place / rotate / put back
     ├── Garage                   (Node3D)   GarageStructure: floor, walls, columns, roof, shutter frame
     ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 37 lights, dust, rain
-    ├── Dressing                 (Node3D)   GarageDressing: 191 props, 53 stations, cables, signage, decals
+    ├── Dressing                 (Node3D)   GarageDressing: 192 props, 54 stations, cables, signage, decals
     │
     ├── area volumes ×6          (Area3D)   named rooms; group "garage_areas"
     ├── Player                   (CharacterBody3D)
@@ -82,16 +82,16 @@ progress.
 
 | Step | What it does | Measured (UHD 620) |
 |---|---|---|
-| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 270 ms for one 256 px surface (262–283 across runs) |
-| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 5 866 ms |
-| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 40 ms |
-| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig, the photographs | 4 996 ms |
+| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 269 ms for one 256 px surface (262–283 across runs) |
+| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 5 912 ms |
+| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 37 ms |
+| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig, the photographs, the notice wall | 5 187 ms |
 | 4 | Area volumes | — |
-| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 73 ms |
-| 6 | Player, camera, ray, reticle, collision, capsule sizing | 31 ms |
-| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 233 ms |
+| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 78 ms |
+| 6 | Player, camera, ray, reticle, collision, capsule sizing | 32 ms |
+| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 201 ms |
 | 8 | `_apply_restored_state()` — replays a saved run with `instant = true` | — |
-| | **total** | **11 509 ms** |
+| | **total** | **11 716 ms** |
 
 Surfaces are synthesised **lazily**, on first request. Loading every recipe up front would cost
 roughly 9.5 s for all 34 at 256 px; the garage actually touches 34 of them, so the saving is in the
@@ -169,7 +169,7 @@ per texel into colour/roughness/metallic/occlusion/height, pack to RGB8 byte buf
 tangent-space normal by Sobel gradient on the wrapped height field, upload in one
 `Image::create_from_data` per channel. See `docs/GRAPHICS_ALGORITHMS.md` §2.
 
-**`shape_kit.gd`** — the primitive composition layer, and the reason 197 props is affordable. Two
+**`shape_kit.gd`** — the primitive composition layer, and the reason 198 props is affordable. Two
 ideas: a mesh cache keyed on dimensions so forty spanners share one mesh, and true generators (lathe
 from a profile, gear from tooth count and module, tube sweep, coil, chain, plate) for the shapes that
 are not primitives. Also `shape_aabb_local()`, `area_aabb()` and `node_bounds()`, which exist because
@@ -350,7 +350,7 @@ and in the capture harness. The rain, the dust and the footsteps use separate se
 one does not perturb another.
 
 **Fixed capture viewpoints.** The capture harness drives the progression to a known state and parks
-the camera at eighteen declared transforms, which is what makes the screenshots in `captures/`
+the camera at nineteen declared transforms, which is what makes the screenshots in `captures/`
 comparable between code revisions. It also reports a luminance histogram per shot: the check that
 matters most is the `black` percentage, because a lighting rig that renders almost nothing still
 produces a screenshot and would otherwise read as success.
@@ -375,7 +375,7 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 | `tests/walk_in.gd` | Builds the world headless, takes control of the real player and drives it from the spawn into the shop, back out and sideways across the courtyard, printing position, floor contact, stalls and — when stalled — the exact collider being slid against. This is what proved the entrance lip unclimbable, the courtyard boundless, and the gravity-accumulation pinning on slopes (`docs/EXPERIMENTS.md` §7.6). |
 | Perf harness (`perf.flag`) | Drives the full progression, then samples three fixed viewpoints twice each — shipped settings and the earlier values flipped back at runtime in the same session — and writes a paired A/B table to `user://captures/perf.log`. Its first run is what exposed the shadow-budget bug and the session's 7.5 Hz presentation cap (`docs/EXPERIMENTS.md` §7.5). |
 | `tests/bake_preview.gd` | Renders the lab-wall plate specs (scientists, header, inventions board) and the wall maps (Bangladesh, Sylhet) to PNGs in `user://captures/`, so Bengali on a wall can be proof-read at full resolution without launching the garage. |
-| Capture harness | Boots the real renderer, drives the full progression, writes 18 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
+| Capture harness | Boots the real renderer, drives the full progression, writes 19 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
 | Graphics bench | Self-measurement at runtime, exportable to CSV, with a fixed-camera capture at each configuration. |
 
 What is **not** tested: there is no unit test suite, no automated interaction test that drives `E`

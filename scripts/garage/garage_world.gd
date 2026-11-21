@@ -713,6 +713,8 @@ const CAP_SHOTS: Array = [
 	{"name": "16_division_map", "pos": Vector3(-2.6, 1.56, 4.52), "look": Vector3(-4.05, 1.58, 4.55)},
 	# the author's photographs: the row above the mechanical bench
 	{"name": "17_photo_wall", "pos": Vector3(-1.35, 1.60, 1.75), "look": Vector3(-4.05, 2.45, 1.72)},
+	# the pinned Commons collage on the entrance's west pier
+	{"name": "18_notice_wall", "pos": Vector3(-0.7, 1.7, 3.2), "look": Vector3(-2.75, 1.72, 5.05)},
 ]
 
 var _capturing: bool = false

@@ -29,6 +29,7 @@ static func register(f: PropFactory) -> void:
 	f.generators["wall_clock"] = wall_clock
 	f.generators["wall_banner"] = wall_banner
 	f.generators["wall_plaque"] = wall_plaque
+	f.generators["photo_wall"] = photo_wall
 	f.generators["flag_pole"] = flag_pole
 	f.generators["big_coin"] = big_coin
 	f.generators["poster"] = poster
@@ -904,6 +905,41 @@ static func big_coin(f: PropFactory, o: Dictionary) -> Node3D:
 	body_col.add_child(ShapeKit.col_box(Vector3(r * 2.0, 0.30 + r * 2.0, 0.4)))
 	body_col.position = Vector3(0.0, (0.30 + r * 2.0) * 0.5, 0.0)
 	root.add_child(body_col)
+	return root
+
+
+static func photo_wall(f: PropFactory, o: Dictionary) -> Node3D:
+	## A wall of pinned photographs: a plywood sheet with a grid of small prints,
+	## each slightly crooked, each its own material. The photographs arrive as an
+	## array of paths and load through MaterialLibrary.photo_print() — no import
+	## side files, like the street banner. Used for the entrance notice wall, the
+	## author-curated Commons set listed in docs/ASSET_LICENSES.md.
+	var photos: Array = o.get("photos", [])
+	var cols: int = int(o.get("cols", 4))
+	var cell := Vector2(0.24, 0.19)
+	var pad: float = 0.06
+	var rows: int = int(ceil(float(photos.size()) / float(cols)))
+	var board_w: float = pad * 2.0 + cell.x * float(cols)
+	var board_h: float = pad * 2.0 + cell.y * float(rows)
+	var root := Node3D.new()
+	root.name = "PhotoWall"
+	var back: MeshInstance3D = ShapeKit.box(Vector3(board_w, board_h, 0.02), f.ML.plywood(), "Board")
+	back.position = Vector3(0.0, board_h * 0.5, -0.014)
+	root.add_child(back)
+	for i: int in range(photos.size()):
+		var col: int = i % cols
+		var row: int = i / cols
+		var px: float = -board_w * 0.5 + pad + cell.x * (float(col) + 0.5) + f.rand().randf_range(-0.006, 0.006)
+		# the board's origin is its bottom edge, so rows count down from the top
+		var py: float = board_h - pad - cell.y * (float(row) + 0.5) + f.rand().randf_range(-0.006, 0.006)
+		var photo: MeshInstance3D = ShapeKit.plane(Vector2(0.20, 0.15), f.ML.photo_print(String(photos[i])), "Photo%d" % i)
+		photo.position = Vector3(px, py, 0.0)
+		photo.rotation.z = f.rand().randf_range(-0.055, 0.055)
+		root.add_child(photo)
+		var pin: MeshInstance3D = ShapeKit.sphere(0.007, f.ML.steel(), 8, "Pin")
+		pin.position = Vector3(px, py + 0.066, 0.002)
+		pin.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(pin)
 	return root
 
 

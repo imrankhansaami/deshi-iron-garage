@@ -265,7 +265,9 @@ inventor's voice, and a short letter. The sketch's dimensions are the ones the s
 row above the mechanical bench — a Bangladesh Railway locomotive, Ali Amjad's clock in Sylhet, and an
 older batch of students around a half-stripped television — the team photo leaning by the notebook,
 the exosuit concept poster on the wall the assembly stand faces, and a desk flag on the electronics
-bench. `F` on any of them for the story.
+bench. At the entrance, a plywood board pins thirteen pictures of the country itself — rickshaws,
+markets, tea gardens, boats, paddy — the community-licensed set whose credits are listed in
+`docs/ASSET_LICENSES.md`. `F` on any of them for the story.
 
 ---
 

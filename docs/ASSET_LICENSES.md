@@ -10,8 +10,9 @@ records exactly what came from where, and under what terms.
 
 | Category | Count | Origin | Licence |
 |---|---|---|---|
-| 3D meshes | 1 140 distinct, 191 placed | **Generated at runtime** by `ShapeKit` and the prop catalogues | Original work, same licence as the source |
+| 3D meshes | 1 141 distinct, 192 placed | **Generated at runtime** by `ShapeKit` and the prop catalogues | Original work, same licence as the source |
 | Photographs (5) | Wall art from `assets/textures/user/` | **Supplied by the author** for in-world frames | Loaded with `Image.load_from_file()`, no import side files; the locomotive and clock images are also published on Wikimedia Commons — pin their exact licences before wider redistribution |
+| Photographs (13) | The notice-wall collage, `assets/textures/wall/` | **Wikimedia Commons, CC BY-SA 4.0**, fetched through the Commons API and resized to 480 px | Every file, author and source page is listed below |
 | Texture images | 34 surface sets × 3 channels = 102 images | **Synthesised at runtime** by `TextureFactory` | Original work |
 | Supplied photograph | 1 image (127 KB) | **Provided by the project's author** — the workshop banner hung on the north wall | Author's own work, used with the author's permission |
 | Audio | 22 clips | **Synthesised at runtime** by `AudioSynth` | Original work |
@@ -33,8 +34,33 @@ catalogues.
 Two mechanisms are used:
 
 **Engine primitives, parameterised.** Godot's `BoxMesh`, `CylinderMesh`, `SphereMesh`, `TorusMesh`,
-`PlaneMesh` and `CapsuleMesh` are configured per prop and cached by dimensions. 1 140 distinct
-configured meshes serve 191 placed props through 1 805 cache hits in the shipped room.
+`PlaneMesh` and `CapsuleMesh` are configured per prop and cached by dimensions. 1 141 distinct
+configured meshes serve 192 placed props through 1 818 cache hits in the shipped room.
+
+**The notice-wall photographs.** Thirteen files from Wikimedia Commons, fetched through the Commons
+API, each checked to carry a CC BY-SA 4.0 licence before download, then resized to 480 px for the
+collage. Authors as named on the file pages:
+
+| In-game file | Commons file | Author |
+|---|---|---|
+| `wall_01.jpg` | [Back view of Rickshaw … bd](https://commons.wikimedia.org/w/index.php?search=Back+view+of+Rickshaw+bd) (title carries Bengali script) | Bengali Wikimedia user, named on the file page |
+| `wall_02.jpg` | [At Sadarghat street Market 06](https://commons.wikimedia.org/wiki/File:At_Sadarghat_street_Market_06.jpg) | Kritzolina |
+| `wall_03.jpg` | [Inside bamboo frame roadside tea stall Khulna](https://commons.wikimedia.org/wiki/File:Inside_bamboo_frame_roadside_tea_stall_Khulna.jpg) | User:TanvirSdq |
+| `wall_04.jpg` | [Lakkatura Tea Garden, Sylhet](https://commons.wikimedia.org/wiki/File:Lakkatura_Tea_Garden,_Sylhet.jpg) | AdibHossain999 |
+| `wall_05.jpg` | [Bangladesh Railway 2](https://commons.wikimedia.org/wiki/File:Bangladesh_Railway_2.jpg) | Mahbubur |
+| `wall_06.jpg` | [City point, Sylhet (cropped)](https://commons.wikimedia.org/wiki/File:City_point,sylhet_(cropped).jpg) | Abdul hadi chowdhury |
+| `wall_07.jpg` | [A fishing boat at Muktaria ghat, Hatiya, Noakhali](https://commons.wikimedia.org/wiki/File:A_fishing_boat_at_Muktaria_ghat_,_Hatiya,_Noakhali,_Bangladesh._Meghna_river_on_the_left_side.(_29_February_2020)..jpg) | Salim Khandoker |
+| `wall_08.jpg` | [A boat in Padma river](https://commons.wikimedia.org/wiki/File:A_boat_in_Padma_river.jpg) | Smartmsh |
+| `wall_11.jpg` | [A pigeon house in a Santal village in Dinajpur district 02](https://commons.wikimedia.org/wiki/File:A_pigeon_house_in_a_Santal_village_in_Dinajpur_district_02.jpg) | Kritzolina |
+| `wall_12.jpg` | [Baitul Mukarram National Mosque, Dhaka 168](https://commons.wikimedia.org/wiki/File:Baitul_Mukarram_National_Mosque,Dhaka_168.jpg) | Frameofashik |
+| `wall_13.jpg` | [Bangladesh Railway Museum, Chattogram (2Q7A0322)](https://commons.wikimedia.org/wiki/File:Bangladesh_Railway_Museum,_Chattogram_(2Q7A0322).jpg) | Moheen Reeyad |
+| `wall_14.jpg` | [Badshavog — ধান — Paddy — DSC00603](https://commons.wikimedia.org/w/index.php?search=Badshavog+Paddy+DSC00603) (title carries Bengali script) | ROCKY |
+| `wall_15.jpg` | [A Bangladeshi Saintmartin Hyundai Bus In Dhaka Chittagong Highway](https://commons.wikimedia.org/wiki/File:A_Bangladeshi_Saintmartin_Hyundai_Bus_In_Dhaka_Chittagong_Highway.jpg) | Sabbir Siam |
+
+Two file pages are linked through a Commons search because their titles carry Bengali script that the
+fetch pipeline could not round-trip; both are CC BY-SA 4.0 and their authors are as shown on the
+pages. CC BY-SA 4.0 requires attribution and share-alike for derivatives — the credits here are that
+attribution, and any redistribution of the collage keeps this file with it.
 
 **Geometry generated from parameters.** Where a primitive is insufficient, the mesh is built with
 `SurfaceTool` or `ArrayMesh` from parameters:

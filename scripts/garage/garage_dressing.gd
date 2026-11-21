@@ -1564,6 +1564,20 @@ func _keepsakes() -> void:
 		"spec": [["format", "desk flag, 0.24 m"], ["ratio", "10 : 6"], ["note", "same cloth art as the gate flag"]],
 		"sfx": "paper", "distance": 1.6,
 	})
+	# the notice wall: the curated Commons photographs, pinned on the south wall's
+	# west pier — the wall you face walking in, opposite the country map
+	var notice_photos: Array = []
+	for n: int in range(1, 16):
+		if n == 9 or n == 10:
+			continue
+		notice_photos.append("res://assets/textures/wall/wall_%02d.jpg" % n)
+	var notice: Node3D = _place("photo_wall", Vector3(-2.7, 1.30, structure.half_l - 0.16), Vector3(0.0, PI, 0.0), {"photos": notice_photos, "cols": 4})
+	_station(notice, Station.Kind.SIGN, Vector3(0.0, 0.43, 0.05), {
+		"area": "entrance", "title": "Photo wall — the shop's places",
+		"desc": "Thirteen photographs pinned crooked to a plywood sheet: the rickshaw seen from the door, Sadarghat market, a tea stall in Khulna, the tea gardens, the railway, Sylhet, the boats, the paddy. The owner's picks of the country, with their credits kept in the project's asset list.",
+		"spec": [["photographs", "13, pinned"], ["licences", "CC BY-SA 4.0 (see docs/ASSET_LICENSES.md)"], ["board", "plywood, 1.1 × 0.9 m"]],
+		"sfx": "paper", "distance": 3.2,
+	})
 
 
 func _bangladesh_map_spec() -> Dictionary:
