@@ -274,11 +274,11 @@ count and the shadow-pass draw calls alongside the frame time. Measurements are 
 camera (fixed transform) so all configurations see the same geometry.
 
 **Note on the rig these rows were measured on.** The table below is from the lighting rig of the
-first build — 31 lights, 7 casters. The shipped rig has 34 — four tube fixtures instead of five,
-plus the five always-on bulbs, which cast no shadows — with the same seven-caster budget, the same
-circuit structure and the same finding: the cost tracks the shadow casters, not the light count.
-Re-running the tab on the shipped room reproduces the shape of the table rather than these exact
-milliseconds.
+first build — 31 lights, 7 casters. The shipped rig has 37 — four tube fixtures instead of five,
+plus the five always-on bulbs and the sign's three colour washes, none of which cast shadows — with
+the same seven-caster budget, the same circuit structure and the same
+finding: the cost tracks the shadow casters, not the light count. Re-running the tab on the shipped
+room reproduces the shape of the table rather than these exact milliseconds.
 
 **Results**
 
@@ -378,14 +378,14 @@ performance work.
 
 | Step | Time | Share | What dominates |
 |---|---|---|---|
-| Surface synthesis (first surface) | 262 ms | 2.4% | the per-texel loop |
-| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 5 772 ms | 52.4% | mesh generation, collision shapes, and the surfaces it requests |
-| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 40 ms | 0.4% | negligible |
-| Dressing — 185 placements, 47 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs, wall maps | 4 654 ms | 42.2% | prop construction, station wiring, and its surfaces |
-| Screens — 5 live `SubViewport`s and their materials | 74 ms | 0.7% | — |
-| Player — camera, ray, reticle, collision | 31 ms | 0.3% | — |
-| Interface — HUD, 10 panels, objective director | 182 ms | 1.7% | — |
-| **Total** | **11 015 ms** | **100%** | |
+| Surface synthesis (first surface) | 268 ms | 2.3% | the per-texel loop |
+| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 5 920 ms | 51.6% | mesh generation, collision shapes, and the surfaces it requests |
+| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 39 ms | 0.3% | negligible |
+| Dressing — 185 placements, 47 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs, wall maps, the sign's RGB rig | 4 951 ms | 43.2% | prop construction, station wiring, and its surfaces |
+| Screens — 5 live `SubViewport`s and their materials | 72 ms | 0.6% | — |
+| Player — camera, ray, reticle, collision | 32 ms | 0.3% | — |
+| Interface — HUD, 10 panels, objective director | 184 ms | 1.6% | — |
+| **Total** | **11 466 ms** | **100%** | |
 
 **Dressing breakdown, `GarageDressing.dressing_breakdown()`**
 
@@ -397,13 +397,13 @@ performance work.
 | Authored placements | 153 |
 | Procedural placements | 22 (4 groups: 6 + 5 + 6 + 5) |
 | Wall-rack placements | 10 |
-| Mesh cache hits / misses | 1 781 / 1 129 |
+| Mesh cache hits / misses | 1 783 / 1 131 |
 | Rejection-sampler efficiency | 46% of attempts produce a placement |
 
 The counts above are from the shipped build. The per-step times are from the latest capture run;
-the same garage measured 11 101 ms and 12 473 ms within the hour either side of it, so treat absolute
-milliseconds as load-dependent — they drift by about 20% when something else is using the laptop —
-and the shares as the finding. This is worth stating rather than pretending the machine is a
+the same garage measured 11 015 ms, 11 101 ms and 12 473 ms across the day's earlier runs, so treat
+absolute milliseconds as load-dependent — they drift by about 20% when something else is using the
+laptop — and the shares as the finding. This is worth stating rather than pretending the machine is a
 benchmark rig.
 
 **Finding 7.1 — surface synthesis dominates the wall clock.** The first surface costs 262–283 ms across
@@ -413,12 +413,12 @@ left is moving that per-texel loop to a compute shader, not reducing geometry. T
 13 × 16.5 m room measured 71%; the share rose when the room shrank, because the texture cost is per
 *surface*, not per cubic metre.
 
-**Finding 7.2 — mesh caching is what makes 191 props affordable.** 1 129 distinct meshes serve 185
-placed props through 1 781 hits. Without the cache every spanner, capacitor and bolt would allocate
+**Finding 7.2 — mesh caching is what makes 191 props affordable.** 1 131 distinct meshes serve 185
+placed props through 1 783 hits. Without the cache every spanner, capacitor and bolt would allocate
 its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
 is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 
-**Finding 7.3 — environment setup is free; environment *rendering* is not.** Building 34 lights, the
+**Finding 7.3 — environment setup is free; environment *rendering* is not.** Building 37 lights, the
 sky, the SDFGI configuration and two particle systems costs 39 ms. *Rendering* SDFGI costs 9.5 ms per
 frame. Setup cost and runtime cost are unrelated here, which is worth knowing when choosing what to
 add.

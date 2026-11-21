@@ -924,5 +924,18 @@ static func signboard(f: PropFactory, o: Dictionary) -> Node3D:
 		var hanger: MeshInstance3D = ShapeKit.cyl(0.006, 0.5, f.ML.steel_dark(), 6, Vector3i(0, 1, 0), "Hanger")
 		hanger.position = Vector3((w * 0.4) * (1.0 if i == 0 else -1.0), h * 0.5 + 0.25, 0.0)
 		root.add_child(hanger)
+	# the chasing LED frame: the colour-cycling strip the sign shops sell by the
+	# metre, run around the board's edge. The shader self-animates
+	# (shaders/sign_rgb.gdshader), so the prop stays a pure builder.
+	var neon_mat: Material = f.ML.shader_material("res://shaders/sign_rgb.gdshader", {})
+	for i: int in range(2):
+		var bar_h: MeshInstance3D = ShapeKit.box(Vector3(w + 0.08, 0.032, 0.032), neon_mat, "NeonH")
+		bar_h.position = Vector3(0.0, (h * 0.5 + 0.016) * (1.0 if i == 0 else -1.0), 0.045)
+		bar_h.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(bar_h)
+		var bar_v: MeshInstance3D = ShapeKit.box(Vector3(0.032, h + 0.08, 0.032), neon_mat, "NeonV")
+		bar_v.position = Vector3((w * 0.5 + 0.016) * (1.0 if i == 0 else -1.0), 0.0, 0.045)
+		bar_v.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(bar_v)
 	root.set_meta("face_path", "Face")
 	return root

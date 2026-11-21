@@ -209,10 +209,16 @@ func _area_entrance() -> void:
 	# the signboard over the shutter. Raised from 2.78 to 2.95: at 2.78 its bottom
 	# third sat behind the shutter head beam, which is 3 cm prouder than the board.
 	var sign: Node3D = _place("signboard", Vector3(0.0, 2.95, half_l + 0.14), Vector3.ZERO, {"width": 2.5, "height": 0.6})
+	# the sign's RGB rig: the LED frame lives in the prop (its shader self-animates);
+	# the two washes and their hue cycle are added here, on circuit 0 so the sign is
+	# never dark
+	var rgb_script: GDScript = load("res://scripts/garage/sign_rgb.gd")
+	sign.set_script(rgb_script)
+	sign.call("setup_rgb", runtime)
 	_station(sign, Station.Kind.SIGN, Vector3.ZERO, {
 		"area": "entrance", "title": "Garage signboard",
-		"desc": "Hand-painted on a sheet of tin: the shop name in Bangla, the tagline underneath, and a phone number that is really a mobile number.",
-		"spec": [["script", "Bengali, Noto Sans Bengali"], ["medium", "house paint on tin"], ["repainted", "three times"]],
+		"desc": "Hand-painted on a sheet of tin: the shop name in Bangla, the tagline underneath, and a phone number that is really a mobile number. The frame is a chasing RGB LED strip from the electronics market, and two washes keep the board readable after dark.",
+		"spec": [["script", "Bengali, Noto Sans Bengali"], ["medium", "house paint on tin"], ["repainted", "three times"], ["lighting", "RGB LED frame, cycling washes"]],
 		"sfx": "", "distance": 7.0,
 	})
 	# the banner over the left pier of the facade, facing the street. A second,
@@ -1108,7 +1114,7 @@ func _signage() -> void:
 		var face: MeshInstance3D = sign.get_node_or_null("Face") as MeshInstance3D
 		if face != null:
 			var spec: Dictionary = _sign_spec(String(labels.garage_name), String(labels.brand), String(labels.tagline))
-			baker.apply_baked(face, spec, "signboard", 0.35, 0.42)
+			baker.apply_baked(face, spec, "signboard", 1.0, 0.42)
 	# the workshop name plate inside
 	var plate_spec: Dictionary = _plate_spec(String(labels.lab))
 	var plate: MeshInstance3D = ShapeKit.plane(Vector2(1.1, 0.34), null, "LabPlate")
@@ -1242,14 +1248,14 @@ func _sign_spec(garage: String, brand: String, tagline: String) -> Dictionary:
 		"size": Vector2i(1024, 256), "transparent": false, "bg": "#0e1a26",
 		"border": {"color": "#d4af37", "width": 6.0},
 		"layers": [
-			{"type": "rect", "pos": Vector2(0, 0), "sz": Vector2(1024, 62), "color": "#16283a"},
-			{"type": "rect", "pos": Vector2(0, 194), "sz": Vector2(1024, 62), "color": "#16283a"},
-			{"type": "text", "name": "GARAGE", "pos": Vector2(28, 62), "size": 96, "color": "#f2e6c8", "text": garage, "font": "bangla", "shadow": true},
-			{"type": "text", "name": "BRAND", "pos": Vector2(28, 12), "size": 34, "color": "#d4af37", "text": brand, "font": "bangla"},
-			{"type": "text", "name": "TAG", "pos": Vector2(28, 202), "size": 40, "color": "#4fd8ff", "text": tagline, "font": "bangla"},
-			{"type": "text", "name": "EN", "pos": Vector2(700, 206), "size": 30, "color": "#8fa0ab", "text": "OPEN 24 HOURS", "font": "mono"},
+			{"type": "rect", "pos": Vector2(0, 0), "sz": Vector2(1024, 62), "color": "#1c3450"},
+			{"type": "rect", "pos": Vector2(0, 194), "sz": Vector2(1024, 62), "color": "#1c3450"},
+			{"type": "text", "name": "GARAGE", "pos": Vector2(28, 62), "size": 96, "color": "#f6ecd2", "text": garage, "font": "bangla", "shadow": true},
+			{"type": "text", "name": "BRAND", "pos": Vector2(28, 12), "size": 34, "color": "#e2bf4a", "text": brand, "font": "bangla"},
+			{"type": "text", "name": "TAG", "pos": Vector2(28, 202), "size": 40, "color": "#5fe0ff", "text": tagline, "font": "bangla"},
+			{"type": "text", "name": "EN", "pos": Vector2(700, 208), "size": 30, "color": "#a8b8c4", "text": "OPEN 24 HOURS", "font": "mono"},
 			{"type": "circle", "center": Vector2(960, 128), "radius": 34, "color": "#e2453c", "filled": true},
-			{"type": "text", "name": "NUM", "pos": Vector2(700, 74), "size": 40, "color": "#c8d0d8", "text": "017XX-XXXXXX", "font": "mono"},
+			{"type": "text", "name": "NUM", "pos": Vector2(694, 68), "size": 46, "color": "#e8eef4", "text": "017XX-XXXXXX", "font": "mono"},
 		],
 	}
 

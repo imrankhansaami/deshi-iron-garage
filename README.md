@@ -188,7 +188,9 @@ geometry, not asserted in text.
 - **A lighting rig in four switchable circuits** over one shadow-casting daylight source, plus **five
   always-on bulbs** wired ahead of the switchboard on the incoming line — walk lane, both benches,
   the testing corner and the store — so the room is never dark, even before power is restored. Each
-  bulb carries its own light, so picking one up and moving it moves its glow with it. The shutter
+  bulb carries its own light, so picking one up and moving it moves its glow with it. The shop
+  signboard over the gate is framed in a **chasing RGB LED strip** with two colour-cycling washes,
+  also on the incoming line — the street side of the garage gets its neon. The shutter
   position continuously drives the daylight shafts and the volumetric fog density — the gate opens by
   itself as anyone approaches the courtyard, and the room visibly wakes up as it lifts. The
   expensive features are preset tiers — SDFGI and the fog are off below the high preset, and the
@@ -266,13 +268,13 @@ in-world graphics bench. These are the numbers the application reports about its
 
 | Measurement | Value |
 |---|---|
-| Full garage build | ≈ 11–12 s (11.0 s in the latest capture run; it moves with machine load) |
+| Full garage build | ≈ 11–12 s (11.5 s in the latest capture run; it moves with machine load) |
 | Surface synthesis, first 256 px surface | ≈ 280 ms |
 | Props placed | 185 (191 built, 134 kinds) |
 | Interactive stations | 47 |
-| Registered lights | 34 (of which shadow casters: 7) |
+| Registered lights | 37 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1781 hits, 1129 misses |
+| Mesh cache | 1783 hits, 1131 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Adaptive resolution | on by default: render scale 0.55–0.85, ±0.05 per second, holding worst-case frames under 24 ms |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |
@@ -326,7 +328,7 @@ scripts/
   player/                   # Player
   ui/                       # Hud, BenchmarkPanel, MainMenu
 tests/
-  validate_scripts.gd       # headless compile check for all 42 scripts
+  validate_scripts.gd       # headless compile check for all 43 scripts
   timing_probe.gd           # measures surface synthesis at three resolutions
   introspect.gd             # engine API introspection, used during development
   dump_floor.gd             # headless scene inspector: names what a capture shows

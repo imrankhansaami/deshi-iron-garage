@@ -228,7 +228,9 @@ three gauges, six toggle levers and a mushroom emergency stop, a portrait diagno
 
 **Outside.** Step back out through the gate — it has rolled itself up, and it does that for anyone who
 walks up: the presence sensor over the lintel lifts the curtain as you approach (there is nothing to
-press; the shutter station only tells you about it). The way in and out is a concrete apron that
+press; the shutter station only tells you about it). Above the gate, the shop's tin signboard is
+framed in a chasing RGB LED strip with two colour-cycling washes — always on, like the bulbs inside,
+so the street side of the garage is never dark either. The way in and out is a concrete apron that
 ramps the doorway down to the yard, so you walk in without breaking stride whichever way you come.
 The courtyard itself is walled in — the street wall and the neighbour walls are solid, and the packed
 earth runs right up to them. On the walls of the entrance: **a hand-drawn map of Bangladesh** right

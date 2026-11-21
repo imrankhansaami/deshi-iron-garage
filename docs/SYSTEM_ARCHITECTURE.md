@@ -49,7 +49,7 @@ to catch the first.
     ├── Runtime                  (Node)     GarageRuntime: power, shutter, fans, screens, core, assembly
     ├── Carry                    (Node)     CarrySystem: mouse pick-up / place / rotate / put back
     ├── Garage                   (Node3D)   GarageStructure: floor, walls, columns, roof, shutter frame
-    ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 34 lights, dust, rain
+    ├── Environment              (Node3D)   GarageEnvironment: WorldEnvironment, 37 lights, dust, rain
     ├── Dressing                 (Node3D)   GarageDressing: 185 props, 47 stations, cables, signage, decals
     │
     ├── area volumes ×6          (Area3D)   named rooms; group "garage_areas"
@@ -82,16 +82,16 @@ progress.
 
 | Step | What it does | Measured (UHD 620) |
 |---|---|---|
-| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 264 ms for one 256 px surface (264–283 across runs) |
-| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 5 772 ms |
-| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs are registered by the dressing, each attached to its own bulb) | 40 ms |
-| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps | 4 654 ms |
+| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 268 ms for one 256 px surface (262–283 across runs) |
+| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 5 920 ms |
+| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 39 ms |
+| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig | 4 951 ms |
 | 4 | Area volumes | — |
-| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 74 ms |
-| 6 | Player, camera, ray, reticle, collision, capsule sizing | 31 ms |
-| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 182 ms |
+| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 72 ms |
+| 6 | Player, camera, ray, reticle, collision, capsule sizing | 32 ms |
+| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 184 ms |
 | 8 | `_apply_restored_state()` — replays a saved run with `instant = true` | — |
-| | **total** | **11 015 ms** |
+| | **total** | **11 466 ms** |
 
 Surfaces are synthesised **lazily**, on first request. Loading every recipe up front would cost
 roughly 9.5 s for all 34 at 256 px; the garage actually touches 34 of them, so the saving is in the
@@ -367,7 +367,7 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 
 | Mechanism | What it covers |
 |---|---|
-| `tests/validate_scripts.gd` | Loads and compiles all 42 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
+| `tests/validate_scripts.gd` | Loads and compiles all 43 scripts headless; fails loudly on any parse or compile error. This is the primary guard, and it caught every error class during development. |
 | `tests/timing_probe.gd` | Measures one surface at 256/384/512 px. The instrumentation that established the texture budget. |
 | `tests/introspect.gd` | Engine API introspection. Used to pin exact signatures when they were uncertain rather than guessing. |
 | `tests/dump_floor.gd` | Builds the world headless and reports: every node within a radius of a floor point, the dressing's occupancy boxes with their owning stations, per-child bound audits, and a full carry-system exercise — surface heights, a pick-up/place cycle and the put-back path. Written to turn "the screenshot shows something odd" into a named object, and "the carry maths should work" into measured numbers. |

@@ -150,6 +150,7 @@ recorded in `docs/ASSET_LICENSES.md`.
 | Lab wall | Six honour plaques for Bangladeshi/Bengali scientists and one inventions board, engraved in Bangla from `data/scientists.json` and `data/inventions.json` through the same sign baker as every other sign, plus `F` inspection text for each |
 | National corner | The national flag on a courtyard pole — the official construction (2:3, disc at 9/20 length, radius L/5) with a cloth shader that waves it — and a big brass ৫ টাকা display coin leaning on its plinth; both are inspectable, neither is real currency |
 | Wall maps | Two hand-drawn sketch maps hung on the entrance walls: the country right of the gate, the Sylhet division beside the door — outline, rivers, towns and district lines drawn through the same sign baker as every other sign, with `F` text honest that they are line sketches, not survey data |
+| Shop signboard | Hand-painted tin over the gate, now framed in a chasing **RGB LED strip** (its own shader) with two colour-cycling washes — all on the incoming line, so the board stays bright and the street gets its neon whatever the switchboard does |
 | Auto-opening gate | The shutter's presence sensor rolls the curtain up as anyone approaches the courtyard — it starts most of the way down and the room wakes up as it lifts. It can no longer be lowered |
 | Always-on bulbs | Five bare bulbs — walk lane, both benches, the testing corner, the store — are wired ahead of the switchboard to the incoming line, outside every switchable circuit: the room is never dark, even at the start, and each bulb carries its own light when you pick it up |
 | Entrance | A concrete apron ramps the doorway down to the packed earth so the shop can be walked into and out of without breaking stride, and the courtyard is walled in — walking past the street wall or the neighbour walls stops you instead of dropping you out of the world |
@@ -198,12 +199,12 @@ assembly sequence. That is the localisation requirement, implemented as configur
 
 On Intel UHD 620 at 1600×900, Forward+:
 
-- Garage build: **11.0 s** in the latest capture run (5.8 s structure, 4.7 s dressing for 185
-  placements; the same build has measured 11.1 s and 12.5 s across the day — machine load moves it;
+- Garage build: **11.5 s** in the latest capture run (5.9 s structure, 5.0 s dressing for 185
+  placements; the same build has measured 11.0–12.5 s across earlier runs — machine load moves it;
   most of the total is surface synthesis, spread across both steps)
 - Medium preset: 40–55 fps measured before the preset retune — SDFGI and volumetric fog off, SSR on,
   five shadow casters; the retune cut a further 13–27 ms of CPU frame time (`docs/EXPERIMENTS.md` §7.5)
 - High preset: 18–26 fps measured before the retune, all global-illumination features on, seven casters
-- 34 lights, 7 of them shadow casters, 5 live screen viewports
+- 37 lights, 7 of them shadow casters, 5 live screen viewports
 
 `docs/EXPERIMENTS.md` holds the per-experiment tables and the exact configuration for each row.
