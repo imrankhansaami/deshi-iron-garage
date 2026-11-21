@@ -109,14 +109,14 @@ func surface(key: String, opts: Dictionary = {}) -> StandardMaterial3D:
 	if opts.has("rough_override"):
 		m.roughness = float(opts["rough_override"])
 		m.roughness_texture = null
-	# --- the gloss pass ------------------------------------------------------
-	# `roughness` multiplies the ORM texture's green channel, so one number makes
-	# every surface in the room glossier without erasing its per-texel variation.
-	# 1.0 was the Godot default; the project now ships shinier — painted steel,
-	# sealed concrete, varnished teak — which also feeds the screen-space
-	# reflections something to catch.
+	# --- physically sensible gloss -------------------------------------------
+	# A blanket gloss pass multiplied every recipe's roughness by one number,
+	# which made plaster and brick read like plastic. Roughness now depends on
+	# the material family instead: masonry and earth stay matte, the sealed
+	# concrete floor is lightly polished, varnished wood and paint are glossy,
+	# bare metal most of all.
 	if not opts.has("rough_override"):
-		m.roughness = float(opts.get("roughness", 0.58))
+		m.roughness = _roughness_factor(key)
 	var has_emission: bool = opts.has("emission") and str(opts.get("emission", "")) != ""
 	if has_emission:
 		m.emission_enabled = true
@@ -136,6 +136,23 @@ func surface(key: String, opts: Dictionary = {}) -> StandardMaterial3D:
 	_materials[mat_key] = m
 	_tick()
 	return m
+
+
+func _roughness_factor(key: String) -> float:
+	## The material family's gloss. `roughness` multiplies the ORM texture's green
+	## channel, so these numbers keep each recipe's per-texel variation while
+	## setting how polished the family reads.
+	if key.begins_with("brick") or key.begins_with("plaster") or key.begins_with("plaster_painted") or key == "concrete_block" or key.begins_with("packed_earth") or key.begins_with("dirt") or key.begins_with("sand"):
+		return 0.95
+	if key.begins_with("worn_concrete") or key.begins_with("floor") or key.contains("concrete"):
+		return 0.62
+	if key.begins_with("teak") or key.begins_with("plywood") or key.begins_with("wood"):
+		return 0.5
+	if key.begins_with("steel") or key.begins_with("rust") or key.begins_with("brass") or key.begins_with("copper") or key.begins_with("iron") or key.begins_with("metal"):
+		return 0.45
+	if key.begins_with("paint") or key.begins_with("plastic"):
+		return 0.42
+	return 0.8
 
 
 func _vec3(v: Variant) -> Vector3:

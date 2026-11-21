@@ -202,10 +202,10 @@ geometry, not asserted in text.
   controller** moves the render scale inside 0.55–0.85 to hold a comfortable frame rate on whatever
   machine the build finds itself on (`docs/EXPERIMENTS.md` §7.5).
 - Post-processing: AgX tonemapping, thresholded bloom, SSAO, SSR, SDFGI, volumetric fog, exponential
-  distance fog, colour adjustment. Every one of them is a live switch in the graphics bench. Every
-  surface recipe ships with a **global gloss pass** — roughness is multiplied down to 0.58, so painted
-  steel, sealed concrete and varnished teak actually catch the room's lights and the screen-space
-  reflections have something to work with.
+  distance fog, colour adjustment. Every one of them is a live switch in the graphics bench. Surface
+  gloss is **per material family**, not one global number: masonry and earth stay matte, the sealed
+  concrete floor is lightly polished, varnished wood and paint are glossy, bare metal most of all, and
+  the SSAO is tuned a touch wider and heavier so contact shadows hold the room together.
 - **A house armour project.** A whole red-and-gold armoured figure on a service base by the north
   wall — core lens and eye slits lit — with its spare helmet, chest plate, gauntlet and boot laid out
   where they are worked on. Procedurally built, deliberately unbranded, and every piece individually
@@ -287,13 +287,13 @@ in-world graphics bench. These are the numbers the application reports about its
 
 | Measurement | Value |
 |---|---|
-| Full garage build | ≈ 11–14 s (13.7 s in the latest run — the same build has measured 11.0 s on quieter runs; machine load moves it) |
+| Full garage build | ≈ 11–16 s by machine load (16.1 s in the latest loaded run; 11.0 s when quiet) |
 | Surface synthesis, first 256 px surface | 262–283 ms on quiet runs |
-| Props placed | 197 (203 built, 140 kinds) |
-| Interactive stations | 59 |
+| Props placed | 199 (205 built, 140 kinds) |
+| Interactive stations | 61 |
 | Registered lights | 37 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1833 hits, 1174 misses |
+| Mesh cache | 1843 hits, 1176 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Adaptive resolution | on by default: render scale 0.55–0.85, ±0.05 per second, holding worst-case frames under 24 ms |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |

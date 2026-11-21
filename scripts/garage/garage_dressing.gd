@@ -57,6 +57,7 @@ func dress() -> void:
 	_scientists_corner()
 	_wall_maps()
 	_keepsakes()
+	_photo_boards()
 	_fake_details()
 	_armor()
 	# last, so it sees crates placed by any area
@@ -1996,6 +1997,36 @@ func _sylhet_map_spec() -> Dictionary:
 	layers.append({"type": "poly", "points": [Vector2(444, 54), Vector2(439, 68), Vector2(449, 68)], "color": ink, "filled": true})
 	layers.append({"type": "text", "name": "N", "pos": Vector2(436, 94), "size": 13, "color": ink, "text": "N", "font": "mono"})
 	return {"size": Vector2i(480, 420), "transparent": false, "bg": paper, "border": {"color": "#8a7f66", "width": 3.0}, "layers": layers}
+
+
+func _photo_boards() -> void:
+	# the notice wall's siblings: two more boards of community-licensed country
+	# photographs, from the Openverse set — the assembly bay's west wall and the
+	# north wall by the testing corner
+	var wall_photos_b: Array = []
+	var wall_photos_c: Array = []
+	for n: int in range(21, 33):
+		var p: String = "res://assets/textures/wall/wall_%02d.jpg" % n
+		if not FileAccess.file_exists(ProjectSettings.globalize_path(p)):
+			continue
+		if wall_photos_b.size() < 6:
+			wall_photos_b.append(p)
+		else:
+			wall_photos_c.append(p)
+	var board_b: Node3D = _place("photo_wall", Vector3(-structure.half_w + 0.19, 1.0, -3.0), Vector3(0.0, PI * 0.5, 0.0), {"photos": wall_photos_b, "cols": 3})
+	_station(board_b, Station.Kind.SIGN, Vector3(0.0, 0.4, 0.05), {
+		"area": "assembly", "title": "Photo board — the streets",
+		"desc": "Six more pictures of the country, pinned where the assembly bay can see them: streetside scenes, a Dhaka rickshaw, a tea counter, Keane Bridge with Ali Amjad's clock behind it, traffic, and a Sundarbans boat. Community-licensed; the credits are in the project's asset list.",
+		"spec": [["photographs", "6, pinned"], ["licences", "CC0 / CC BY / CC BY-SA (see docs/ASSET_LICENSES.md)"], ["board", "plywood, 0.84 m"]],
+		"sfx": "paper", "distance": 3.0,
+	})
+	var board_c: Node3D = _place("photo_wall", Vector3(2.25, 1.3, -structure.half_l + 0.19), Vector3.ZERO, {"photos": wall_photos_c, "cols": 2})
+	_station(board_c, Station.Kind.SIGN, Vector3(0.0, 0.28, 0.05), {
+		"area": "testing", "title": "Photo board — the working country",
+		"desc": "Four more: a snake charmer, the Ashulia brickfields, a garment worker helped after Rana Plaza, and a farmer holding his rice. The testing corner's wall keeps the country's work in view.",
+		"spec": [["photographs", "4, pinned"], ["licences", "CC0 / CC BY / CC BY-SA (see docs/ASSET_LICENSES.md)"], ["board", "plywood, 0.6 m"]],
+		"sfx": "paper", "distance": 3.0,
+	})
 
 
 func _poster_spec(index: int, dream: String, prototype: String) -> Dictionary:

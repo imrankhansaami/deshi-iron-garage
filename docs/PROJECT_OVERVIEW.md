@@ -137,7 +137,7 @@ recorded in `docs/ASSET_LICENSES.md`.
 |---|---|
 | First-person controller | WASD, mouse look, sprint, crouch-walk, gravity, jump, distance-driven head bob, material-aware footsteps |
 | Interaction | Raycast focus with a bounding-box reticle, contextual prompts, E to operate, F to inspect |
-| Interactable stations | 59 registered, across 20 behaviour kinds |
+| Interactable stations | 61 registered, across 20 behaviour kinds |
 | Power | 4 circuits, sequential energisation, tube strike simulation, live circuit isolation from the MCB row |
 | Workstation | 6-section `Control`-built interface reading live simulation state, with a POST → login → ready boot |
 | In-world screens | 5 screen meshes, 5 live `SubViewport`s, temperature-graded CRT and LCD glass shader |
@@ -156,7 +156,7 @@ recorded in `docs/ASSET_LICENSES.md`.
 | Faked wear | Flush overlays and chips that make the room read used: painted tool outlines on the pegboard, chalk dimension notes on the floor, tea rings and an old spill on the bench top, a six-row paper label strip on the component drawers, and a scatter of stickers — no props, no stations, no lights |
 | Sound | Every clip synthesised as PCM at load — no sound packs. Surface-aware footsteps (concrete, steel deck, packed earth), tools, servos, the shutter's chain rattle — and an instrument-free nature ambience (wind, leaves, sparrows) as the project's music, from the title screen on |
 | Armour | A whole red-and-gold armoured figure on a service base by the north wall — core lens and eye slits lit — with its spare helmet, chest plate, gauntlet and boot laid out where they are worked on; procedurally built, deliberately unbranded, every piece pickable |
-| Global gloss | Every surface recipe multiplies its roughness down to 0.58, so painted steel, sealed concrete and varnished teak catch the room's lights and the SSR has something to work with |
+| Global gloss | Surface gloss is per material family, not one global number: masonry and earth stay matte, the sealed concrete floor is lightly polished, varnished wood and paint are glossy, bare metal most of all — and the SSAO runs wider and heavier so contact shadows hold the room together |
 | Auto-opening gate | The shutter's presence sensor rolls the curtain up as anyone approaches the courtyard — it starts most of the way down and the room wakes up as it lifts. It can no longer be lowered |
 | Always-on bulbs | Five bare bulbs — walk lane, both benches, the testing corner, the store — are wired ahead of the switchboard to the incoming line, outside every switchable circuit: the room is never dark, even at the start, and each bulb carries its own light when you pick it up |
 | Entrance | A concrete apron ramps the doorway down to the packed earth so the shop can be walked into and out of without breaking stride, and the courtyard is walled in — walking past the street wall or the neighbour walls stops you instead of dropping you out of the world |
@@ -205,9 +205,9 @@ assembly sequence. That is the localisation requirement, implemented as configur
 
 On Intel UHD 620 at 1600×900, Forward+:
 
-- Garage build: **13.7 s** in the latest run (6.3 s structure, 6.7 s dressing for 197
-  placements; the same build has measured 11.0–13.7 s across earlier runs — machine load moves it;
-  most of the total is surface synthesis, spread across both steps)
+- Garage build: **16.1 s** in the latest loaded run (11.0 s when quiet; 7.6 s structure, 7.7 s
+  dressing for 199 placements in the loaded run; machine load moves it — the same build has measured
+  11.0–16.1 s across the day; most of the total is surface synthesis, spread across both steps)
 - Medium preset: 40–55 fps measured before the preset retune — SDFGI and volumetric fog off, SSR on,
   five shadow casters; the retune cut a further 13–27 ms of CPU frame time (`docs/EXPERIMENTS.md` §7.5)
 - High preset: 18–26 fps measured before the retune, all global-illumination features on, seven casters

@@ -108,8 +108,8 @@ func _build_environment() -> void:
 	for i: int in range(7):
 		env.set("glow_levels/%d" % (i + 1), 1.0 - float(i) * 0.06)
 	env.ssao_enabled = bool(GameState.settings.get("ssao", true))
-	env.ssao_radius = 0.42
-	env.ssao_intensity = 1.15
+	env.ssao_radius = 0.5
+	env.ssao_intensity = 1.25
 	env.ssao_power = 1.35
 	env.ssao_sharpness = 0.35
 	env.ssao_light_affect = 0.28

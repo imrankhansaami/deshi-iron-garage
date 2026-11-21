@@ -268,7 +268,9 @@ older batch of students around a half-stripped television — the team photo lea
 the exosuit concept poster on the wall the assembly stand faces, and a desk flag on the electronics
 bench. At the entrance, a plywood board pins thirteen pictures of the country itself — rickshaws,
 markets, tea gardens, boats, paddy — the community-licensed set whose credits are listed in
-`docs/ASSET_LICENSES.md`. And the room keeps the marks of work: painted tool outlines on the
+`docs/ASSET_LICENSES.md`; two more boards hang in the assembly bay and by the testing corner with ten
+more licensed pictures of the streets and the working country. And the room keeps the marks of work:
+painted tool outlines on the
 pegboard, chalk notes on the floor, tea rings on the bench top, paper labels on the drawers, a
 grease handprint on the apron, a paint-test board, stickers — and a whole red-and-gold armoured
 figure on a service base by the north wall, its spare plates laid out where they are worked on.

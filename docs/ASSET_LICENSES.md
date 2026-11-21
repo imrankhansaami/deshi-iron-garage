@@ -10,9 +10,10 @@ records exactly what came from where, and under what terms.
 
 | Category | Count | Origin | Licence |
 |---|---|---|---|
-| 3D meshes | 1 174 distinct, 197 placed | **Generated at runtime** by `ShapeKit` and the prop catalogues | Original work, same licence as the source |
+| 3D meshes | 1 176 distinct, 199 placed | **Generated at runtime** by `ShapeKit` and the prop catalogues | Original work, same licence as the source |
 | Photographs (5) | Wall art from `assets/textures/user/` | **Supplied by the author** for in-world frames | Loaded with `Image.load_from_file()`, no import side files; the locomotive and clock images are also published on Wikimedia Commons — pin their exact licences before wider redistribution |
 | Photographs (13) | The notice-wall collage, `assets/textures/wall/` | **Wikimedia Commons, CC BY-SA 4.0**, fetched through the Commons API and resized to 480 px | Every file, author and source page is listed below |
+| Photographs (10) | The two smaller boards — the streets and the working country | **Openverse (Flickr originals), CC0 / CC BY 2.0 / CC BY-SA 2.0**, fetched through the Openverse API, licence-filtered, resized to 480 px | Every file, author and source page is listed below |
 | Texture images | 34 surface sets × 3 channels = 102 images | **Synthesised at runtime** by `TextureFactory` | Original work |
 | Supplied photograph | 1 image (127 KB) | **Provided by the project's author** — the workshop banner hung on the north wall | Author's own work, used with the author's permission |
 | Audio | every clip | **Synthesised at runtime** by `AudioSynth` | Original work; no recorded music and no musical instruments anywhere — the ambience is wind, leaves, sparrows, the street and the rain |
@@ -34,8 +35,8 @@ catalogues.
 Two mechanisms are used:
 
 **Engine primitives, parameterised.** Godot's `BoxMesh`, `CylinderMesh`, `SphereMesh`, `TorusMesh`,
-`PlaneMesh` and `CapsuleMesh` are configured per prop and cached by dimensions. 1 174 distinct
-configured meshes serve 197 placed props through 1 833 cache hits in the shipped room.
+`PlaneMesh` and `CapsuleMesh` are configured per prop and cached by dimensions. 1 176 distinct
+configured meshes serve 199 placed props through 1 843 cache hits in the shipped room.
 
 **The notice-wall photographs.** Thirteen files from Wikimedia Commons, fetched through the Commons
 API, each checked to carry a CC BY-SA 4.0 licence before download, then resized to 480 px for the
@@ -61,6 +62,28 @@ Two file pages are linked through a Commons search because their titles carry Be
 fetch pipeline could not round-trip; both are CC BY-SA 4.0 and their authors are as shown on the
 pages. CC BY-SA 4.0 requires attribution and share-alike for derivatives — the credits here are that
 attribution, and any redistribution of the collage keeps this file with it.
+
+**The Openverse photographs.** Ten more files for the two smaller boards, fetched through the
+Openverse API (`api.openverse.org`), licence-filtered to CC0 / CC BY / CC BY-SA, then resized to
+480 px. Wikimedia's WAF began refusing this machine's fetches midway through the project, so
+Openverse — which indexes the same kinds of Flickr originals — is the source for this batch. Authors
+and landing pages as recorded on the API's response:
+
+| In-game file | Title | Author | Licence | Source |
+|---|---|---|---|---|
+| `wall_21.jpg` | Streetside scenes | -Niloy- | CC BY 2.0 | [Flickr](https://www.flickr.com/photos/63369436@N00/46729199) |
+| `wall_22.jpg` | Dhaka Rickshaw | Gary Lee Todd, Ph.D. | CC0 1.0 | [Flickr](https://www.flickr.com/photos/101561334@N08/39795792142) |
+| `wall_23.jpg` | After Ifter at Barista. | Andalib. | CC BY 2.0 | [Flickr](https://www.flickr.com/photos/77568842@N08/7796814912) |
+| `wall_24.jpg` | Keane Bridge & Clock Of Ali Amjad | ~~ `Nostalgia' ~~ | CC BY 2.0 | [Flickr](https://www.flickr.com/photos/15433877@N07/2766696675) |
+| `wall_25.jpg` | Snake Charmer | Jorge Lascar | CC BY 2.0 | [Flickr](https://www.flickr.com/photos/8721758@N06/4499194699) |
+| `wall_26.jpg` | Dhaka traffic dynamics | Ahron de Leeuw | CC BY 2.0 | [Flickr](https://www.flickr.com/photos/53848312@N00/1568681602) |
+| `wall_27.jpg` | On a Sundarbans Boat | Mike Prince | CC BY 2.0 | [Flickr](https://www.flickr.com/photos/70804987@N00/16571997796) |
+| `wall_28.jpg` | Welcome to Ashulia brickfield | joiseyshowaa | CC BY-SA 2.0 | [Flickr](https://www.flickr.com/photos/30201239@N00/3373611632) |
+| `wall_29.jpg` | Helping Khaleda, one of the survivors of Rana Plaza | DFID — UK Department for International Development | CC BY 2.0 | [Flickr](https://www.flickr.com/photos/14214150@N02/14008308964) |
+| `wall_32.jpg` | A Village Farmer in Bangladesh (title carries Bengali script) | Ahsan Ovi Photography | CC0 1.0 | [Flickr](https://www.flickr.com/photos/149196903@N02/34308123365) |
+
+CC BY and CC BY-SA require attribution; the credits here are that attribution, and any redistribution
+of the boards keeps this file with them.
 
 **Geometry generated from parameters.** Where a primitive is insufficient, the mesh is built with
 `SurfaceTool` or `ArrayMesh` from parameters:
