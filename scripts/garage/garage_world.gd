@@ -736,6 +736,9 @@ const CAP_SHOTS: Array = [
 	{"name": "17_photo_wall", "pos": Vector3(-1.35, 1.60, 1.75), "look": Vector3(-4.05, 2.45, 1.72)},
 	# the pinned Commons collage on the entrance's west pier
 	{"name": "18_notice_wall", "pos": Vector3(-0.7, 1.7, 3.2), "look": Vector3(-2.75, 1.72, 5.05)},
+	# the store corner: the shelf, its placard and the stock row — the corner the
+	# organisation pass lives in, kept visible to every verification run
+	{"name": "19_store", "pos": Vector3(-1.9, 1.65, -2.9), "look": Vector3(-3.85, 1.05, -4.35)},
 ]
 
 var _capturing: bool = false

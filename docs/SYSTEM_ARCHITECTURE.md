@@ -354,7 +354,7 @@ and in the capture harness. The rain, the dust and the footsteps use separate se
 one does not perturb another.
 
 **Fixed capture viewpoints.** The capture harness drives the progression to a known state and parks
-the camera at nineteen declared transforms, which is what makes the screenshots in `captures/`
+the camera at twenty declared transforms, which is what makes the screenshots in `captures/`
 comparable between code revisions. It also reports a luminance histogram per shot: the check that
 matters most is the `black` percentage, because a lighting rig that renders almost nothing still
 produces a screenshot and would otherwise read as success.
@@ -381,7 +381,7 @@ so that `tests/validate_scripts.gd` can run in an environment with no GPU.
 | `tests/where_is.gd` | Builds the world headless and prints named props' positions and bounding boxes, so placement clashes are fixed from numbers instead of screenshots. |
 | Perf harness (`perf.flag`) | Drives the full progression, then samples three fixed viewpoints twice each — shipped settings and the earlier values flipped back at runtime in the same session — and writes a paired A/B table to `user://captures/perf.log`. Its first run is what exposed the shadow-budget bug and the session's 7.5 Hz presentation cap (`docs/EXPERIMENTS.md` §7.5). |
 | `tests/bake_preview.gd` | Renders the lab-wall plate specs (scientists, header, inventions board) and the wall maps (Bangladesh, Sylhet) to PNGs in `user://captures/`, so Bengali on a wall can be proof-read at full resolution without launching the garage. |
-| Capture harness | Boots the real renderer, drives the full progression, writes 19 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
+| Capture harness | Boots the real renderer, drives the full progression, writes 20 PNGs plus luminance histograms and a build report. Catches the class of failure that compiles cleanly and renders nothing. |
 | Graphics bench | Self-measurement at runtime, exportable to CSV, with a fixed-camera capture at each configuration. |
 
 What is **not** tested: there is no unit test suite, no automated interaction test that drives `E`

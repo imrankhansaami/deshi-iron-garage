@@ -368,9 +368,10 @@ func _area_mechanical() -> void:
 	})
 	_place("motorcycle_frame", Vector3(wall + 0.57, 0.0, -2.65), Vector3(0.0, 0.45, 0.0), {"scale": 0.85})
 	_place("wheel_rickshaw", Vector3(wall + 0.42, 0.34, -0.55), Vector3(0.0, 0.2, 0.0), {"radius": 0.33})
-	# the store drum, off the shelf's footprint: at the old spot two-thirds of it
-	# passed through the shelf planks and into the spare gauntlet beside them
-	_place("steel_drum", Vector3(-half_w + 1.1, 0.0, -3.55))
+	# the store drum, rolled into the store's stock row beside the gas cylinder:
+	# at its first spot two-thirds of it passed through the shelf planks, and at
+	# the second it stood alone mid-floor
+	_place("steel_drum", Vector3(-half_w + 0.93, 0.0, -4.55))
 	# the spare tyre stands against the wall in the south corner, clear of the
 	# grindstone, the battery and the frame crate: lying flat on the open floor it
 	# had none of them
@@ -791,14 +792,28 @@ func _area_store() -> void:
 	var half_w: float = structure.half_w
 	var sx: float = -half_w + 0.3
 	_place("shelf_unit", Vector3(sx, 0.0, -4.25), Vector3(0.0, PI * 0.5, 0.0), {"w": 1.5, "levels": 5, "d": 0.36})
-	_place("crate_stack", Vector3(-half_w + 0.8, 0.0, -2.9), Vector3(0.0, 0.3, 0.0), {"count": 3})
-	_place("sack", Vector3(-2.7, 0.0, -4.4), Vector3(0.0, 1.1, 0.0), {"scale": 0.88})
-	_place("sack", Vector3(-2.62, 0.44, -4.3), Vector3(0.0, 0.4, 0.0), {"scale": 0.76})
+	# the store corner, kept deliberately simple: the shelf is the anchor, and
+	# everything on the floor lines up in one stock row beside it — crates
+	# squared to the wall, sacks settled in a pair, and the drum rolled in
+	# beside the gas cylinder
+	_place("crate_stack", Vector3(-half_w + 0.8, 0.0, -2.9), Vector3(0.0, 0.06, 0.0), {"count": 3})
+	_place("sack", Vector3(-2.66, 0.0, -4.35), Vector3(0.0, 0.2, 0.0), {"scale": 0.88})
+	_place("sack", Vector3(-2.58, 0.44, -4.28), Vector3(0.0, 0.15, 0.0), {"scale": 0.76})
 	_place("gas_cylinder", Vector3(-half_w + 0.62, 0.0, -5.0))
 	# tin and label sit on shelf planks: the unit's levels are at 0.18/0.695/1.21/
 	# 1.725/2.24, so these y values are measured, not guessed
 	_place("muri_tin", Vector3(sx + 0.02, 0.71, -4.15))
 	_place("storage_box", Vector3(-half_w + 0.58, 0.0, -3.8), Vector3(0.0, 0.9, 0.0), {"w": 0.26, "h": 0.17, "d": 0.19})
+	# the stock register, open on the box where it was left: the corner's
+	# readable heart — what came in, what went out, in Bengali numerals
+	var ledger: Node3D = _place("notebook", Vector3(-half_w + 0.58, 0.175, -3.8), Vector3(0.0, 0.5, 0.0), {"width": 0.2})
+	ledger.name = "StockBook"
+	_station(ledger, Station.Kind.EVERYDAY, Vector3(0.0, 0.06, 0.0), {
+		"area": "store", "title": "Stock register",
+		"desc": "The store's day-book, open where it was left: what came in, what went out, counted in Bengali numerals. The last line is Tuesday's; the pencil is somewhere under the bench.",
+		"spec": [["মাল", "বোল্ট-নাট · রড · রং · তার"], ["শেষ এন্ট্রি", "গত মঙ্গলবার"], ["হাতের লেখা", "দোকানদারের নিজের"]],
+		"sfx": "paper", "distance": 2.4,
+	})
 	_always_on_bulb(Vector3(-half_w + 1.3, structure.height - 0.15, -4.2), 0.5, 1.5, 6.0)
 	_place("shelf_label", Vector3(sx + 0.19, 1.225, -4.2), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.11})
 
@@ -1188,6 +1203,12 @@ func _signage() -> void:
 		var page: MeshInstance3D = nb.get_node_or_null("OpenPage") as MeshInstance3D
 		if page != null:
 			baker.apply_baked(page, _notebook_spec(String(labels.first_sketch)), "notebook", 0.0, 0.85)
+	# the store's stock register: the second khata, with its own page
+	var stock: Node3D = _find_first("StockBook")
+	if stock != null:
+		var stock_page: MeshInstance3D = stock.get_node_or_null("OpenPage") as MeshInstance3D
+		if stock_page != null:
+			baker.apply_baked(stock_page, _stock_book_spec(), "stock_book", 0.0, 0.85)
 	# the poster faces
 	var posters: Array = _find_all("Poster")
 	for i: int in range(posters.size()):
@@ -1905,6 +1926,24 @@ func _peel_spec() -> Dictionary:
 		"layers": [
 			{"type": "poly", "points": [Vector2(40, 42), Vector2(88, 26), Vector2(150, 34), Vector2(196, 52), Vector2(212, 84), Vector2(160, 102), Vector2(96, 104), Vector2(52, 82)], "color": rim, "filled": true},
 			{"type": "poly", "points": [Vector2(50, 46), Vector2(92, 34), Vector2(146, 42), Vector2(188, 56), Vector2(200, 80), Vector2(156, 94), Vector2(100, 96), Vector2(60, 78)], "color": pale, "filled": true},
+		],
+	}
+
+
+func _stock_book_spec() -> Dictionary:
+	## The store's stock register page: ruled entries in Bengali numerals — the
+	## shop's actual inventory of what the yard holds, last line still unpaid.
+	return {
+		"size": Vector2i(384, 256), "transparent": false, "bg": "#e8e0cc",
+		"layers": [
+			{"type": "text", "name": "T", "pos": Vector2(16, 8), "size": 30, "width": 352, "align": "center", "color": "#2b2b33", "text": "ভাণ্ডারের খাতা", "font": "bangla"},
+			{"type": "line", "from": Vector2(16, 48), "to": Vector2(368, 48), "color": "#8a7f66", "width": 2.0},
+			{"type": "text", "name": "L1", "pos": Vector2(20, 58), "size": 22, "color": "#33363d", "text": "১. বোল্ট-নাট — ৪ কেজি", "font": "bangla"},
+			{"type": "text", "name": "L2", "pos": Vector2(20, 90), "size": 22, "color": "#33363d", "text": "২. রড ১২ মি.মি. — ২৩ পিস", "font": "bangla"},
+			{"type": "text", "name": "L3", "pos": Vector2(20, 122), "size": 22, "color": "#33363d", "text": "৩. রঙ (লাল) — ২ গ্যালন", "font": "bangla"},
+			{"type": "text", "name": "L4", "pos": Vector2(20, 154), "size": 22, "color": "#33363d", "text": "৪. তার — ১ কয়েল", "font": "bangla"},
+			{"type": "text", "name": "L5", "pos": Vector2(20, 186), "size": 22, "color": "#33363d", "text": "৫. সিমেন্ট — ৩ বস্তা", "font": "bangla"},
+			{"type": "text", "name": "L6", "pos": Vector2(20, 218), "size": 22, "color": "#a03325", "text": "৬. গ্যাস — বাকি আছে", "font": "bangla"},
 		],
 	}
 

@@ -36,7 +36,7 @@ is running on.
 ### The garage, in pictures
 
 All frames below are real-time captures taken by the project's own verification harness — the
-nineteen-viewpoint camera set documented in `docs/EXPERIMENTS.md`, driven through the full
+twenty-viewpoint camera set documented in `docs/EXPERIMENTS.md`, driven through the full
 progression and written with luminance histograms so the build can be checked frame by frame.
 
 |  |  |
@@ -55,6 +55,8 @@ progression and written with luminance histograms so the build can be checked fr
 | The owner's photographs above the mechanical bench | Walking in: the gate, the maps, the lit shop |
 | <img src="screenshots/18_notice_wall.jpg" width="420"> | <img src="screenshots/16_division_map.jpg" width="420"> |
 | Thirteen community-licensed photographs pinned at the entrance | The Sylhet division map beside the door |
+| <img src="screenshots/19_store.jpg" width="420"> | <img src="screenshots/10_final_garage.jpg" width="420"> |
+| The store: shelf, placard and the stock register | The workshop from the lane, roof to floor |
 
 ---
 
@@ -88,7 +90,7 @@ global-illumination features; the Settings panel switches it live.
 ### Capture / verification mode
 
 Dropping an empty file named `capture.flag` next to `project.godot` puts the world into verification
-mode: it drives the whole twelve-step progression, then parks the camera at nineteen fixed viewpoints
+mode: it drives the whole twelve-step progression, then parks the camera at twenty fixed viewpoints
 and writes a PNG plus a luminance histogram for each, then quits. The files land in `user://captures/`
 (`%APPDATA%\Godot\app_userdata\Deshi Iron Garage\captures\` on Windows), which is how the screenshots
 quoted in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and has no effect without
