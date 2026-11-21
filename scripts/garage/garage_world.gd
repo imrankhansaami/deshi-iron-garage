@@ -743,10 +743,16 @@ var _cap_frames: int = 0
 var _cap_stage: int = 0
 var _cap_shot: int = -1
 var _cap_settle: int = 0
+var _cap_perf: PackedFloat32Array = PackedFloat32Array()
 
 
 func _capture_process(delta: float) -> void:
 	_cap_frames += 1
+	# the verification harness doubles as the benchmark (plan M): every settle
+	# window of every shot samples main-thread frame cost, so each capture run
+	# also produces per-viewpoint draw-call and frame-time numbers
+	if _cap_stage == 2:
+		_cap_perf.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
 	if _cap_frames % 30 == 0:
 		_cap_log("frame %d stage %d shot %d fps %.1f" % [
 			_cap_frames, _cap_stage, _cap_shot, Performance.get_monitor(Performance.TIME_FPS)])
@@ -845,6 +851,7 @@ func _cap_place(shot: Dictionary) -> void:
 		player.camera.look_at_from_position(shot.pos as Vector3, look, Vector3.FORWARD)
 	else:
 		player.camera.look_at_from_position(shot.pos as Vector3, look, Vector3.UP)
+	_cap_perf = PackedFloat32Array()
 
 
 func _cap_shoot() -> void:
@@ -878,6 +885,15 @@ func _cap_shoot() -> void:
 		String(shot.name), error_string(err), img.get_width(), img.get_height(), mean,
 		100.0 * float(dark) / float(maxi(samples, 1)),
 		100.0 * float(blown) / float(maxi(samples, 1))])
+	if _cap_perf.size() > 1:
+		var perf: PackedFloat32Array = _cap_perf.duplicate()
+		perf.sort()
+		var n: int = perf.size()
+		_cap_lines.append("  %-18s  perf frames=%d cpu_p50=%.2fms p95=%.2fms max=%.2fms draw=%d prim=%d vram=%.0fMB" % [
+			String(shot.name), n, perf[n / 2], perf[mini(int(float(n) * 0.95), n - 1)], perf[n - 1],
+			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+			int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
+			Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
 	if mean < 0.02:
 		_cap_lines.append("    WARNING nearly black")
 

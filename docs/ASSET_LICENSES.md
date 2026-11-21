@@ -36,7 +36,7 @@ Two mechanisms are used:
 
 **Engine primitives, parameterised.** Godot's `BoxMesh`, `CylinderMesh`, `SphereMesh`, `TorusMesh`,
 `PlaneMesh` and `CapsuleMesh` are configured per prop and cached by dimensions. 1 176 distinct
-configured meshes serve 199 placed props through 1 843 cache hits in the shipped room.
+configured meshes serve 199 placed props through 1 839 cache hits in the shipped room.
 
 **The notice-wall photographs.** Thirteen files from Wikimedia Commons, fetched through the Commons
 API, each checked to carry a CC BY-SA 4.0 licence before download, then resized to 480 px for the

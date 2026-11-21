@@ -82,22 +82,22 @@ progress.
 
 | Step | What it does | Measured (UHD 620) |
 |---|---|---|
-| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 354 ms for one 256 px surface in the loaded final run (262–283 on quiet runs) |
-| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 7 637 ms |
-| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 73 ms |
-| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig, the photographs, the notice wall, the two photo boards, the faked-wear overlays, the armour | 7 710 ms |
+| 0 | `MaterialLibrary.ensure_built()`, first surface synthesised | 181 ms for one 256 px surface on the quietest run (286 ms under load; 262–283 ms before the banding pass) |
+| 1 | `GarageStructure.build()` — floor, plinths, courtyard, walls, columns, roof, shutter frame, entrance apron, windows | 4 309 ms |
+| 2 | `GarageEnvironment.build()` — sky, WorldEnvironment, 29 lights in 4 circuits, dust, rain (the five always-on bulbs and the sign's RGB rig are registered by the dressing, each light attached to its own prop) | 44 ms |
+| 3 | `GarageDressing.dress()` — 5 areas, 4 procedural layout groups, 2 wall racks, cables, signage, the always-on bulbs, the wall maps, the sign's RGB rig, the photographs, the notice wall, the two photo boards, the zone stencils and directory board, the faked-wear overlays, the armour | 4 411 ms |
 | 4 | Area volumes | — |
-| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 84 ms |
-| 6 | Player, camera, ray, reticle, collision, capsule sizing | 33 ms |
-| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 196 ms |
+| 5 | Live `SubViewport`s for 5 screens, attached to their materials | 71 ms |
+| 6 | Player, camera, ray, reticle, collision, capsule sizing | 28 ms |
+| 7 | HUD, all panels, `ObjectiveDirector`, `start()` | 152 ms |
 | 8 | `_apply_restored_state()` — replays a saved run with `instant = true` | — |
-| | **total** | **16 087 ms** (11 015–16 087 ms across the day, by machine load) |
+| | **total** | **9 196 ms** (9 196–16 966 ms across runs, by machine load; 11 015–11 762 ms was the pre-banding quiet range) |
 
-Surfaces are synthesised **lazily**, on first request. Loading every recipe up front would cost
-roughly 9.5 s for all 34 at 256 px; the garage actually touches 34 of them, so the saving is in the
-ordering rather than the count — the first surface is paid for during step 0 and the rest are paid
-inside the step that needs them, which spreads the cost across the loading bar instead of stalling
-one step.
+Surfaces are synthesised **lazily**, on first request. The per-texel pass runs banded across the
+worker pool (see `texture_factory.gd` below), so the whole-set cost is no longer the wall clock it
+was; the garage touches all 34 recipes, and the ordering is what keeps the cost spread across the
+loading bar — the first surface is paid for during step 0 and the rest inside the step that needs
+them — rather than stalling one step.
 
 ---
 
@@ -167,7 +167,11 @@ fronts, and a domain-warp function that stops noise bands reading as straight st
 **`texture_factory.gd`** — 34 surface recipes. For each: generate the scalar fields, composite them
 per texel into colour/roughness/metallic/occlusion/height, pack to RGB8 byte buffers, derive a
 tangent-space normal by Sobel gradient on the wrapped height field, upload in one
-`Image::create_from_data` per channel. See `docs/GRAPHICS_ALGORITHMS.md` §2.
+`Image::create_from_data` per channel. The per-texel pass is a pure function of the fields — no RNG —
+so it is dispatched as 16 scanline bands on the `WorkerThreadPool` and the output is bit-identical to
+the old serial order (MD5-checked by `tests/surface_bench.gd`); band state travels as object members
+because Godot 4.7's `Callable.bind()` hands workers a *copy* of any Array or Dictionary it carries.
+See `docs/GRAPHICS_ALGORITHMS.md` §2.
 
 **`shape_kit.gd`** — the primitive composition layer, and the reason 205 props is affordable. Two
 ideas: a mesh cache keyed on dimensions so forty spanners share one mesh, and true generators (lathe

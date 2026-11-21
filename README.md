@@ -287,13 +287,13 @@ in-world graphics bench. These are the numbers the application reports about its
 
 | Measurement | Value |
 |---|---|
-| Full garage build | ≈ 11–16 s by machine load (16.1 s in the latest loaded run; 11.0 s when quiet) |
-| Surface synthesis, first 256 px surface | 262–283 ms on quiet runs |
+| Full garage build | ≈ 9–17 s by machine load: **9.2 s on the quietest run** — surface synthesis is now banded across the worker threads — and 17.0 s under load |
+| Surface synthesis, first 256 px surface | 180–286 ms (the per-texel pass is banded; the remainder is the 12 noise-field fills per surface) |
 | Props placed | 199 (205 built, 140 kinds) |
 | Interactive stations | 61 |
 | Registered lights | 37 (of which shadow casters: 7) |
 | Live screen SubViewports | 5 |
-| Mesh cache | 1843 hits, 1176 misses |
+| Mesh cache | 1839 hits, 1176 misses |
 | CPU loop, headless (script side, no GPU work) | 7.9 ms per frame (127 fps) |
 | Adaptive resolution | on by default: render scale 0.55–0.85, ±0.05 per second, holding worst-case frames under 24 ms |
 | Frame rate | interactive only: the automated capture session's window presentation is capped at 7.5 Hz regardless of load (see `docs/EXPERIMENTS.md` §7.5), so frame rates are read from the in-app bench (F6). The retune cut 13–27 ms of CPU frame time against the earlier settings |

@@ -276,6 +276,13 @@ grease handprint on the apron, a paint-test board, stickers — and a whole red-
 figure on a service base by the north wall, its spare plates laid out where they are worked on.
 `F` on any of the pictures for the story.
 
+**The weather.** The yard runs a slow rain cycle: rain on the tin, then the after-rain hush while the
+concrete is still wet, then dry, then drizzle back in. The floor slab visibly darkens and its sheen
+softens while it rains, and dries out as the machine parks dry; the rain bed on the tin follows the
+same cycle. The rain toggle in Settings is the master switch — with it off, the yard parks dry. And
+the shop now tells you where you are: painted stencils on the floor name each bay, shelf placards cap
+the storage racks, and the entrance directory board carries a small plan of all five areas.
+
 ---
 
 ## 7. The graphics bench (`F6`)

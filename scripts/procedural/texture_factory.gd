@@ -33,6 +33,14 @@ var _gen_times: Dictionary = {}
 var _size: int = DEFAULT_SIZE
 var _rng_seed_base: int = 0x5E1A
 
+## Band-dispatch scratch shared with the worker threads during one surface's
+## synthesis. Surfaces synthesise one at a time on the main thread, so these are
+## never in contention between surfaces.
+var _band_p: Dictionary = {}
+var _band_size: int = 0
+var _band_ranges: Array = []
+var _band_results: Array = []
+
 
 func _init(size: int = DEFAULT_SIZE, seed_base: int = 0x5E1A) -> void:
 	_size = maxi(64, size)
@@ -145,17 +153,9 @@ func _synthesize(key: String, spec: Dictionary) -> Dictionary:
 	var repeat_u: float = maxf(0.25, float(spec.get("repeat", [1.0, 1.0])[0]))
 	var repeat_v: float = maxf(0.25, float(spec.get("repeat", [1.0, 1.0])[1]))
 
-	# --- 1. field buffers ------------------------------------------------
-	var height: PackedFloat32Array = PackedFloat32Array()
-	var rough: PackedFloat32Array = PackedFloat32Array()
-	var metal: PackedFloat32Array = PackedFloat32Array()
-	var ao: PackedFloat32Array = PackedFloat32Array()
-	var col: PackedFloat32Array = PackedFloat32Array()   # linear RGB triples
-	height.resize(size * size)
-	rough.resize(size * size)
-	metal.resize(size * size)
-	ao.resize(size * size)
-	col.resize(size * size * 3)
+	# --- 1. noise field buffers ------------------------------------------
+	# (the per-texel pass that consumes these lives in _synth_band, which packs
+	# its own bands straight to byte buffers)
 
 	var base: Color = Color.from_string(String(spec.get("base", "#808080")), Color.GRAY)
 	var tint_a: Color = Color.from_string(String(spec.get("tint_a", "#604f42")), Color.BROWN)
@@ -193,12 +193,136 @@ func _synthesize(key: String, spec: Dictionary) -> Dictionary:
 	var fb_pat_c: PackedByteArray = _field_bytes(seed + 91, pattern_scale * 4.0, 1, FastNoiseLite.TYPE_CELLULAR, size)
 	var inv: float = 1.0 / 255.0
 
-	# --- 2. per-texel evaluation ---------------------------------------
-	for y: int in range(size):
+	# --- 2. per-texel evaluation, banded across the thread pool ----------
+	# The noise fields above are precomputed and the pass below is a pure
+	# function of them — no RNG — so it splits into scanline bands that run on
+	# worker threads and produce byte-identical output to the old single-threaded
+	# loop. This loop was the largest measured cost in the build (~34 surfaces x
+	# ~270 ms, most of the wall clock), and freeing it is what makes the richer
+	# 512 px pass affordable.
+	var p: Dictionary = {
+		"seed": seed, "inv": inv,
+		"base": base, "tint_a": tint_a, "tint_b": tint_b,
+		"grain": grain, "rough_base": rough_base, "rough_var": rough_var,
+		"metal_base": metal_base, "metal_var": metal_var,
+		"wear": wear, "pits": pits, "streaks": streaks,
+		"pattern": pattern, "pattern_scale": pattern_scale,
+		"height_amp": height_amp, "bump": bump,
+		"fb_mottle": fb_mottle, "fb_grain": fb_grain, "fb_fine": fb_fine,
+		"fb_wear": fb_wear, "fb_front": fb_front, "fb_pit": fb_pit,
+		"fb_streak": fb_streak, "fb_along": fb_along, "fb_scratch": fb_scratch,
+		"fb_pat_a": fb_pat_a, "fb_pat_b": fb_pat_b, "fb_pat_c": fb_pat_c,
+	}
+	var band_count: int = mini(clampi(OS.get_processor_count() * 2, 2, 16), size)
+	var band_rows: int = int(ceil(float(size) / float(band_count)))
+	var ranges: Array = []
+	var y0: int = 0
+	while y0 < size:
+		var y1: int = mini(y0 + band_rows, size)
+		ranges.append(Vector2i(y0, y1))
+		y0 = y1
+	# NOTE: the band parameters travel as members, not as bound callable
+	# arguments — Godot 4.7's Callable.bind() hands the worker a copy of any
+	# Array/Dictionary it carries, so results "bound" that way never come back
+	# (measured: the group reports all elements processed, the slots stay null).
+	_band_p = p
+	_band_size = size
+	_band_ranges = ranges
+	_band_results = []
+	_band_results.resize(ranges.size())
+	var group: int = WorkerThreadPool.add_group_task(_synth_band, ranges.size(), ranges.size(), false, "surface_%s" % key)
+	WorkerThreadPool.wait_for_group_task_completion(group)
+
+	# --- 3. assemble the bands into the full maps ------------------------
+	var albedo_img: Image = Image.create_empty(size, size, false, Image.FORMAT_RGB8)
+	var orm_img: Image = Image.create_empty(size, size, false, Image.FORMAT_RGB8)
+	var normal_img: Image = Image.create_empty(size, size, false, Image.FORMAT_RGB8)
+	var y: int = 0
+	for b: int in range(ranges.size()):
+		var band: Dictionary = _band_results[b]
+		var bh: int = int(band["h"])
+		albedo_img.blit_rect(Image.create_from_data(size, bh, false, Image.FORMAT_RGB8, band["albedo"]), Rect2i(0, 0, size, bh), Vector2i(0, y))
+		orm_img.blit_rect(Image.create_from_data(size, bh, false, Image.FORMAT_RGB8, band["orm"]), Rect2i(0, 0, size, bh), Vector2i(0, y))
+		normal_img.blit_rect(Image.create_from_data(size, bh, false, Image.FORMAT_RGB8, band["normal"]), Rect2i(0, 0, size, bh), Vector2i(0, y))
+		y += bh
+
+	var tex_albedo: ImageTexture = ImageTexture.create_from_image(albedo_img)
+	var tex_orm: ImageTexture = ImageTexture.create_from_image(orm_img)
+	var tex_normal: ImageTexture = ImageTexture.create_from_image(normal_img)
+
+	return {
+		"albedo": tex_albedo,
+		"orm": tex_orm,
+		"normal": tex_normal,
+		"uv_scale": Vector2(repeat_u, repeat_v),
+		"size": size,
+	}
+
+
+# ===========================================================================
+# Normal derivation
+# ===========================================================================
+
+func _synth_band(band: int) -> void:
+	## One scanline band of a surface's synthesis, run on a worker thread. It
+	## computes the band's own albedo/ORM bytes and a Sobel-derived normal band,
+	## packed exactly as the old single-threaded pass packed the full maps; the
+	## caller blits the bands together on the main thread. One wrapped row above
+	## and below feeds the Sobel, so band seams are invisible.
+	##
+	## Parameters arrive through _band_p/_band_size/_band_ranges (see the note in
+	## _synthesize on why they are not bound into this callable).
+	var p: Dictionary = _band_p
+	var size: int = _band_size
+	var y0: int = (_band_ranges[band] as Vector2i).x
+	var y1: int = (_band_ranges[band] as Vector2i).y
+	var band_h: int = y1 - y0
+	var rows: int = band_h + 2
+	var h_rows: PackedFloat32Array = PackedFloat32Array()
+	h_rows.resize(rows * size)
+	var albedo_bytes: PackedByteArray = PackedByteArray()
+	albedo_bytes.resize(band_h * size * 3)
+	var orm_bytes: PackedByteArray = PackedByteArray()
+	orm_bytes.resize(band_h * size * 3)
+
+	var fb_mottle: PackedByteArray = p["fb_mottle"]
+	var fb_grain: PackedByteArray = p["fb_grain"]
+	var fb_fine: PackedByteArray = p["fb_fine"]
+	var fb_wear: PackedByteArray = p["fb_wear"]
+	var fb_front: PackedByteArray = p["fb_front"]
+	var fb_pit: PackedByteArray = p["fb_pit"]
+	var fb_streak: PackedByteArray = p["fb_streak"]
+	var fb_along: PackedByteArray = p["fb_along"]
+	var fb_scratch: PackedByteArray = p["fb_scratch"]
+	var fb_pat_a: PackedByteArray = p["fb_pat_a"]
+	var fb_pat_b: PackedByteArray = p["fb_pat_b"]
+	var fb_pat_c: PackedByteArray = p["fb_pat_c"]
+	var base: Color = p["base"]
+	var tint_a: Color = p["tint_a"]
+	var tint_b: Color = p["tint_b"]
+	var grain: float = p["grain"]
+	var rough_base: float = p["rough_base"]
+	var rough_var: float = p["rough_var"]
+	var metal_base: float = p["metal_base"]
+	var metal_var: float = p["metal_var"]
+	var wear: float = p["wear"]
+	var pits: float = p["pits"]
+	var streaks: float = p["streaks"]
+	var pattern: String = p["pattern"]
+	var pattern_scale: float = p["pattern_scale"]
+	var height_amp: float = p["height_amp"]
+	var seed: int = p["seed"]
+	var inv: float = p["inv"]
+
+	for r: int in range(rows):
+		var wy: int = (y0 - 1 + r + size) % size
+		var row_base: int = wy * size
+		var v: float = float(wy) / float(size)
+		var emit: bool = r >= 1 and r <= band_h
+		var out_row: int = r - 1
 		for x: int in range(size):
-			var i: int = y * size + x
+			var i: int = row_base + x
 			var u: float = float(x) / float(size)
-			var v: float = float(y) / float(size)
 			# byte reads, not noise evaluation: this is the whole point of the
 			# precomputed field layer above
 			var m: float = float(fb_mottle[i]) * inv * 2.0 - 1.0
@@ -231,9 +355,9 @@ func _synthesize(key: String, spec: Dictionary) -> Dictionary:
 					c = base.lerp(tint_b, 0.5 + wave * 0.5)
 				"weave":
 					var wx: float = sin(u * TAU * pattern_scale)
-					var wy: float = sin(v * TAU * pattern_scale + 1.5708)
-					h = maxf(wx, wy) * 0.7 + f * 0.3
-					c = base.lerp(tint_a, 0.5 + wx * wy * 0.5)
+					var wv: float = sin(v * TAU * pattern_scale + 1.5708)
+					h = maxf(wx, wv) * 0.7 + f * 0.3
+					c = base.lerp(tint_a, 0.5 + wx * wv * 0.5)
 				"wood_grain":
 					var rings: float = n_a
 					var fibre: float = n_b
@@ -242,11 +366,11 @@ func _synthesize(key: String, spec: Dictionary) -> Dictionary:
 					c = base.lerp(tint_a, t)
 					rgh = rough_base + t * 0.18 - fibre * 0.06
 				"circuit":
-					var p: Dictionary = _pcb_field(u, v, pattern_scale, n_a, n_b, n_c)
-					h = p.h
-					c = p.color
-					rgh = p.rough
-					mt = p.metal
+					var pc: Dictionary = _pcb_field(u, v, pattern_scale, n_a, n_b, n_c)
+					h = pc.h
+					c = pc.color
+					rgh = pc.rough
+					mt = pc.metal
 				"panel_lines":
 					var pl: float = _panel_gaps(u, v, pattern_scale)
 					h = -pl
@@ -300,90 +424,44 @@ func _synthesize(key: String, spec: Dictionary) -> Dictionary:
 				rgh = clampf(rgh - line * 0.22, 0.03, 1.0)
 				h += line * 0.05
 
-			# ---- store -------------------------------------------------
-			var o: int = i * 3
-			col[o] = c.r
-			col[o + 1] = c.g
-			col[o + 2] = c.b
-			height[i] = h * height_amp
-			rough[i] = clampf(rgh, 0.02, 1.0)
-			metal[i] = clampf(mt + (metal_var * (g * 0.5 + 0.5) - metal_var * 0.5), 0.0, 1.0)
-			ao[i] = clampf(occ, 0.0, 1.0)
+			h_rows[r * size + x] = h * height_amp
+			if emit:
+				var o: int = (out_row * size + x) * 3
+				albedo_bytes[o] = int(clampf(c.r, 0.0, 1.0) * 255.0)
+				albedo_bytes[o + 1] = int(clampf(c.g, 0.0, 1.0) * 255.0)
+				albedo_bytes[o + 2] = int(clampf(c.b, 0.0, 1.0) * 255.0)
+				orm_bytes[o] = int(clampf(occ, 0.0, 1.0) * 255.0)
+				orm_bytes[o + 1] = int(clampf(rgh, 0.0, 1.0) * 255.0)
+				orm_bytes[o + 2] = int(clampf(mt + (metal_var * (g * 0.5 + 0.5) - metal_var * 0.5), 0.0, 1.0) * 255.0)
 
-	# --- 3. pack channels into images -----------------------------------
-	# One create_from_data per channel. set_pixel() per texel measured as a
-	# significant share of the original 7.8 s, and the byte buffers are already in
-	# the exact RGB8 layout the Image expects.
-	var albedo_bytes: PackedByteArray = PackedByteArray()
-	albedo_bytes.resize(size * size * 3)
-	var orm_bytes: PackedByteArray = PackedByteArray()
-	orm_bytes.resize(size * size * 3)
-	for i: int in range(size * size):
-		var o: int = i * 3
-		var r: float = clampf(col[o], 0.0, 1.0)
-		var gg: float = clampf(col[o + 1], 0.0, 1.0)
-		var bb: float = clampf(col[o + 2], 0.0, 1.0)
-		albedo_bytes[o] = int(r * 255.0)
-		albedo_bytes[o + 1] = int(gg * 255.0)
-		albedo_bytes[o + 2] = int(bb * 255.0)
-		orm_bytes[o] = int(clampf(ao[i], 0.0, 1.0) * 255.0)
-		orm_bytes[o + 1] = int(clampf(rough[i], 0.0, 1.0) * 255.0)
-		orm_bytes[o + 2] = int(clampf(metal[i], 0.0, 1.0) * 255.0)
-
-	var albedo_img: Image = Image.create_from_data(size, size, false, Image.FORMAT_RGB8, albedo_bytes)
-	var orm_img: Image = Image.create_from_data(size, size, false, Image.FORMAT_RGB8, orm_bytes)
-	var normal_img: Image = _height_to_normal(height, size, bump)
-
-	var tex_albedo: ImageTexture = ImageTexture.create_from_image(albedo_img)
-	var tex_orm: ImageTexture = ImageTexture.create_from_image(orm_img)
-	var tex_normal: ImageTexture = ImageTexture.create_from_image(normal_img)
-
-	return {
-		"albedo": tex_albedo,
-		"orm": tex_orm,
-		"normal": tex_normal,
-		"uv_scale": Vector2(repeat_u, repeat_v),
-		"size": size,
-	}
-
-
-# ===========================================================================
-# Normal derivation
-# ===========================================================================
-
-func _height_to_normal(height: PackedFloat32Array, size: int, strength: float) -> Image:
-	## Sobel gradient of the wrapped height field -> tangent-space normal, encoded
-	## as (n * 0.5 + 0.5). Wrapping keeps the map tileable, which matters because
-	## every wall and floor in the garage repeats these textures many times.
-	## Built as a byte buffer and uploaded in one call, for the same reason as the
-	## albedo and ORM channels.
-	var bytes: PackedByteArray = PackedByteArray()
-	bytes.resize(size * size * 3)
-	var s: float = strength * 1.6
-	for y: int in range(size):
-		var ym: int = (y - 1 + size) % size
-		var yp: int = (y + 1) % size
+	# Sobel gradient of the band's wrapped height rows -> normal bytes
+	var normal_bytes: PackedByteArray = PackedByteArray()
+	normal_bytes.resize(band_h * size * 3)
+	var s: float = float(p["bump"]) * 1.6
+	for orow: int in range(band_h):
+		var rr: int = orow + 1
 		for x: int in range(size):
 			var xm: int = (x - 1 + size) % size
 			var xp: int = (x + 1) % size
-			var tl: float = height[ym * size + xm]
-			var t: float = height[ym * size + x]
-			var tr: float = height[ym * size + xp]
-			var l: float = height[y * size + xm]
-			var r: float = height[y * size + xp]
-			var bl: float = height[yp * size + xm]
-			var b: float = height[yp * size + x]
-			var br: float = height[yp * size + xp]
-			var dx: float = (tr + 2.0 * r + br) - (tl + 2.0 * l + bl)
-			var dy: float = (bl + 2.0 * b + br) - (tl + 2.0 * t + tr)
+			var tl: float = h_rows[(rr - 1) * size + xm]
+			var tc: float = h_rows[(rr - 1) * size + x]
+			var tr: float = h_rows[(rr - 1) * size + xp]
+			var lc: float = h_rows[rr * size + xm]
+			var rc: float = h_rows[rr * size + xp]
+			var bl: float = h_rows[(rr + 1) * size + xm]
+			var bc: float = h_rows[(rr + 1) * size + x]
+			var br: float = h_rows[(rr + 1) * size + xp]
+			var dx: float = (tr + 2.0 * rc + br) - (tl + 2.0 * lc + bl)
+			var dy: float = (bl + 2.0 * bc + br) - (tl + 2.0 * tc + tr)
 			var nx: float = -dx * s
 			var ny: float = -dy * s
 			var inv_len: float = 1.0 / sqrt(nx * nx + ny * ny + 1.0)
-			var o: int = (y * size + x) * 3
-			bytes[o] = int((nx * inv_len * 0.5 + 0.5) * 255.0)
-			bytes[o + 1] = int((ny * inv_len * 0.5 + 0.5) * 255.0)
-			bytes[o + 2] = int((1.0 * inv_len * 0.5 + 0.5) * 255.0)
-	return Image.create_from_data(size, size, false, Image.FORMAT_RGB8, bytes)
+			var o: int = (orow * size + x) * 3
+			normal_bytes[o] = int((nx * inv_len * 0.5 + 0.5) * 255.0)
+			normal_bytes[o + 1] = int((ny * inv_len * 0.5 + 0.5) * 255.0)
+			normal_bytes[o + 2] = int((1.0 * inv_len * 0.5 + 0.5) * 255.0)
+
+	_band_results[band] = {"albedo": albedo_bytes, "orm": orm_bytes, "normal": normal_bytes, "h": band_h}
 
 
 # ===========================================================================

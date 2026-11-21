@@ -69,6 +69,12 @@ returns microseconds, vertex count, triangle count, arc length and bounding volu
 built; `GarageDressing.layout_stats()` returns per-layout requested/placed/attempts, so the rejection
 sampler's efficiency is a reported number rather than an assumption.
 
+**Harness telemetry** — the capture driver doubles as the benchmark: for each of its 19 fixed
+viewpoints it records 60 frames of main-thread cost (p50/p95/max), draw calls, primitives and video
+memory into `capture.log`. Every verification pass therefore ends with a performance row per
+viewpoint, measured on the real renderer with the real content, and nothing needs to be re-run to
+quote it.
+
 Every figure in `docs/EXPERIMENTS.md` comes from one of those three, with its source labelled.
 **Nothing is estimated, and nothing is carried over from a previous run or a different machine.**
 
@@ -153,10 +159,18 @@ a draw-call increase even while the frame time improves.
 
 Not a research question, but necessary for the others to mean anything:
 
-- **Compile validation:** `tests/validate_scripts.gd` loads all 37 scripts headless. Every class of
+- **Compile validation:** `tests/validate_scripts.gd` loads all 51 scripts headless. Every class of
   error encountered during development — parse errors, type inference failures, wrong engine enum
   names, method-signature mismatches, duplicate function names, cyclic type dependencies — was caught
   by this before it could be mistaken for a rendering problem.
+- **Placement audit:** `tests/overlap_deep.gd` walks every dressing child's meshes, computes tight
+  per-vertex world boxes (a rotated prop's box built from its transformed local box overstates up to
+  41%, which produced a long first list of false pairs), samples curve meshes' vertices and edge
+  geometry, and reports only clashes with a real sink. `tests/clash_trace.gd` then names the exact
+  meshes behind any hit. The shipped ledger is **0 genuine clashes, 3 designed contacts** — a stand's
+  collar seated inside its pit, the cradle and head yoke gripping the suit, and the suit's lower legs
+  inside the reactor pedestal — each listed with its reason in the audit's `DESIGNED` block rather
+  than left implicit.
 - **Full run:** the capture harness boots the real renderer, applies the whole twelve-step progression,
   and confirms every subsystem reached its end state, because a "successful" build that never powered
   the lights would otherwise pass a compile check.

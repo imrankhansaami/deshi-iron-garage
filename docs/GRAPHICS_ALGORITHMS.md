@@ -71,6 +71,15 @@ The hand-written noise in `scripts/procedural/noise.gd` is retained only for the
 pitting, a ridged variant for corrosion, and domain warping. Under `--headless` the bulk path returns
 an empty image and the GDScript path is used as a fallback so the project still builds in CI.
 
+**Banding the per-texel pass.** The composition loop below is deterministic — every value derives
+from the twelve precomputed fields, no RNG — so it splits by scanline: 16 bands are dispatched via
+`WorkerThreadPool.add_group_task`, each band computing its own rows plus a wrapped row of overlap for
+the Sobel, and the main thread blits the band images together. The result is bit-identical to the old
+serial order, verified across runs by MD5 in `tests/surface_bench.gd`. One engine gotcha is on
+record in the code: `Callable.bind()` gives the worker a copy of any Array or Dictionary argument, so
+the band parameters arrive through object members instead. This is what took the full garage build
+from ~11 s to 9.2 s on quiet runs without changing a single texel.
+
 ### 2.3 Per-texel composition
 
 For each texel, in order:
@@ -515,7 +524,7 @@ that darkens distant sources.
 ### 8.1 Mesh caching
 
 `ShapeKit` keys every primitive on its dimensions and reuses the mesh. The garage builds 205 props
-from **1 176 distinct meshes** with **1 843 cache hits** — a 1.6:1 reuse ratio, which is the difference
+from **1 176 distinct meshes** with **1 839 cache hits** — a 1.6:1 reuse ratio, which is the difference
 between a scene that runs on integrated graphics and one that does not.
 
 ### 8.2 Generators rather than primitives

@@ -378,14 +378,14 @@ performance work.
 
 | Step | Time | Share | What dominates |
 |---|---|---|---|
-| Surface synthesis (first surface) | 354 ms | 2.2% | the per-texel loop (262–283 ms on quiet runs) |
-| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 7 637 ms | 47.5% | mesh generation, collision shapes, and the surfaces it requests |
-| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 73 ms | 0.5% | negligible |
-| Dressing — 199 placements, 61 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs, wall maps, the sign's RGB rig, photographs, the notice wall, the two photo boards, the faked-wear overlays, the armour | 7 710 ms | 47.9% | prop construction, station wiring, and its surfaces |
-| Screens — 5 live `SubViewport`s and their materials | 84 ms | 0.5% | — |
-| Player — camera, ray, reticle, collision | 33 ms | 0.2% | — |
-| Interface — HUD, 10 panels, objective director | 196 ms | 1.2% | — |
-| **Total** | **16 087 ms** | **100%** | |
+| Surface synthesis (first surface) | 181 ms | 2.0% | the banded per-texel pass; the twelve noise-field fills are what remains |
+| Structure — floor, walls, columns, roof, shutter, entrance apron, windows | 4 309 ms | 46.9% | mesh generation, collision shapes, and the surfaces it requests |
+| Environment — sky, `WorldEnvironment`, 29 lights, dust, rain | 44 ms | 0.5% | negligible |
+| Dressing — 199 placements, 61 stations, 4 layout groups, cables, signage, grime decals, wall plaques, flag, coin, always-on bulbs, wall maps, the sign's RGB rig, photographs, the notice wall, the two photo boards, the zone stencils and directory board, the faked-wear overlays, the armour | 4 411 ms | 48.0% | prop construction, station wiring, and its surfaces |
+| Screens — 5 live `SubViewport`s and their materials | 71 ms | 0.8% | — |
+| Player — camera, ray, reticle, collision | 28 ms | 0.3% | — |
+| Interface — HUD, 10 panels, objective director | 152 ms | 1.7% | — |
+| **Total** | **9 196 ms** | **100%** | |
 
 **Dressing breakdown, `GarageDressing.dressing_breakdown()`**
 
@@ -397,24 +397,28 @@ performance work.
 | Authored placements | 167 |
 | Procedural placements | 22 (4 groups: 6 + 5 + 6 + 5) |
 | Wall-rack placements | 10 |
-| Mesh cache hits / misses | 1 843 / 1 176 |
+| Mesh cache hits / misses | 1 839 / 1 176 |
 | Rejection-sampler efficiency | 46% of attempts produce a placement |
 
-The counts above are from the shipped build. The per-step times are from the latest capture run —
-which ran while the machine was loaded, hence the 16.1 s total; the same garage measured 11 762 ms,
-11 716 ms, 11 509 ms and 11 015 ms across quieter runs earlier in the day, and the drift is about 20%
-when something else is using the laptop. Treat the shares as the finding. This is worth stating
-rather than pretending the machine is a benchmark rig.
+The counts above are from the shipped build. The per-step table is the quietest capture run of the
+latest pass (9 195.7 ms); the same build measured 16 966 ms with the machine loaded — load moves the
+totals by up to 80% while the shares barely move — and the pre-banding quiet range was
+11 015–11 762 ms. Treat the shares as the finding. This is worth stating rather than pretending the
+machine is a benchmark rig.
 
-**Finding 7.1 — surface synthesis dominates the wall clock.** The first surface costs 262–283 ms on
-quiet runs in step 0; the other 33 are synthesised lazily inside the structure and dressing steps. At
-≈ 270 ms per surface that is roughly nine seconds of the ≈ 11 s build — so the largest single lever
-left is moving that per-texel loop to a compute shader, not reducing geometry. The earlier build of a
-13 × 16.5 m room measured 71%; the share rose when the room shrank, because the texture cost is per
-*surface*, not per cubic metre.
+**Finding 7.1 — the per-texel pass now runs on the worker pool.** It was the wall clock: ≈ 34
+surfaces × ≈ 270 ms ≈ nine seconds of the pre-banding build, single-threaded. The loop is a pure
+function of the twelve precomputed noise fields (no RNG), so it now splits into 16 scanline bands
+dispatched with `WorkerThreadPool.add_group_task`, and the output is bit-identical to the old serial
+order — `tests/surface_bench.gd` MD5-checks all three maps across runs. The quiet build fell from
+11.0–11.8 s to 9.2 s; what remains of the first surface's ~180–286 ms is the field fills themselves,
+which stay serial. Two lessons are baked into the code: Godot 4.7's `Callable.bind()` hands each
+worker a *copy* of any Array or Dictionary it carries, so the band state travels as members instead,
+and comparisons are only honest when both runs share machine load. The next lever is cross-surface
+parallelism — filling the next surface's fields while the current one bands.
 
 **Finding 7.2 — mesh caching is what makes 205 props affordable.** 1 176 distinct meshes serve 199
-placed props through 1 843 hits. Without the cache every spanner, capacitor and bolt would allocate
+placed props through 1 839 hits. Without the cache every spanner, capacitor and bolt would allocate
 its own `BoxMesh`; with it, forty spanners share one. This is also why the frame time is as low as it
 is — shared meshes are candidates for batching in a way that per-instance geometry is not.
 

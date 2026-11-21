@@ -468,15 +468,19 @@ static func suit_stand(f: PropFactory, o: Dictionary) -> Node3D:
 	root.name = "SuitStand"
 	var steel: StandardMaterial3D = f.ML.steel()
 	var dark: StandardMaterial3D = f.ML.steel_dark()
-	var base: MeshInstance3D = ShapeKit.cyl(0.55, 0.08, dark, 22, Vector3i(0, 1, 0), "Base")
+	# the base plate is sized by the caller: at full width it spans the platform's
+	# reactor pit and the cradle rings rise through it, so the assembly passes a
+	# radius that tucks the plate inside the pit mouth
+	var base_r: float = float(o.get("base_radius", 0.55))
+	var base: MeshInstance3D = ShapeKit.cyl(base_r, 0.08, dark, 22, Vector3i(0, 1, 0), "Base")
 	base.position = Vector3(0.0, 0.04, 0.0)
 	root.add_child(base)
-	ShapeKit.bolt_ring(6, 0.45, 0.014, steel, base)
+	ShapeKit.bolt_ring(6, maxf(base_r - 0.1, 0.1), 0.014, steel, base)
 	var column: MeshInstance3D = ShapeKit.cyl(0.07, 1.15, steel, 14, Vector3i(0, 1, 0), "Column")
 	column.position = Vector3(0.0, 0.65, -0.08)
 	root.add_child(column)
-	root.add_child(ShapeKit.frame_tube(Vector3(0.3, 0.1, -0.1), Vector3(0.05, 0.9, -0.08), 0.03, steel, "BraceA"))
-	root.add_child(ShapeKit.frame_tube(Vector3(-0.3, 0.1, -0.1), Vector3(0.05, 0.9, -0.08), 0.03, steel, "BraceB"))
+	root.add_child(ShapeKit.frame_tube(Vector3(0.19, 0.1, -0.06), Vector3(0.05, 0.9, -0.08), 0.03, steel, "BraceA"))
+	root.add_child(ShapeKit.frame_tube(Vector3(-0.19, 0.1, -0.06), Vector3(0.05, 0.9, -0.08), 0.03, steel, "BraceB"))
 	var cradle := Node3D.new()
 	cradle.name = "TorsoCradle"
 	cradle.position = Vector3(0.0, 1.32, -0.06)
@@ -493,12 +497,13 @@ static func suit_stand(f: PropFactory, o: Dictionary) -> Node3D:
 		var pad: MeshInstance3D = ShapeKit.box(Vector3(0.06, 0.06, 0.03), f.ML.rubber(), "Pad")
 		pad.position = arm.position + Vector3(cos(a) * 0.11, sin(a) * 0.11, 0.06)
 		cradle.add_child(pad)
-	# the head yoke is a horizontal hoop, so it lies flat
+	# the head yoke is a horizontal hoop, so it lies flat. Raised 5 cm: at 1.78
+	# the hoop's band passed through the suit's neck collar
 	var yoke: MeshInstance3D = ShapeKit.torus(0.14, 0.025, steel, 18, 6, "HeadYoke")
-	yoke.position = Vector3(0.0, 1.78, -0.06)
+	yoke.position = Vector3(0.0, 1.83, -0.06)
 	root.add_child(yoke)
 	var yoke_post: MeshInstance3D = ShapeKit.cyl(0.025, 0.3, steel, 10, Vector3i(0, 1, 0), "YokePost")
-	yoke_post.position = Vector3(0.0, 1.64, -0.12)
+	yoke_post.position = Vector3(0.0, 1.69, -0.12)
 	root.add_child(yoke_post)
 	for i: int in range(2):
 		var boot: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.06, 0.3), dark, "BootSupport")
@@ -507,7 +512,9 @@ static func suit_stand(f: PropFactory, o: Dictionary) -> Node3D:
 		var riser: MeshInstance3D = ShapeKit.cyl(0.03, 0.16, steel, 10, Vector3i(0, 1, 0), "Riser")
 		riser.position = boot.position + Vector3(0.0, 0.1, 0.0)
 		root.add_child(riser)
-	var umb: MeshInstance3D = ShapeKit.hose(Vector3(0.35, 0.2, -0.3), Vector3(0.05, 1.1, -0.14), 0.02, 0.2, f.ML.cable_material(Color("1a2a33")), "Umbilical")
+	# the stand's own umbilical lands on the deck plates now; at y = 0.2 it ended
+	# in mid-air a hand's width above them
+	var umb: MeshInstance3D = ShapeKit.hose(Vector3(0.35, 0.055, -0.3), Vector3(0.05, 1.1, -0.14), 0.02, 0.2, f.ML.cable_material(Color("1a2a33")), "Umbilical")
 	root.add_child(umb)
 	root.set_meta("cradle_path", "TorsoCradle")
 	root.set_meta("yoke_path", "HeadYoke")
@@ -672,6 +679,9 @@ static func safety_boundary(f: PropFactory, o: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	root.name = "SafetyBoundary"
 	var posts: int = 8
+	# spans to leave out, so the barrier has real gates: a span index i covers
+	# post i to post i+1, and the posts at either end of a gap still stand
+	var skip_spans: Array = o.get("skip_spans", [])
 	for i: int in range(posts):
 		var a: float = ShapeKit.TAU_K * float(i) / float(posts)
 		var post: MeshInstance3D = ShapeKit.cyl(0.028, 0.95, f.ML.hazard_paint(), 10, Vector3i(0, 1, 0), "Post%02d" % i)
@@ -680,6 +690,8 @@ static func safety_boundary(f: PropFactory, o: Dictionary) -> Node3D:
 		var cap: MeshInstance3D = ShapeKit.sphere(0.032, f.ML.paint_yellow(), 8, "Cap")
 		cap.position = post.position + Vector3(0.0, 0.48, 0.0)
 		root.add_child(cap)
+		if skip_spans.has(i):
+			continue
 		var next_a: float = ShapeKit.TAU_K * float(i + 1) / float(posts)
 		var rail: MeshInstance3D = ShapeKit.frame_tube(
 			post.position + Vector3(0.0, 0.3, 0.0),

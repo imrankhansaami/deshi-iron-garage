@@ -37,7 +37,24 @@ var sky: Sky
 var skylight: OmniLight3D
 var dust: GPUParticles3D
 var rain: GPUParticles3D
-var rain_sound: AudioStreamPlayer
+
+## --- weather ---------------------------------------------------------------
+## Rain has always been a single on/off; the machine below gives it states on a
+## slow cycle — rain, after-rain, dry, drizzle — and wets the shared concrete
+## slab whenever it rains or has just rained, with the slab drying out while the
+## machine parks dry. The cycle is frozen whenever the rain setting is off, which
+## is the state the capture harness runs in, so captures stay deterministic.
+enum WeatherState { DRY, DRIZZLE, RAIN, AFTER_RAIN }
+var weather: int = WeatherState.RAIN
+var weather_drift: bool = true
+var _weather_left: float = 180.0
+var _wet_damp: float = 0.0
+const WEATHER_DWELL: Dictionary = {
+	WeatherState.DRY: 200.0,
+	WeatherState.DRIZZLE: 150.0,
+	WeatherState.RAIN: 240.0,
+	WeatherState.AFTER_RAIN: 120.0,
+}
 var _zone_lights: Dictionary = {}
 var _shaft_spots: Array[SpotLight3D] = []
 
@@ -590,11 +607,84 @@ func _build_rain() -> void:
 	rain.draw_pass_1 = streak
 	add_child(rain)
 	runtime.rain = rain
-	rain.emitting = bool(GameState.settings.get("rain", true))
-	# the roof rain bed, positioned above the tin so the listener is inside
-	rain_sound = AudioStreamPlayer.new()
-	rain_sound.bus = AudioBank.BUS_AMBIENCE
-	add_child(rain_sound)
+	set_weather(WeatherState.RAIN if bool(GameState.settings.get("rain", true)) else WeatherState.DRY)
+
+
+func set_weather(state: int) -> void:
+	## Applies one weather state: the rain particle load, the tin-roof bed and how
+	## wet the concrete is. The floor material is the shared worn-concrete slab, so
+	## the whole floor — the interior and the apron outside — damps together.
+	weather = state
+	_weather_left = float(WEATHER_DWELL.get(state, 180.0))
+	var rain_on: bool = bool(GameState.settings.get("rain", true))
+	if rain != null:
+		match state:
+			WeatherState.DRIZZLE:
+				rain.amount = 450
+				rain.emitting = rain_on
+			WeatherState.RAIN:
+				rain.amount = 1400
+				rain.emitting = rain_on
+			_:
+				rain.emitting = false
+	AudioBank.set_bed_playing("rain", rain_on and (state == WeatherState.RAIN or state == WeatherState.DRIZZLE))
+	var damp: float = 0.0
+	match state:
+		WeatherState.DRIZZLE:
+			damp = 0.35
+		WeatherState.RAIN:
+			damp = 1.0
+		WeatherState.AFTER_RAIN:
+			damp = 0.6
+	_apply_floor_wetness(damp)
+
+
+func _apply_floor_wetness(damp: float) -> void:
+	## One material, two numbers: wet concrete loses about a third of its dry
+	## roughness and darkens a little. The change is a uniform on the existing
+	## material — no new draw calls, no shader recompiles, nothing to stream.
+	if is_equal_approx(damp, _wet_damp):
+		return
+	_wet_damp = damp
+	# this is the exact call garage_structure._build_floor makes, so the cache
+	# hands back the very material the floor slab is wearing, not a variant
+	var floor_style: String = String(GameConfig.preset().get("floor_style", "worn_concrete"))
+	var slab: StandardMaterial3D = MaterialLibrary.surface(floor_style, {"uv_scale": Vector3(5.0, 5.0, 5.0), "normal_scale": 0.9})
+	if slab == null:
+		return
+	var dry: float = MaterialLibrary._roughness_factor(floor_style)
+	slab.roughness = dry * (1.0 - 0.34 * damp)
+	slab.albedo_color = Color.WHITE.lerp(Color(0.78, 0.81, 0.85), 0.6 * damp)
+
+
+func _weather_process(delta: float) -> void:
+	var rain_on: bool = bool(GameState.settings.get("rain", true))
+	if not rain_on:
+		# master toggle off (as under the capture harness): park dry and let the
+		# slab dry out; the build starts dry, so captures stay byte-stable
+		if _wet_damp > 0.0:
+			_apply_floor_wetness(maxf(_wet_damp - delta * 0.02, 0.0))
+		if weather != WeatherState.DRY:
+			set_weather(WeatherState.DRY)
+		return
+	if not weather_drift:
+		return
+	if weather == WeatherState.AFTER_RAIN:
+		_apply_floor_wetness(maxf(_wet_damp - delta * 0.012, 0.3))
+	elif weather == WeatherState.DRY and _wet_damp > 0.0:
+		_apply_floor_wetness(maxf(_wet_damp - delta * 0.02, 0.0))
+	_weather_left -= delta
+	if _weather_left > 0.0:
+		return
+	match weather:
+		WeatherState.RAIN:
+			set_weather(WeatherState.AFTER_RAIN)
+		WeatherState.AFTER_RAIN:
+			set_weather(WeatherState.DRY)
+		WeatherState.DRY:
+			set_weather(WeatherState.DRIZZLE)
+		WeatherState.DRIZZLE:
+			set_weather(WeatherState.RAIN)
 
 
 func set_shutter_influence(amount: float) -> void:
@@ -715,6 +805,7 @@ var _adaptive_worst: float = 0.0
 
 
 func _process(delta: float) -> void:
+	_weather_process(delta)
 	if env == null or not bool(GameState.settings.get("adaptive_resolution", true)):
 		return
 	if _quality_scale > 0.995:

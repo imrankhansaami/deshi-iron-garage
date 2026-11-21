@@ -59,6 +59,7 @@ func dress() -> void:
 	_keepsakes()
 	_photo_boards()
 	_fake_details()
+	_wayfinding()
 	_armor()
 	# last, so it sees crates placed by any area
 	_register_component_crates()
@@ -122,8 +123,12 @@ func _station(node: Node3D, kind: Station.Kind, pos: Vector3 = Vector3.ZERO, opt
 			runtime.register_fan(node, String(opts.get("fan_key", "")), float(opts.get("rpm", 42.0)))
 		var b: AABB = ShapeKit.node_bounds(node)
 		if b.has_volume():
-			var shape: CollisionShape3D = ShapeKit.col_box(b.size + Vector3.ONE * 0.1)
-			shape.position = b.get_center() - node.global_position
+			# The collider is built in the node's LOCAL space: a world-space box
+			# parented under a rotated prop comes out turned 90 degrees, which is
+			# why every rotated station's interaction volume was wrong-oriented.
+			var local: AABB = node.global_transform.affine_inverse() * b
+			var shape: CollisionShape3D = ShapeKit.col_box(local.size + Vector3.ONE * 0.1)
+			shape.position = local.get_center()
 			s.add_child(shape)
 			_occupied.append(b)
 		else:
@@ -147,6 +152,9 @@ func _register_light(node: Node3D, circuit: int, zone: StringName, energy: float
 		light.shadow_bias = 0.03
 		light.shadow_normal_bias = 0.06
 		light.shadow_blur = 1.2
+		# a physical bulb has size; without it the shadow pools on the concrete
+		# read as hard black ellipses instead of soft light falloff
+		light.light_size = 0.7
 	node.add_child(light)
 	runtime.register_light(light, circuit, zone, energy)
 	return light
@@ -166,6 +174,7 @@ func _spot(node: Node3D, pos: Vector3, target: Vector3, circuit: int, zone: Stri
 		light.shadow_bias = 0.04
 		light.shadow_normal_bias = 0.08
 		light.shadow_blur = 1.6
+		light.light_size = 0.6
 	node.add_child(light)
 	runtime.register_light(light, circuit, zone, energy)
 	return light
@@ -270,7 +279,7 @@ func _area_entrance() -> void:
 		"sfx": "metal_thunk", "distance": 3.4,
 	})
 	_place("sandals", Vector3(-0.7, 0.0, half_l - 0.3), Vector3(0.0, 0.4, 0.0))
-	_place("water_bucket", Vector3(half_w - 0.6, 0.0, half_l - 0.5))
+	_place("water_bucket", Vector3(half_w - 0.5, 0.0, half_l - 0.3))
 	# the interior entrance strip
 	var stool: Node3D = _place("wooden_stool", Vector3(half_w - 1.9, 0.0, half_l - 2.1))
 	_station(stool, Station.Kind.EVERYDAY, Vector3.ZERO, {
@@ -279,7 +288,9 @@ func _area_entrance() -> void:
 		"spec": [["seat", "teak, 380 mm"], ["legs", "4, one replaced"]],
 		"sfx": "tool_place",
 	})
-	_place("storage_box", Vector3(-half_w + 1.0, 0.0, half_l - 1.4), Vector3(0.0, 0.3, 0.0))
+	# the storage box lives under the bench now: on the south floor it shared its
+	# spot with the tyre and the grindstone
+	_place("storage_box", Vector3(-half_w + 0.51, 0.0, half_l - 2.95), Vector3(0.0, 0.15, 0.0))
 	_place("sack", Vector3(-half_w + 2.55, 0.0, half_l - 0.65), Vector3(0.0, 0.6, 0.0), {"scale": 0.85})
 	_place("bicycle_chain", Vector3(half_w - 0.12, 1.35, 3.75), Vector3(0.0, -PI * 0.5, 1.4), {"links": 14})
 	# the entrance light is the batten _ambience_props() hangs at (0, 3.5): the bare
@@ -323,25 +334,27 @@ func _area_mechanical() -> void:
 	# The tool chest moved to the floor: it was on the bench in the old 3 m layout
 	# and would now hang past the bench end at y = 0.96.
 	_place("tool_chest", Vector3(wall + 0.30, 0.0, 2.98), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.4})
-	_place("vice", Vector3(wall + 0.7, 0.96, 0.85))
+	_place("vice", Vector3(wall + 0.74, 0.96, 1.10))
 	_place("workbench_lamp", Vector3(wall + 0.42, 0.96, 0.85))
-	_place("brush_cup", Vector3(wall + 0.34, 0.96, 1.45))
-	_place("oil_can", Vector3(wall + 0.62, 0.96, 1.28))
+	_place("brush_cup", Vector3(wall + 0.18, 1.01, 1.38))
+	_place("oil_can", Vector3(wall + 0.62, 1.01, 1.28))
 	_place("notebook", Vector3(wall + 0.5, 0.98, 1.95), Vector3(0.0, 0.35, 0.0), {"width": 0.24})
 	_place("pen", Vector3(wall + 0.34, 1.0, 1.82), Vector3(PI * 0.5, 0.0, 0.2))
 	_place("tea_glass", Vector3(wall + 0.66, 0.97, 2.35))
-	_place("flask", Vector3(wall + 0.5, 0.95, 2.62))
+	# the flask lives on the tool chest now: on the bench it sat inside the spare
+	# helmet's face whenever the helmet was back from a job
+	_place("flask", Vector3(wall + 0.30, 0.32, 2.98))
 	# --- the engine, on the bench where it is being worked on ------------
-	var engine: Node3D = _place("engine_block", Vector3(wall + 0.36, 0.95, 1.15), Vector3(0.0, 0.4, 0.0))
+	var engine: Node3D = _place("engine_block", Vector3(wall + 0.36, 1.00, 1.15), Vector3(0.0, 0.4, 0.0))
 	_station(engine, Station.Kind.PART, Vector3.ZERO, {
 		"area": "mechanical", "title": "Split single-cylinder engine",
 		"desc": "Pulled off a 100 cc bike two monsoons ago. The fins are still straight, which means it was not seized when it came off.",
 		"spec": [["type", "air-cooled OHV single"], ["bore", "50 mm"], ["condition", "carboned, serviceable"], ["donor for", "frame module"]],
 		"sfx": "metal_thunk",
 	})
-	_place("cylinder_head", Vector3(wall + 0.62, 0.97, 1.62), Vector3(0.0, 0.9, 0.0))
-	_place("piston", Vector3(wall + 0.3, 0.97, 1.55), Vector3(0.3, 0.0, 0.0))
-	_place("carburettor", Vector3(wall + 0.66, 0.96, 0.95))
+	_place("cylinder_head", Vector3(wall + 0.62, 1.02, 1.62), Vector3(0.0, 0.9, 0.0))
+	_place("piston", Vector3(wall + 0.18, 1.02, 1.52), Vector3(0.3, 0.0, 0.0))
+	_place("carburettor", Vector3(wall + 0.66, 1.01, 0.95))
 	# --- the shelf, north of the bench -----------------------------------
 	_place("shelf_unit", Vector3(wall + 0.26, 0.0, -1.15), Vector3(0.0, PI * 0.5, 0.0), {"w": 1.6, "levels": 4})
 	_place("bench_pegboard", Vector3(wall + 0.02, 1.62, -3.0), Vector3(0.0, PI * 0.5, 0.0), {"w": 1.3, "h": 0.8})
@@ -358,8 +371,13 @@ func _area_mechanical() -> void:
 	# the store drum, off the shelf's footprint: at the old spot two-thirds of it
 	# passed through the shelf planks and into the spare gauntlet beside them
 	_place("steel_drum", Vector3(-half_w + 1.1, 0.0, -3.55))
-	_place("tyre", Vector3(-half_w + 1.05, 0.26, 3.9), Vector3(0.0, 0.5, PI * 0.5), {"radius": 0.26})
-	_place("suspension_fork", Vector3(-half_w + 0.42, 0.0, 3.3), Vector3(0.0, 0.0, 0.32))
+	# the spare tyre stands against the wall in the south corner, clear of the
+	# grindstone, the battery and the frame crate: lying flat on the open floor it
+	# had none of them
+	_place("tyre", Vector3(-half_w + 0.35, 0.33, 4.94), Vector3(0.0, 0.15, PI * 0.5), {"radius": 0.26})
+	# the fork leans on the wall at a height where it leans, not where it sinks:
+	# at y = 0 its stanchion stood 30 cm into the concrete
+	_place("suspension_fork", Vector3(-half_w + 0.42, 0.30, 3.75), Vector3(0.0, 0.0, 0.32))
 	# the silencer was on the old 3 m bench; here it leans against the wall
 	_place("silencer", Vector3(-half_w + 0.6, 0.0, 3.4), Vector3(0.0, 0.3, 0.0))
 	_place("brake_drum", Vector3(wall + 0.28, 1.583, -1.3))
@@ -374,7 +392,9 @@ func _area_mechanical() -> void:
 	_place("hook_nail", Vector3(wall + 0.01, 2.0, 4.4), Vector3(0.0, PI * 0.5, 0.0))
 	_place("towel_hanging", Vector3(wall + 0.02, 1.98, 4.0), Vector3(0.0, 0.2, 0.0), {"length": 0.6})
 	# the frame crate, standing where the frame came off the bench
-	_place("component_crate", Vector3(-2.6, 0.0, 4.35), Vector3(0.0, 0.5, 0.0), {"module": "frame", "width": 0.52})
+	# the frame crate by the bench's north end, squared against the wall line
+	# rather than dropped mid-floor
+	_place("component_crate", Vector3(-2.55, 0.0, 4.52), Vector3(0.0, 0.08, 0.0), {"module": "frame", "width": 0.52})
 	# --- one fan, one tube light -----------------------------------------
 	var fan: Node3D = _place("ceiling_fan", Vector3(-1.6, structure.height - 0.12, 2.4), Vector3.ZERO, {"radius": 0.52, "drop": 0.38})
 	_station(fan, Station.Kind.FAN_CEILING, Vector3(0.0, -0.35, 0.0), {
@@ -441,7 +461,10 @@ func _area_electronics() -> void:
 		"sfx": "tool_place",
 	})
 	# monitors, standing at the back of the desk facing the room
-	var crt: Node3D = _place("crt_monitor", Vector3(wall - 0.12, dtop, 0.95), Vector3(0.0, -PI * 0.5 + 0.16, 0.0), {"width": 0.38})
+	# the CRT is seated with its foot resting on the desktop and its body clear of
+	# the desk's back tray: at desk height its shell passed through that tray, and
+	# raised further its foot floated
+	var crt: Node3D = _place("crt_monitor", Vector3(wall - 0.25, dtop + 0.055, 0.95), Vector3(0.0, -PI * 0.5 + 0.16, 0.0), {"width": 0.38})
 	_station(crt, Station.Kind.CRT, Vector3.ZERO, {
 		"area": "electronics", "title": "Salvaged CRT",
 		"desc": "The 15-inch tube the inventor kept when everything else went to the scrap dealer. Its yoke is the donor for the core's coupling coil.",
@@ -458,8 +481,8 @@ func _area_electronics() -> void:
 	})
 	runtime.register_screen(lcd.get_node_or_null("Screen") as Node3D, "workstation", "status")
 	# the working row: keyboard, mouse, multimeter, solder station
-	_place("keyboard", Vector3(wall - 0.42, dtop - 0.012, 1.75), Vector3(0.0, -PI * 0.5, 0.0), {"width": 0.38})
-	_place("mouse", Vector3(wall - 0.4, dtop - 0.012, 1.38))
+	_place("keyboard", Vector3(wall - 0.42, dtop + 0.005, 1.75), Vector3(0.0, -PI * 0.5, 0.0), {"width": 0.38})
+	_place("mouse", Vector3(wall - 0.70, dtop - 0.012, 1.05))
 	var solder: Node3D = _place("solder_station", Vector3(wall - 0.24, dtop, 2.28), Vector3(0.0, -PI * 0.5 + 0.25, 0.0))
 	_station(solder, Station.Kind.TOOL, Vector3.ZERO, {
 		"area": "electronics", "title": "Solder station",
@@ -468,7 +491,9 @@ func _area_electronics() -> void:
 		"sfx": "tool_place", "distance": 2.6,
 	})
 	_place("multimeter", Vector3(wall - 0.3, dtop, 1.05))
-	_place("laptop_shell", Vector3(wall - 0.38, dtop - 0.005, 0.52), Vector3(0.0, -PI * 0.5 - 0.3, 0.0), {"width": 0.3})
+	# the laptop pulled back onto the desk, lying along it: at z = 0.52 it hung
+	# 20 cm off the desk's south end, and facing the room it reached into the CRT
+	_place("laptop_shell", Vector3(wall - 0.41, dtop - 0.005, 0.62), Vector3(0.0, -0.08, 0.0), {"width": 0.3})
 	# component work along the front of the desk
 	_place("pcb_stack", Vector3(wall - 0.5, dtop - 0.01, 1.5), Vector3.ZERO, {"count": 7})
 	_place("pcb_board", Vector3(wall - 0.36, dtop, 0.72), Vector3(0.0, 0.7, 0.0))
@@ -519,7 +544,7 @@ func _area_electronics() -> void:
 		"spec": [["cells", "2 x 12 V tubular"], ["buffer", "series string"], ["coupling", "flyback ferrite coil"]],
 		"sfx": "metal_thunk",
 	})
-	_place("ups_battery", Vector3(half_w - 0.45, 0.0, 4.85))
+	_place("ups_battery", Vector3(half_w - 0.25, 0.0, 4.50))
 	_place("power_strip", Vector3(half_w - 1.3, 0.02, 3.2), Vector3(0.0, -PI * 0.4, 0.0), {"sockets": 4})
 	# one fan, pointing at the scope, because the scope runs hot. Aimed at the
 	# instrument bench 6 m north of it rather than at the old bench at z = 4.2.
@@ -539,7 +564,8 @@ func _area_electronics() -> void:
 	# the wall it was hanging in mid-air with no bracket
 	_place("led_cluster", Vector3(half_w - 0.06, 1.78, -2.5), Vector3(0.0, -PI * 0.5, 0.2), {"count": 5})
 	# the energy crate, beside the rack it came out of
-	_place("component_crate", Vector3(half_w - 2.1, 0.0, 2.55), Vector3(0.0, -1.1, 0.0), {"module": "energy", "width": 0.48})
+	# the energy crate stands beside the rack it came out of, squared to it
+	_place("component_crate", Vector3(2.35, 0.0, 3.92), Vector3(0.0, -0.25, 0.0), {"module": "energy", "width": 0.48})
 
 
 func _area_assembly() -> void:
@@ -549,7 +575,7 @@ func _area_assembly() -> void:
 	## still close a complete ring around a 1.86 m figure.
 	var centre := Vector3(0.0, 0.0, -1.5)
 	var platform: Node3D = _place("assembly_platform", centre, Vector3.ZERO, {"radius": 1.45})
-	var stand: Node3D = _place("suit_stand", centre + Vector3(0.0, 0.2, 0.0), Vector3(0.0, PI, 0.0))
+	var stand: Node3D = _place("suit_stand", centre + Vector3(0.0, 0.2, 0.0), Vector3(0.0, PI, 0.0), {"base_radius": 0.07})
 	# the suit itself
 	var exosuit := ExosuitFactory.new(props)
 	var built: Dictionary = exosuit.build({})
@@ -602,8 +628,10 @@ func _area_assembly() -> void:
 	for i: int in range(2):
 		var a: float = TAU_D * float(i) / 2.0 + 0.4
 		_place("indicator_strip", centre + Vector3(cos(a) * 1.5, 0.26, sin(a) * 1.5), Vector3(0.0, -a, 0.0), {"length": 1.1, "count": 8})
-	# one conduit run feeding the platform
-	_place("conduit_run", centre + Vector3(1.85, 0.3, -0.2), Vector3(0.0, 1.0, 0.0), {"length": 2.0})
+	# one conduit run feeding the platform: it stops just outside the outer ring
+	# now. The old line ran diagonal into the stage area and its far end stood
+	# inside the ring, between the arms.
+	_place("conduit_run", centre + Vector3(2.49, 0.3, 0.05), Vector3(0.0, -0.94, 0.0), {"length": 2.3})
 	_place("cable_tray_future", centre + Vector3(0.0, structure.height - 1.0, -2.5), Vector3.ZERO, {"length": 3.2})
 	# the parts tray on the floor beside the stage, where a fitter would leave it
 	_place("part_kit", centre + Vector3(-1.9, 0.0, -0.9), Vector3(0.0, -0.4, 0.0), {"count": 6})
@@ -710,8 +738,12 @@ func _area_testing() -> void:
 	## just wide enough to walk outside of.
 	var centre := Vector3(2.15, 0.0, -3.6)
 	var deck: Node3D = _place("testing_platform", centre, Vector3.ZERO, {"size": 1.5})
-	_place("safety_boundary", centre, Vector3.ZERO, {"radius": 1.3})
-	var panel: Node3D = _place("instrument_panel", centre + Vector3(-1.0, 0.0, 0.45), Vector3(0.0, 0.75, 0.0), {"width": 0.72})
+	# two of the fence spans are left out as gates: span 3 (135-180 degrees) where
+	# the diagnostic console stands, span 6 (270-315) where the display screen does
+	_place("safety_boundary", centre, Vector3.ZERO, {"radius": 1.3, "skip_spans": [3, 6]})
+	# the console stands west of the fence now, in the gap's mouth: every spot
+	# closer in crossed either the barrier's tape or the platform's outer ring
+	var panel: Node3D = _place("instrument_panel", centre + Vector3(-1.95, 0.0, 0.0), Vector3(0.0, 0.75, 0.0), {"width": 0.72})
 	# The diagnostic screen's origin is the middle of its frame, with the post and
 	# base hanging 0.7 m below it — it was placed at y = 0, which buried the post,
 	# the base and the bottom third of the panel under the floor. w = 0.36 gives
@@ -999,13 +1031,15 @@ func _cables() -> void:
 	var x: float = structure.half_w
 
 	# 1. switchboard -> mechanical bench, a bundled loom of four. The switchboard
-	# is on the west wall at z = 3.6 and the bench at z = 1.7, so these runs are
-	# short and steep rather than the six-metre diagonal the old plan had.
+	# is on the west wall at z = 3.6 and the bench at z = 1.7. The wires now drop
+	# down the wall and plug in at the bench's back edge; the old ends were aimed
+	# at the bench top's middle, so the whole descent crossed the bench-top clutter
+	# (flask, tea glass, notebook, piston, brush cup) at hand height.
 	var loom_wires: Array = [
-		{"start": Vector3(-x + 0.4, 1.62, half_l - 1.65), "end": Vector3(-x + 1.3, 0.98, 2.4), "sag": 0.26},
-		{"start": Vector3(-x + 0.4, 1.56, half_l - 1.65), "end": Vector3(-x + 1.1, 0.98, 1.9), "sag": 0.28},
-		{"start": Vector3(-x + 0.4, 1.5, half_l - 1.65), "end": Vector3(-x + 0.8, 0.98, 1.4), "sag": 0.3},
-		{"start": Vector3(-x + 0.4, 1.44, half_l - 1.65), "end": Vector3(-x + 0.9, 0.02, 4.1), "sag": 0.42},
+		{"start": Vector3(-x + 0.4, 1.62, half_l - 1.65), "end": Vector3(-x + 0.24, 0.99, 1.05), "sag": 0.06},
+		{"start": Vector3(-x + 0.4, 1.56, half_l - 1.65), "end": Vector3(-x + 0.22, 0.99, 1.35), "sag": 0.07},
+		{"start": Vector3(-x + 0.4, 1.5, half_l - 1.65), "end": Vector3(-x + 0.22, 0.99, 1.65), "sag": 0.08},
+		{"start": Vector3(-x + 0.4, 1.44, half_l - 1.65), "end": Vector3(-x + 0.21, 0.03, half_l - 0.9), "sag": 0.18},
 	]
 	var bundle: MeshInstance3D = gen.make_node({
 		"wires": loom_wires, "radius": 0.011, "radial_segments": 7, "length_segments": 26,
@@ -1014,11 +1048,15 @@ func _cables() -> void:
 	add_child(bundle)
 	_bundle_stats = gen.last_stats.duplicate()
 
-	# 2. workstation loom: tower -> monitors -> wall socket, bundled
+	# 2. workstation loom: the wall socket drops to the tower top, a short lead
+	# pools at the tower's base, and the two monitors are linked across their
+	# backs. The previous three wires ran from the tower straight to the monitor
+	# backs and the socket, so each crossed the desk body diagonally: through the
+	# drawer, the top and the wall duct.
 	var ws_wires: Array = [
-		{"start": Vector3(x - 0.62, 0.36, 2.85), "end": Vector3(x - 0.24, 0.9, 1.9), "sag": 0.1},
-		{"start": Vector3(x - 0.62, 0.36, 2.85), "end": Vector3(x - 0.2, 0.92, 1.0), "sag": 0.14},
-		{"start": Vector3(x - 0.62, 0.36, 2.85), "end": Vector3(x - 0.14, 1.2, 4.0), "sag": 0.3},
+		{"start": Vector3(x - 0.16, 1.24, 4.06), "end": Vector3(x - 0.45, 0.48, 2.90), "sag": 0.12},
+		{"start": Vector3(x - 0.23, 0.42, 2.72), "end": Vector3(x - 0.20, 0.05, 2.58), "sag": 0.06},
+		{"start": Vector3(x - 0.16, 1.08, 1.16), "end": Vector3(x - 0.16, 1.32, 1.78), "sag": 0.04},
 	]
 	add_child(gen.make_node({
 		"wires": ws_wires, "radius": 0.008, "radial_segments": 6, "length_segments": 22,
@@ -1026,25 +1064,26 @@ func _cables() -> void:
 	}, "WorkstationLoom"))
 
 	# 3. IPS leads: the battery rack down to the stabilizer and the floor strip,
-	# which are on the same wall it is. They used to run the width of the room to
-	# the switchboard, which is now on the opposite wall.
+	# which are on the same wall it is. They now leave the cells' face and land on
+	# the stabilizer's top and the strip; the old ends crossed the rack's skid and
+	# the stabilizer's body on the way down.
 	add_child(gen.make_node({
 		"wires": [
-			{"start": Vector3(x - 1.0, 0.4, 4.0), "end": Vector3(x - 0.35, 0.04, 3.62), "sag": 0.1},
-			{"start": Vector3(x - 1.0, 0.4, 4.0), "end": Vector3(x - 0.5, 0.04, 3.42), "sag": 0.12},
-			{"start": Vector3(x - 1.0, 0.44, 4.0), "end": Vector3(x - 1.55, 0.02, 3.25), "sag": 0.16},
+			{"start": Vector3(x - 0.95, 0.44, 4.02), "end": Vector3(x - 0.53, 0.33, 3.56), "sag": 0.06},
+			{"start": Vector3(x - 0.95, 0.42, 4.02), "end": Vector3(x - 0.47, 0.33, 3.66), "sag": 0.05},
+			{"start": Vector3(x - 0.95, 0.44, 4.02), "end": Vector3(x - 1.20, 0.06, 3.30), "sag": 0.12},
 		],
 		"radius": 0.016, "radial_segments": 8, "length_segments": 28, "spread": 0.04,
 		"material": red, "u_scale": 2.4,
 	}, "IpsLeads"))
 
 	# 4. the reactor feed: a thick conduit-cable from the reactor housing on the
-	# north wall down to the platform cradle — its actual source, a 3.5 m run inside
-	# the assembly bay. The earlier version started on the east wall and crossed the
-	# whole room at chest height, which cut the electronics bench in half.
+	# north wall down to the platform. It leaves the housing high and lands by the
+	# pit's edge; the old path sagged to y ~0.5 across the testing corner, which
+	# put it through the diagnostic console's face and the boundary rail.
 	var feed: MeshInstance3D = gen.make_node({
-		"start": Vector3(1.45, 1.75, -4.75), "end": Vector3(0.05, 0.5, -1.55),
-		"sag": 0.35, "slack": 0.25, "sideways": 0.3, "radius": 0.03,
+		"start": Vector3(1.47, 2.05, -4.68), "end": Vector3(0.58, 0.31, -1.05),
+		"sag": 0.12, "slack": 0.18, "sideways": -0.12, "radius": 0.03,
 		"radial_segments": 12, "length_segments": 44, "material": holo, "u_scale": 4.0,
 		"taper": 0.96,
 	}, "ReactorFeed")
@@ -1062,13 +1101,15 @@ func _cables() -> void:
 		hang.name = "CeilingRun%d" % i
 		add_child(hang)
 
-	# 6. the loose jumper cables a workshop always has, draped over the shelf edge
+	# 6. the loose jumper cables a workshop always has. The first hangs off the
+	# bench's front edge; it used to be slung from the store shelf toward the holo
+	# table, which dragged it through the table's glass top.
 	add_child(gen.make_hang(
-		Vector3(-structure.half_w + 0.5, 1.55, -0.5),
-		Vector3(-structure.half_w + 1.1, 0.9, 0.1), 1.35, 0.007, blue, 24))
+		Vector3(-structure.half_w + 0.83, 1.02, 2.10),
+		Vector3(-structure.half_w + 0.95, 0.22, 1.94), 0.08, 0.007, blue, 24))
 	add_child(gen.make_hang(
 		Vector3(structure.half_w - 0.5, 1.6, 2.6),
-		Vector3(structure.half_w - 1.4, 0.93, 2.9), 1.4, 0.006, yellow, 24))
+		Vector3(structure.half_w - 1.4, 0.93, 2.9), 1.0, 0.006, yellow, 24))
 
 
 var _bundle_stats: Dictionary = {}
@@ -1561,7 +1602,9 @@ func _keepsakes() -> void:
 	# the desk flag on the electronics bench, art shared with the gate's flag.
 	# Named explicitly: a second node called "FlagPole" would be auto-renamed by
 	# Godot on the name collision and the signage pass would miss its cloth.
-	var desk_flag: Node3D = _place("flag_pole", Vector3(3.90, 0.925, 1.10), Vector3(0.0, -0.6, 0.0), {"height": 0.46, "flag_width": 0.24})
+	# the desk flag stands in the gap between the CRT and the keyboard; at its old
+	# spot its base sat inside the CRT's body and the pole crossed the screen
+	var desk_flag: Node3D = _place("flag_pole", Vector3(3.82, 0.925, 1.32), Vector3(0.0, -0.6, 0.0), {"height": 0.46, "flag_width": 0.24})
 	desk_flag.name = "DeskFlagPole"
 	_station(desk_flag, Station.Kind.SIGN, Vector3(0.0, 0.28, 0.0), {
 		"area": "electronics", "title": "Desk flag",
@@ -1664,6 +1707,71 @@ func _fake_details() -> void:
 	desk_wear.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
 	add_child(desk_wear)
 	baker.apply_baked(desk_wear, _bench_wear_spec(), "desk_wear", 0.0, 0.9)
+	# 10. wall scuff bands: the dark brush marks at bench height where people
+	# lean over the benches, breaking the plaster's clean edge
+	var scuffs: Array = [
+		[Vector3(-4.105, 1.10, 1.70), Vector3(0.0, PI * 0.5, 0.0), Vector2(1.8, 0.26)],
+		[Vector3(4.105, 1.16, 1.50), Vector3(0.0, -PI * 0.5, 0.0), Vector2(1.6, 0.24)],
+	]
+	for sc: Array in scuffs:
+		var band: MeshInstance3D = ShapeKit.plane(sc[2], null, "ScuffBand")
+		band.position = sc[0]
+		band.rotation = sc[1]
+		add_child(band)
+		baker.apply_baked(band, _scuff_spec(), "scuff_band", 0.0, 0.98)
+	# 11. rain drips: dark runs below the switchboard and the north wall panels
+	var drips: Array = [
+		[Vector3(-4.105, 0.95, 3.60), Vector3(0.0, PI * 0.5, 0.0), Vector2(0.34, 0.5)],
+		[Vector3(-0.30, 1.55, -5.105), Vector3(0.0, 0.0, 0.0), Vector2(0.40, 0.45)],
+	]
+	for dr: Array in drips:
+		var run: MeshInstance3D = ShapeKit.plane(dr[2], null, "DripStreak")
+		run.position = dr[0]
+		run.rotation = dr[1]
+		add_child(run)
+		baker.apply_baked(run, _drip_spec(), "drip_streak", 0.0, 0.95)
+	# 12. old leaks: dried mineral rings high on the plaster, out of the way
+	var rings: Array = [
+		[Vector3(-4.105, 2.52, 0.40), Vector3(0.0, PI * 0.5, 0.0)],
+		[Vector3(2.60, 2.50, -5.105), Vector3(0.0, 0.0, 0.0)],
+	]
+	for rg: Array in rings:
+		var stain: MeshInstance3D = ShapeKit.plane(Vector2(0.5, 0.44), null, "WaterStain")
+		stain.position = rg[0]
+		stain.rotation = rg[1]
+		add_child(stain)
+		baker.apply_baked(stain, _stain_spec(), "water_stain", 0.0, 0.92)
+	# 13. dusty boot prints coming in off the yard, fading as the dust runs out
+	var prints: MeshInstance3D = ShapeKit.plane(Vector2(1.2, 0.8), null, "BootPrints")
+	prints.position = Vector3(-0.35, 0.013, 4.45)
+	prints.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+	add_child(prints)
+	baker.apply_baked(prints, _prints_spec(), "boot_prints", 0.0, 0.9)
+	# 14. cobwebs: the top corners of an old workshop are never clean. Variant
+	# flips the web for corners that sit to the right of the viewer.
+	var webs: Array = [
+		[Vector3(-3.98, 3.12, -4.92), Vector3(0.0, PI * 0.25, 0.0), 0],
+		[Vector3(3.98, 3.12, -4.92), Vector3(0.0, -PI * 0.25, 0.0), 1],
+		[Vector3(3.98, 3.12, 4.92), Vector3(0.0, -PI * 0.75, 0.0), 1],
+	]
+	for wb: Array in webs:
+		var web: MeshInstance3D = ShapeKit.plane(Vector2(0.55, 0.55), null, "Cobweb")
+		web.position = wb[0]
+		web.rotation = wb[1]
+		web.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(web)
+		baker.apply_baked(web, _web_spec(int(wb[2])), "cobweb%d" % int(wb[2]), 0.0, 1.0)
+	# 15. paint flaking off the dado: pale patches where the green has let go
+	var peels: Array = [
+		[Vector3(-4.105, 1.02, -2.35), Vector3(0.0, PI * 0.5, 0.0)],
+		[Vector3(4.105, 1.02, -2.60), Vector3(0.0, -PI * 0.5, 0.0)],
+	]
+	for pl: Array in peels:
+		var peel: MeshInstance3D = ShapeKit.plane(Vector2(0.34, 0.17), null, "PaintPeel")
+		peel.position = pl[0]
+		peel.rotation = pl[1]
+		add_child(peel)
+		baker.apply_baked(peel, _peel_spec(), "paint_peel", 0.0, 0.9)
 
 
 func _tool_outline_spec() -> Dictionary:
@@ -1691,6 +1799,112 @@ func _tool_outline_spec() -> Dictionary:
 			{"type": "line", "from": Vector2(358, 52), "to": Vector2(342, 128), "color": dark, "width": 9.0},
 			{"type": "circle", "center": Vector2(318, 136), "radius": 7, "color": dark, "filled": true},
 			{"type": "circle", "center": Vector2(348, 136), "radius": 7, "color": dark, "filled": true},
+		],
+	}
+
+
+func _scuff_spec() -> Dictionary:
+	## The dark brush band at bench height where shoulders and stock scuff the
+	## plaster. Broken into uneven strokes and two ghost lines so it reads as wear
+	## rather than a painted stripe.
+	var ink: String = "#3b3f36"
+	var soft: String = "#4a4e44"
+	return {
+		"size": Vector2i(512, 96), "transparent": true,
+		"layers": [
+			{"type": "rect", "pos": Vector2(6, 30), "sz": Vector2(120, 34), "color": ink},
+			{"type": "rect", "pos": Vector2(112, 24), "sz": Vector2(96, 46), "color": soft},
+			{"type": "rect", "pos": Vector2(196, 32), "sz": Vector2(150, 30), "color": ink},
+			{"type": "rect", "pos": Vector2(334, 26), "sz": Vector2(80, 42), "color": soft},
+			{"type": "rect", "pos": Vector2(402, 34), "sz": Vector2(104, 28), "color": ink},
+			{"type": "line", "from": Vector2(20, 20), "to": Vector2(500, 18), "color": soft, "width": 5.0},
+			{"type": "line", "from": Vector2(14, 78), "to": Vector2(494, 80), "color": soft, "width": 6.0},
+		],
+	}
+
+
+func _drip_spec() -> Dictionary:
+	## Rain down the plaster: a few dark runs from the top edge, heaviest where
+	## the fixing above lets the water through.
+	var ink: String = "#57544a"
+	var ink2: String = "#63605a"
+	return {
+		"size": Vector2i(160, 224), "transparent": true,
+		"layers": [
+			{"type": "line", "from": Vector2(38, 0), "to": Vector2(40, 176), "color": ink, "width": 7.0},
+			{"type": "line", "from": Vector2(70, 0), "to": Vector2(66, 210), "color": ink2, "width": 5.0},
+			{"type": "line", "from": Vector2(102, 0), "to": Vector2(106, 132), "color": ink, "width": 6.0},
+			{"type": "line", "from": Vector2(126, 0), "to": Vector2(124, 88), "color": ink2, "width": 4.0},
+			{"type": "circle", "center": Vector2(106, 150), "radius": 7, "color": ink, "filled": true},
+		],
+	}
+
+
+func _stain_spec() -> Dictionary:
+	## An old leak: two or three dried rings of pale mineral stain.
+	var ink: String = "#6f6a58"
+	var ink2: String = "#7d7866"
+	return {
+		"size": Vector2i(256, 224), "transparent": true,
+		"layers": [
+			{"type": "arc", "center": Vector2(120, 108), "radius": 92, "start": 0.0, "end": 6.28, "color": ink, "width": 4.0},
+			{"type": "arc", "center": Vector2(126, 100), "radius": 70, "start": 0.0, "end": 6.28, "color": ink2, "width": 3.0},
+			{"type": "arc", "center": Vector2(118, 112), "radius": 48, "start": 0.0, "end": 6.28, "color": ink, "width": 3.0},
+			{"type": "circle", "center": Vector2(114, 106), "radius": 30, "color": ink2, "filled": true},
+		],
+	}
+
+
+func _prints_spec() -> Dictionary:
+	## Dusty boot prints crossing the threshold: four steps, alternating feet,
+	## fading as the dust runs out.
+	var ink: String = "#4c4a42"
+	var ink2: String = "#5b594f"
+	var ink3: String = "#6a685c"
+	return {
+		"size": Vector2i(256, 192), "transparent": true,
+		"layers": [
+			{"type": "rect", "pos": Vector2(36, 140), "sz": Vector2(30, 44), "color": ink},
+			{"type": "circle", "center": Vector2(51, 130), "radius": 12, "color": ink, "filled": true},
+			{"type": "rect", "pos": Vector2(96, 118), "sz": Vector2(30, 44), "color": ink2},
+			{"type": "circle", "center": Vector2(111, 108), "radius": 12, "color": ink2, "filled": true},
+			{"type": "rect", "pos": Vector2(150, 96), "sz": Vector2(30, 44), "color": ink3},
+			{"type": "circle", "center": Vector2(165, 86), "radius": 12, "color": ink3, "filled": true},
+			{"type": "rect", "pos": Vector2(204, 74), "sz": Vector2(30, 44), "color": ink3},
+			{"type": "circle", "center": Vector2(219, 64), "radius": 12, "color": ink3, "filled": true},
+		],
+	}
+
+
+func _web_spec(variant: int = 0) -> Dictionary:
+	## A corner cobweb: threads from a corner point plus echoed arcs. Grey and
+	## thin; it only reads at the edge of vision, which is the point. Variant 1
+	## mirrors it for corners that sit to the right of the viewer.
+	var ink: String = "#b9b4a6"
+	var size: float = 192.0
+	var cx: float = 18.0 if variant == 0 else size - 18.0
+	var a0: float = 0.0 if variant == 0 else 1.5708
+	var a1: float = 1.5708 if variant == 0 else 3.1416
+	var layers: Array = []
+	var spokes: Array = [Vector2(180, 22), Vector2(170, 66), Vector2(140, 118), Vector2(96, 164), Vector2(30, 184)]
+	for sp: Vector2 in spokes:
+		var p: Vector2 = sp if variant == 0 else Vector2(size - sp.x, sp.y)
+		layers.append({"type": "line", "from": Vector2(cx, 18), "to": p, "color": ink, "width": 1.6})
+	for rr: float in [66.0, 120.0, 162.0]:
+		layers.append({"type": "arc", "center": Vector2(cx, 18), "radius": rr, "start": a0, "end": a1, "color": ink, "width": 1.4})
+	return {"size": Vector2i(192, 192), "transparent": true, "layers": layers}
+
+
+func _peel_spec() -> Dictionary:
+	## Flaked dado paint: an irregular pale patch with a dark edge, where the
+	## green has let go of the plaster.
+	var pale: String = "#8d8878"
+	var rim: String = "#4f5a4c"
+	return {
+		"size": Vector2i(256, 128), "transparent": true,
+		"layers": [
+			{"type": "poly", "points": [Vector2(40, 42), Vector2(88, 26), Vector2(150, 34), Vector2(196, 52), Vector2(212, 84), Vector2(160, 102), Vector2(96, 104), Vector2(52, 82)], "color": rim, "filled": true},
+			{"type": "poly", "points": [Vector2(50, 46), Vector2(92, 34), Vector2(146, 42), Vector2(188, 56), Vector2(200, 80), Vector2(156, 94), Vector2(100, 96), Vector2(60, 78)], "color": pale, "filled": true},
 		],
 	}
 
@@ -1819,7 +2033,8 @@ func _armor() -> void:
 		"spec": [["height", "1.77 m"], ["palette", "red over gold over alloy"], ["state", "standing test only"]],
 		"sfx": "metal_thunk", "distance": 3.4,
 	})
-	var helmet: Node3D = _place("armor_helmet", Vector3(-3.72, 0.955, 2.55), Vector3(0.0, 0.6, 0.0), {})
+	# raised 6 cm: the jaw used to sink into the bench top's slab
+	var helmet: Node3D = _place("armor_helmet", Vector3(-3.72, 1.02, 2.55), Vector3(0.0, 0.6, 0.0), {})
 	_station(helmet, Station.Kind.SIGN, Vector3(0.0, 0.14, 0.0), {
 		"area": "mechanical", "title": "Spare helmet",
 		"desc": "The figure's spare head, parked on the bench between jobs. The eye slits are lit even off the stand — a passive tube, no switch.",
@@ -1836,7 +2051,7 @@ func _armor() -> void:
 	var gauntlet: Node3D = _place("armor_gauntlet", Vector3(-3.86, 0.70, -4.55), Vector3(0.0, 0.35, 0.0), {})
 	_station(gauntlet, Station.Kind.SIGN, Vector3(0.0, 0.18, 0.0), {
 		"area": "store", "title": "Spare gauntlet",
-		"desc": "A forearm gauntlet on the desk, gold knuckle up, the wrist slit glowing faintly. Somebody has been measuring it against the wrist jig.",
+		"desc": "A forearm gauntlet up on the store shelf, gold knuckle up, the wrist slit glowing faintly. Somebody has been measuring it against the wrist jig.",
 		"spec": [["shell", "red over alloy"], ["knuckle", "gold"], ["state", "spare"]],
 		"sfx": "metal_tink", "distance": 2.0,
 	})
@@ -2027,6 +2242,99 @@ func _photo_boards() -> void:
 		"spec": [["photographs", "4, pinned"], ["licences", "CC0 / CC BY / CC BY-SA (see docs/ASSET_LICENSES.md)"], ["board", "plywood, 0.6 m"]],
 		"sfx": "paper", "distance": 3.0,
 	})
+
+
+func _wayfinding() -> void:
+	## The tidying pass: painted zone stencils on the concrete, so the shop reads
+	## as five organised bays instead of one crowded room, placards over the two
+	## storage shelves, and a directory board at the entrance. All baked through
+	## the same SignCanvas as every other sign, at worn-paint roughness.
+	var half_w: float = structure.half_w
+	var half_l: float = structure.half_l
+	# --- floor stencils: flat, top pointing north, so they read on the way in --
+	var stencils: Array = [
+		{"id": "zone_mech", "bn": "যন্ত্রকক্ষ", "en": "MECHANICAL", "pos": Vector3(-2.50, 0.008, 1.30), "w": 1.7},
+		{"id": "zone_elec", "bn": "ইলেকট্রনিক্স", "en": "ELECTRONICS", "pos": Vector3(2.55, 0.008, 0.70), "w": 1.7},
+		{"id": "zone_asm", "bn": "সংযোজন", "en": "ASSEMBLY", "pos": Vector3(-0.35, 0.008, 0.60), "w": 1.7},
+		{"id": "zone_test", "bn": "পরীক্ষাগার", "en": "TEST & DIAGNOSTICS", "pos": Vector3(2.30, 0.008, -1.75), "w": 1.5},
+	]
+	for s: Dictionary in stencils:
+		var w: float = float(s["w"])
+		var stencil: MeshInstance3D = ShapeKit.plane(Vector2(w, w * 0.31), null, "ZoneStencil_" + String(s["id"]))
+		stencil.position = s["pos"] as Vector3
+		stencil.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+		stencil.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(stencil)
+		baker.apply_baked(stencil, _zone_stencil_spec(String(s["bn"]), String(s["en"])), String(s["id"]), 0.0, 0.9)
+	# --- placards over the two storage shelves -------------------------------
+	var placards: Array = [
+		{"id": "placard_tools", "bn": "সরঞ্জাম", "en": "TOOLS & SPARES", "z": -1.15},
+		{"id": "placard_store", "bn": "ভাণ্ডার", "en": "STORE", "z": -4.25},
+	]
+	for p: Dictionary in placards:
+		var face: MeshInstance3D = ShapeKit.plane(Vector2(0.64, 0.22), null, "ShelfPlacard_" + String(p["id"]))
+		face.position = Vector3(-half_w + 0.20, 2.48, float(p["z"]))
+		face.rotation = Vector3(0.0, PI * 0.5, 0.0)
+		add_child(face)
+		baker.apply_baked(face, _placard_spec(String(p["bn"]), String(p["en"])), String(p["id"]), 0.0, 0.6)
+	# --- the entrance directory, on the west pier beside the notice wall -----
+	var directory: MeshInstance3D = ShapeKit.plane(Vector2(0.68, 0.86), null, "WorkshopDirectory")
+	directory.position = Vector3(-3.72, 1.52, half_l - 0.21)
+	directory.rotation = Vector3(0.0, PI, 0.0)
+	add_child(directory)
+	baker.apply_baked(directory, _directory_spec(), "directory", 0.0, 0.55)
+
+
+func _zone_stencil_spec(bn: String, en: String) -> Dictionary:
+	## A worn-paint floor stencil: big Bengali line over a small English one, no
+	## board, no border — just paint on concrete. Transparent, so the slab's own
+	## wear and stains read through it.
+	return {
+		"size": Vector2i(512, 160), "transparent": true,
+		"layers": [
+			{"type": "text", "name": "BN", "pos": Vector2(16, 8), "size": 66, "width": 480, "align": "center", "color": "#d3ccbd", "text": bn, "font": "bangla"},
+			{"type": "text", "name": "EN", "pos": Vector2(16, 96), "size": 38, "width": 480, "align": "center", "color": "#b3ac9e", "text": en, "font": "mono"},
+		],
+	}
+
+
+func _placard_spec(bn: String, en: String) -> Dictionary:
+	## A dark board with a brass edge over a storage shelf.
+	return {
+		"size": Vector2i(256, 88), "transparent": false, "bg": "#2f3a34",
+		"border": {"color": "#c9b98a", "width": 3.0},
+		"layers": [
+			{"type": "text", "name": "BN", "pos": Vector2(8, 6), "size": 34, "width": 240, "align": "center", "color": "#e8dfc8", "text": bn, "font": "bangla"},
+			{"type": "text", "name": "EN", "pos": Vector2(8, 48), "size": 22, "width": 240, "align": "center", "color": "#c9b98a", "text": en, "font": "mono"},
+		],
+	}
+
+
+func _directory_spec() -> Dictionary:
+	## The entrance directory: a small plan of the shop, five named bays, north
+	## at the top, the entrance at the bottom edge.
+	var layers: Array = [
+		{"type": "text", "name": "T", "pos": Vector2(8, 4), "size": 30, "width": 240, "align": "center", "color": "#efe7d4", "text": "কর্মশালার মানচিত্র", "font": "bangla"},
+		{"type": "text", "name": "S", "pos": Vector2(8, 42), "size": 17, "width": 240, "align": "center", "color": "#c9b98a", "text": "WORKSHOP DIRECTORY", "font": "mono"},
+		{"type": "rect", "pos": Vector2(20, 70), "sz": Vector2(216, 152), "color": "#c9b98a", "filled": false},
+	]
+	var bays: Array = [
+		[Vector2(26, 76), Vector2(58, 52), "ভাণ্ডার", "STORE"],
+		[Vector2(91, 76), Vector2(66, 52), "সংযোজন", "ASM"],
+		[Vector2(164, 76), Vector2(66, 52), "পরীক্ষা", "TEST"],
+		[Vector2(26, 146), Vector2(58, 68), "যন্ত্র", "MECH"],
+		[Vector2(164, 146), Vector2(66, 68), "ইলেকট্র", "ELEC"],
+	]
+	for i: int in range(bays.size()):
+		var b: Array = bays[i]
+		var at: Vector2 = b[0] as Vector2
+		var sz: Vector2 = b[1] as Vector2
+		layers.append({"type": "rect", "pos": at, "sz": sz, "color": "#3a4a44", "filled": true})
+		layers.append({"type": "rect", "pos": at, "sz": sz, "color": "#c9b98a", "filled": false})
+		layers.append({"type": "text", "name": "B%d" % i, "pos": at + Vector2(0, 6), "size": 15, "width": int(sz.x), "align": "center", "color": "#e8dfc8", "text": String(b[2]), "font": "bangla"})
+		layers.append({"type": "text", "name": "E%d" % i, "pos": at + Vector2(0, 28), "size": 11, "width": int(sz.x), "align": "center", "color": "#b9b2a4", "text": String(b[3]), "font": "mono"})
+	layers.append({"type": "text", "name": "G", "pos": Vector2(20, 226), "size": 13, "width": 216, "align": "center", "color": "#9a9384", "text": "প্রবেশপথ · ENTRANCE", "font": "bangla"})
+	return {"size": Vector2i(256, 320), "transparent": false, "bg": "#232823", "border": {"color": "#c9b98a", "width": 3.0}, "layers": layers}
 
 
 func _poster_spec(index: int, dream: String, prototype: String) -> Dictionary:

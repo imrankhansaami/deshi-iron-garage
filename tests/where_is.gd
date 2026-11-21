@@ -42,7 +42,10 @@ func _run() -> void:
 				var sb: AABB = kit.node_bounds(sub)
 				if not sb.has_volume():
 					continue
-				if sb.size.x > 0.5 or sb.size.z > 0.5 or sb.position.y < -0.02 or sb.position.z < -4.9:
+				# print every child with a real footprint; the old filter only
+				# showed children bigger than 50 cm or below the floor, which hid
+				# exactly the small parts a placement fix needs
+				if sb.size.x > 0.06 or sb.size.y > 0.06 or sb.size.z > 0.06:
 					print("WHERE:   %-20s size=(%.2f, %.2f, %.2f) min=(%.2f, %.2f, %.2f)" % [
 						String(sub.name), sb.size.x, sb.size.y, sb.size.z, sb.position.x, sb.position.y, sb.position.z])
 	quit()
