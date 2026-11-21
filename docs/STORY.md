@@ -1,6 +1,8 @@
 # স্বপ্নের গ্যারেজ — Dream Garage
 ### The project's story, written for the thesis
 
+> **বাংলা রূপ:** `docs/STORY_BN.md` — the same story written in Bengali.
+
 **Logline.** In a one-room iron workshop in Bangladesh, a young engineer rolls up the
 shutter, brings the power back, and finishes building the powered exosuit the shop
 sketched in its notebook years earlier — from a motorcycle frame, a dead IPS battery,
