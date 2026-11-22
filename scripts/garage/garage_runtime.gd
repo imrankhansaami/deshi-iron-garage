@@ -756,8 +756,17 @@ func reset_assembly() -> void:
 func install_module(module_id: String) -> void:
 	## Places a salvaged module's parts onto the stand with a short mechanical
 	## settle, and advances the stage. Called by the assembly UI once the player
-	## has selected the component.
+	## has selected the component. A press that breaks the rules answers in red
+	## with the correction — recover first, then frame, energy, shell in order.
 	if not GameState.has_component(module_id):
+		AudioBank.play("ui_error", -4.0)
+		EventBus.notification_requested.emit("%s isn't recovered yet — its crate is marked by a yellow arrow" % GameConfig.component_label(module_id).to_lower(), "error")
+		return
+	var order: Array = ["frame_module", "energy_module", "armour_shell"]
+	var needed: int = order.find(module_id)
+	if int(GameState.assembly_stage) < needed:
+		AudioBank.play("ui_error", -4.0)
+		EventBus.notification_requested.emit("wrong order — the stand takes them frame, then energy, then shell; install the %s first" % GameConfig.component_label(String(order[needed - 1])).to_lower(), "error")
 		return
 	var parts_to_add: Array[String] = ExosuitFactory.module_parts(module_id)
 	var delay: float = 0.0
@@ -823,7 +832,7 @@ func run_assembly() -> void:
 	if not GameState.all_components_collected():
 		AudioBank.play("ui_error")
 		var missing: int = GameConfig.total_components() - GameState.collected_components.size()
-		EventBus.notification_requested.emit("assembly blocked — %d module(s) missing" % missing, "warning")
+		EventBus.notification_requested.emit("assembly blocked — %d module(s) still at their crates; the yellow arrows mark them" % missing, "error")
 		return
 	assembly_running = true
 	GameState.set_assembly_stage(AssemblyStage.ASSEMBLING)
@@ -939,7 +948,7 @@ func run_diagnostics() -> void:
 		return
 	if GameState.assembly_stage != AssemblyStage.ACTIVE:
 		AudioBank.play("ui_error")
-		EventBus.notification_requested.emit("no prototype to diagnose", "warning")
+		EventBus.notification_requested.emit("nothing to diagnose yet — assemble the suit first: install the three modules at the stage, then press START ASSEMBLY SEQUENCE", "error")
 		return
 	diagnostics_running = true
 	GameState.diagnostics_run = true

@@ -271,12 +271,12 @@ func _primary(player: Node) -> void:
 
 func _no_power() -> void:
 	AudioBank.play("ui_error", -2.0)
-	EventBus.notification_requested.emit("no power — the switchboard is locked out", "warning")
+	EventBus.notification_requested.emit("no power — work the switchboard first: it is left of the entrance, under the danger notice", "error")
 
 
 func _collect(component_id: String) -> void:
 	if GameState.has_component(component_id):
-		EventBus.notification_requested.emit("%s already recovered" % GameConfig.component_label(component_id), "info")
+		EventBus.notification_requested.emit("%s is already recovered — it waits at the stage; press E on the stand to install it" % GameConfig.component_label(component_id), "error")
 		return
 	if GameState.collect_component(component_id):
 		mark_used()

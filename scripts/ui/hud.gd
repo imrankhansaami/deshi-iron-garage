@@ -815,7 +815,7 @@ func _on_run_assembly() -> void:
 	if runtime == null:
 		return
 	if not GameState.all_components_collected():
-		_on_notice("three modules required before assembly", "warning")
+		_on_notice("cannot start yet — three modules required before assembly; their crates are marked by the yellow arrows", "error")
 		return
 	if GameState.assembly_stage == GameState.AssemblyStage.ACTIVE:
 		_on_notice("prototype already complete", "info")

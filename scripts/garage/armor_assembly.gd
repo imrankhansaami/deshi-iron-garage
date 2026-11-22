@@ -55,20 +55,21 @@ var _beacon: Node3D = null           ## the shared beacon that marks the next st
 var _arrows: Dictionary = {}         ## part name -> that spare's own floating arrow
 var _sealed_ms: int = 0
 
-## Where each spare waits, for the tracker's next-step line.
+## Where each spare waits, for the tracker's next-step line. All four live
+## together on the parts tray at the front of the garage (plan P).
 const LOCATIONS: Dictionary = {
-	"ArmorHelmet": "on the mechanical bench, north end",
-	"ArmorChestPlate": "on the bench's lower shelf",
-	"ArmorGauntlet": "on the store shelf, north-west corner",
-	"ArmorBoot": "on the floor beside the figure",
+	"ArmorHelmet": "on the parts tray, just inside the entrance",
+	"ArmorChestPlate": "on the parts tray, just inside the entrance",
+	"ArmorGauntlet": "on the parts tray, just inside the entrance",
+	"ArmorBoot": "on the parts tray, just inside the entrance",
 }
 
-## The same places, short enough for the HUD rows.
+## The same place, short enough for the HUD rows.
 const LOC_SHORT: Dictionary = {
-	"ArmorHelmet": "mechanical bench, north end",
-	"ArmorChestPlate": "bench lower shelf",
-	"ArmorGauntlet": "store shelf",
-	"ArmorBoot": "floor by the figure",
+	"ArmorHelmet": "the parts tray at the front",
+	"ArmorChestPlate": "the parts tray at the front",
+	"ArmorGauntlet": "the parts tray at the front",
+	"ArmorBoot": "the parts tray at the front",
 }
 
 
@@ -134,6 +135,15 @@ func _process(_delta: float) -> void:
 		# walking up to the figure is enough: no looking, no clicking to wake it
 		if _player.global_position.distance_to(figure.global_position) < 4.5:
 			_engaged = true
+		else:
+			# the parts tray at the entrance wakes it too — the arrows are up
+			# the moment anyone walks in past the spares
+			for part_name: String in _parts:
+				if _fitted.has(part_name):
+					continue
+				if _player.global_position.distance_to((_parts[part_name] as Node3D).global_position) < 3.5:
+					_engaged = true
+					break
 	var show: bool = _engaged and _locked.size() < PARTS.size()
 	var target: Vector3 = Vector3.ZERO
 	var beacon_part: String = ""
@@ -224,15 +234,20 @@ func part_detail(part_name: String) -> String:
 		return "bolted down"
 	if st == 1:
 		return "seated"
+	var node: Node3D = _parts.get(part_name, null) as Node3D
+	var home: Dictionary = _homes.get(part_name, {})
+	if node != null and not home.is_empty():
+		if node.global_position.distance_to(home["position"] as Vector3) > 1.2:
+			return "moved off the tray"
 	return String(LOC_SHORT.get(part_name, ""))
 
 
 func next_line() -> String:
-	## The one instruction for right now: an exact verb, the thing, its place
+	## The one instruction for right now: an exact verb, the thing, the place
 	## and a live distance, so anyone can follow it without knowing the room.
 	var held: Node3D = carry.held() if carry != null else null
 	if held != null and _is_part(held):
-		return "NEXT — carry it to the figure and press E to test-fit%s" % _dist_tail(figure.global_position + Vector3.UP * 1.2)
+		return "NEXT — carry it to the figure — the shop's armour on the NORTH WALL — and press E to test-fit%s" % _dist_tail(figure.global_position)
 	if _locked.size() >= PARTS.size():
 		return "DONE — press E at the figure to strip the kit for a second run · R resets the morning"
 	if not _pending_locks().is_empty():
@@ -299,11 +314,15 @@ func figure_action(_player: Node) -> bool:
 		for part_name: String in PARTS:
 			if _parts.get(part_name) == held:
 				if _fitted.has(part_name):
-					EventBus.notification_requested.emit("%s is already seated" % String(PARTS[part_name]["label"]), "info")
+					if _locked.has(part_name):
+						EventBus.notification_requested.emit("the kit is already bolted down and sealed — press E at the figure with empty hands to strip it, or R to reset the morning", "error")
+					else:
+						EventBus.notification_requested.emit("%s is already seated — seat the remaining spares, then press E empty-handed to bolt the kit down" % String(PARTS[part_name]["label"]), "error")
+					AudioBank.play("ui_error", -6.0)
 					return true
 				_seat(part_name)
 				return true
-		EventBus.notification_requested.emit("that part doesn't socket here — helmet, chest plate, gauntlet, boot", "warning")
+		EventBus.notification_requested.emit("wrong part — the figure only takes the four spare shells, and they wait on the parts tray at the front of the garage", "error")
 		AudioBank.play("ui_error", -4.0)
 		return true
 	var pending: Array = _pending_locks()
@@ -402,7 +421,7 @@ func _after_bolts() -> void:
 	if _locked.size() >= PARTS.size():
 		_seal()
 	else:
-		EventBus.notification_requested.emit("%d of 4 bolted — seat the rest, then E again" % _locked.size(), "info")
+		EventBus.notification_requested.emit("%d of 4 bolted — seat the remaining spares (their yellow arrows mark them), then E again to seal the fit" % _locked.size(), "warning")
 
 
 func _ring_step() -> void:

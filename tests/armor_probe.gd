@@ -42,27 +42,36 @@ func _run() -> void:
 	print("ARMOR: guide engaged target=%s beacon=%s stage=\"%s\" next=\"%s\" %s" % [
 		String(armor.guide_part()), str(armor.beacon_visible()),
 		String(armor.stage_line()), String(armor.next_line()),
-		"OK" if String(armor.guide_part()) == "ArmorHelmet" and armor.beacon_visible()
+		"OK" if armor.PARTS.has(String(armor.guide_part())) and armor.beacon_visible()
 			and String(armor.stage_line()).contains("STEP 1 OF 2")
-			and String(armor.next_line()).contains("left-click the spare helmet") else "FAIL"])
+			and String(armor.next_line()).contains("left-click the spare") else "FAIL"])
 	print("ARMOR: beacon built node=%s children=[%s] pos=%s %s" % [
 		str(bcn != null), bch.strip_edges(),
 		str((bcn as Node3D).global_position) if bcn is Node3D else "n/a",
 		"OK" if bcn is Node3D and bch.contains("Arrow") and bch.contains("Beam") and bch.contains("Filament") else "FAIL"])
+	var bp: String = String(armor.guide_part())
 	var av: String = ""
-	for p: String in ["ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]:
-		if armor.arrow_visible(p):
+	var ar_ok: bool = true
+	for p: String in ["ArmorHelmet", "ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]:
+		var vis: bool = bool(armor.arrow_visible(p))
+		if vis:
 			av += p + " "
-	var hv: bool = bool(armor.arrow_visible("ArmorHelmet"))
-	print("ARMOR: spare arrows over=[%s] helmet=%s %s" % [
-		av.strip_edges(), str(hv),
-		"OK" if av.contains("ChestPlate") and av.contains("Gauntlet") and av.contains("Boot") and not hv else "FAIL"])
+		if vis == (p == bp):
+			ar_ok = false
+	print("ARMOR: spare arrows over=[%s] beacon-part=%s %s" % [
+		av.strip_edges(), bp, "OK" if ar_ok and not av.is_empty() else "FAIL"])
 	var parts: Array = ["ArmorChestPlate", "ArmorHelmet", "ArmorGauntlet", "ArmorBoot"]
 	var homes: Dictionary = {}
 	for part_name: String in parts:
 		var n: Node3D = dressing.get_node_or_null(part_name) as Node3D
 		if n != null:
 			homes[part_name] = n.global_position
+	var staged: bool = true
+	for part_name: String in parts:
+		var h: Vector3 = homes.get(part_name, Vector3.ZERO) as Vector3
+		if h.z < 2.5 or h.y < 0.30 or h.y > 0.45:
+			staged = false
+	print("ARMOR: parts staged on the front tray %s" % ["OK" if staged else "FAIL"])
 	# 1. fit every spare through the interactive path
 	var expect_fitted: int = 0
 	for part_name: String in parts:

@@ -206,22 +206,23 @@ console. The board sleeps when the final check is done, and `R` resets the whole
 
 ### The armour figure
 
-By the north wall, on its service base: a red-and-gold figure and its four spare shells, laid out
-where they are worked on — helmet on the mechanical bench's north end, chest plate on the bench's
-lower shelf, gauntlet on the store shelf, boot on the floor beside the figure. Left-click a spare to
-carry it to the figure, then `E` to test-fit it; it seats with a latch, a servo and a light pulse,
-and the base ring climbs a step. The **fourth seat powers the figure on** — eyes, core and ring light
-up. Step back, empty hands, and `E` once more: the bolts walk through in a clack cascade and the fit
-is sealed. `E` again strips the kit for another run.
+By the north wall, on its service base: a red-and-gold figure — and its four spare shells waiting
+together on the **parts tray** just inside the entrance, so the fitting always starts from one place.
+Left-click a spare to carry it back to the figure, then `E` to test-fit it; it seats with a latch, a
+servo and a light pulse, and the base ring climbs a step. The **fourth seat powers the figure on** —
+eyes, core and ring light up. Step back, empty hands, and `E` once more: the bolts walk through in a
+clack cascade and the fit is sealed. `E` again strips the kit for another run.
 
 It is a guided job: walking up to the figure (or picking up any spare) wakes the **floating arrows** —
-a big yellow arrow over every spare still at its place, so the whole set is visible at a glance, while
-the next one's arrow rises on a **column of light** and moves with you. Under the objective, the
-armour's **tracker board** lists the four shells — where each one
-waits, then *seated*, then *bolted* — and one line says exactly what to do next (*"NEXT — left-click
-the spare helmet to pick it up · on the mechanical bench, north end · 7 m"*). The console keeps the
-same checklist live (`Tab` → Assembly → Armour), and `R` returns the whole garage to the morning so
-the sequence can be performed again.
+a big yellow arrow over every spare on the tray, so the whole set is visible at a glance, while the
+next one's arrow rises on a **column of light** and moves with you. Under the objective, the armour's
+**tracker board** lists the four shells — where each one waits, then *seated*, then *bolted* — and one
+line says exactly what to do next (*"NEXT — left-click the spare helmet to pick it up · on the parts
+tray, just inside the entrance · 7 m"*). Wrong moves are answered in **red, with the correction** — a
+hammer carried to the figure, a module installed out of order, the console pressed before the suit is
+built: each says what went wrong and what to do instead. The console keeps the same checklist live
+(`Tab` → Assembly → Armour), and `R` returns the whole garage to the morning so the sequence can be
+performed again.
 
 ### The diagnostic console
 
@@ -304,7 +305,8 @@ more licensed pictures of the streets and the working country. And the room keep
 painted tool outlines on the
 pegboard, chalk notes on the floor, tea rings on the bench top, paper labels on the drawers, a
 grease handprint on the apron, a paint-test board, stickers — and a whole red-and-gold armoured
-figure on a service base by the north wall, its spare plates laid out where they are worked on.
+figure on a service base by the north wall, its four spare shells waiting together on a parts tray at
+the front.
 `F` on any of the pictures for the story.
 
 **The weather.** The yard runs a slow rain cycle: rain on the tin, then the after-rain hush while the
@@ -487,11 +489,10 @@ For showing the project in about six minutes, following the sequence in the brie
 12. `E` on the stage. Install three modules. Start the assembly. **Let it run without talking.**
 13. The core ignites, the optics light.
 14. `E` on the console in the testing corner. The diagnostic pass runs.
-15. Walk to the armour figure by the north wall. The guide wakes as you arrive: a big yellow arrow
-    floats over every spare still at its place, the next one's on a column of light, and the tracker
-    under the objective spells out the next step. Carry each of the four spares over and `E` to
-    test-fit it — the fourth seat powers the figure on — then one more `E`, empty-handed, bolts the
-    kit down and seals it.
+15. At the parts tray just inside the entrance: all four spare shells wait together, each under a big
+    yellow arrow. Carry each one to the figure by the north wall and `E` to test-fit it — the fourth
+    seat powers the figure on — then one more `E`, empty-handed, bolts the kit down and seals it.
+    Wrong moves answer in red and say what to do instead.
 16. **F6**. Materials tab: change roughness and metallic live. Hologram tab: switch between the three
     variants. Lighting tab: switch to warm-only and back to full rig. Post tab: toggle SDFGI and watch
     the core's wall spill disappear.

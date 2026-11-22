@@ -129,11 +129,13 @@ into its socket with a latch while the base ring climbs a step; the **fourth par
 seats and the figure powers on** — eyes, core and ring light up — then **bolt the kit
 down** with one more `E`: a cascade of clacks walks all four locks and **seals the
 fit** with a second surge. Both assemblies guide themselves: a **big yellow
-arrow** floats over every part still waiting its turn — the armour's four shells
-and the suit's three module crates — and the next step's arrow rises on a
-**column of light**, while a **tracker board** under the objective lists every
-step in plain words with live distances. The armour's arrows wake by walking up
-to the figure, so anyone can start with whatever part is closest. `R` puts
+arrow** floats over every part still waiting its turn — the armour's four
+shells, waiting together on a parts tray just inside the entrance, and the
+suit's three module crates — and the next step's arrow rises on a **column of
+light**, while a **tracker board** under the objective lists every step in
+plain words with live distances. Wrong moves answer in red and say what to do
+instead, and the armour's arrows wake by walking up to the figure, so anyone
+can start with whatever is closest. `R` puts
 the whole garage back to the morning so the
 sequence can run again, `T` opens the measured claims (the checklist lives in the
 console, `Tab` → Assembly → Armour), and `1`–`0` / `[` `]` jump the camera through

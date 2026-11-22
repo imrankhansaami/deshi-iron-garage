@@ -2060,47 +2060,99 @@ func _drawer_label_spec() -> Dictionary:
 
 func _armor() -> void:
 	## The shop's other project: a whole armoured figure on a service base by the
-	## north wall, and its spare plates laid out where they are worked on — a
-	## helmet on the bench, the chest plate on the shelf under it, a gauntlet on
-	## the electronics desk, the other boot on the floor. Red and gold over dark
-	## alloy; an homage in the reference palette and deliberately unbranded, and
-	## every piece is individually pickable with the mouse.
+	## north wall, and its four spare shells waiting together on one parts tray
+	## just inside the entrance — the fitting starts at the front of the garage
+	## and walks back to the figure. Red and gold over dark alloy; an homage in
+	## the reference palette and deliberately unbranded, and every piece is
+	## individually pickable with the mouse.
 	var figure: Node3D = _place("armor_figure", Vector3(-1.6, 0.0, -4.55), Vector3(0.0, 0.35, 0.0), {})
 	_station(figure, Station.Kind.SIGN, Vector3(0.0, 1.0, 0.12), {
 		"area": "assembly", "title": "The shop's armour",
-		"desc": "A whole armoured figure on a service base, core lens and eye slits lit — red plates over gold over dark alloy. The shop's own homage build, made here, not a film prop; the core is a cold-cathode tube out of a dead scanner.",
+		"desc": "A whole armoured figure on a service base, core lens and eye slits lit — red plates over gold over dark alloy. The shop's own homage build, made here, not a film prop; the core is a cold-cathode tube out of a dead scanner. Its four spare shells wait on the parts tray at the front of the garage.",
 		"spec": [["height", "1.77 m"], ["palette", "red over gold over alloy"], ["state", "standing test only"]],
 		"sfx": "metal_thunk", "distance": 3.4,
 	})
-	# raised 6 cm: the jaw used to sink into the bench top's slab
-	var helmet: Node3D = _place("armor_helmet", Vector3(-3.72, 1.02, 2.55), Vector3(0.0, 0.6, 0.0), {})
+	# the parts tray: one place for all four spare shells, right at the front
+	_parts_tray()
+	# the parts sit on the tray top (0.33): each is lifted past the below-origin
+	# geometry the trace found — the helmet's jaw dips 3 cm, the chest plate 6 cm
+	var helmet: Node3D = _place("armor_helmet", Vector3(-1.62, 0.365, 3.58), Vector3(0.0, 0.45, 0.0), {})
 	_station(helmet, Station.Kind.SIGN, Vector3(0.0, 0.14, 0.0), {
-		"area": "mechanical", "title": "Spare helmet",
-		"desc": "The figure's spare head, parked on the bench between jobs. The eye slits are lit even off the stand — a passive tube, no switch.",
+		"area": "assembly", "title": "Spare helmet",
+		"desc": "The figure's spare head on the parts tray at the front of the garage. The eye slits are lit even off the stand — a passive tube, no switch.",
 		"spec": [["shell", "red plate over alloy"], ["faceplate", "brushed gold"], ["state", "spare"]],
 		"sfx": "metal_thunk", "distance": 2.2,
 	})
-	var chest: Node3D = _place("armor_chest_plate", Vector3(-3.85, 0.29, 1.6), Vector3(0.0, -0.3, 0.0), {})
+	var chest: Node3D = _place("armor_chest_plate", Vector3(-0.98, 0.395, 3.58), Vector3(0.0, -0.25, 0.0), {})
 	_station(chest, Station.Kind.SIGN, Vector3(0.0, 0.18, 0.0), {
-		"area": "mechanical", "title": "Spare chest plate",
-		"desc": "A spare chest plate on the bench's lower shelf, core lens fitted and cold. The band across the top is the same gold as the figure's.",
+		"area": "assembly", "title": "Spare chest plate",
+		"desc": "A spare chest plate on the parts tray, core lens fitted and cold. The band across the top is the same gold as the figure's.",
 		"spec": [["lens", "cold-cathode, unlit"], ["plates", "rolled steel, shop-painted"], ["state", "spare"]],
 		"sfx": "metal_thunk", "distance": 2.2,
 	})
-	var gauntlet: Node3D = _place("armor_gauntlet", Vector3(-3.86, 0.70, -4.55), Vector3(0.0, 0.35, 0.0), {})
+	var gauntlet: Node3D = _place("armor_gauntlet", Vector3(-1.62, 0.335, 3.88), Vector3(0.0, 1.15, 0.0), {})
 	_station(gauntlet, Station.Kind.SIGN, Vector3(0.0, 0.18, 0.0), {
-		"area": "store", "title": "Spare gauntlet",
-		"desc": "A forearm gauntlet up on the store shelf, gold knuckle up, the wrist slit glowing faintly. Somebody has been measuring it against the wrist jig.",
+		"area": "assembly", "title": "Spare gauntlet",
+		"desc": "A forearm gauntlet on the parts tray, gold knuckle up, the wrist slit glowing faintly. Somebody has been measuring it against the wrist jig.",
 		"spec": [["shell", "red over alloy"], ["knuckle", "gold"], ["state", "spare"]],
 		"sfx": "metal_tink", "distance": 2.0,
 	})
-	var boot: Node3D = _place("armor_boot", Vector3(-0.9, 0.0, -4.25), Vector3(0.0, 1.2, 0.0), {})
+	var boot: Node3D = _place("armor_boot", Vector3(-0.98, 0.335, 3.88), Vector3(0.0, 0.95, 0.0), {})
 	_station(boot, Station.Kind.SIGN, Vector3(0.0, 0.1, 0.0), {
 		"area": "assembly", "title": "Spare boot",
-		"desc": "The other boot, left where it was kicked off after the last fitting. Gold toe, red shell, a dark sole that has seen the yard.",
+		"desc": "The other boot, on the parts tray. Gold toe, red shell, a dark sole that has seen the yard.",
 		"spec": [["toe", "gold"], ["sole", "dark compound"], ["state", "spare"]],
 		"sfx": "metal_tink", "distance": 2.0,
 	})
+
+
+func _parts_tray() -> void:
+	## The spare-parts tray at the front of the garage: a low plywood platform
+	## with a tilted, baked sign and a painted down-chevron — where all four
+	## spare shells wait together, so the fitting always starts from one place.
+	## Staging only: it carries no collider of its own; the parts keep theirs.
+	var tray: Node3D = Node3D.new()
+	tray.name = "SparePartsTray"
+	tray.position = Vector3(-1.3, 0.0, 3.72)
+	add_child(tray)
+	var top: MeshInstance3D = ShapeKit.box(Vector3(1.3, 0.06, 0.8), ML.plywood(), "TrayTop")
+	top.position = Vector3(0.0, 0.30, 0.0)
+	tray.add_child(top)
+	for z: float in [-0.37, 0.37]:
+		var rail: MeshInstance3D = ShapeKit.box(Vector3(1.3, 0.10, 0.06), ML.woodgrain_dark(), "Rail")
+		rail.position = Vector3(0.0, 0.37, z)
+		tray.add_child(rail)
+	for x: float in [-0.58, 0.58]:
+		var foot: MeshInstance3D = ShapeKit.box(Vector3(0.12, 0.27, 0.68), ML.woodgrain_dark(), "Foot")
+		foot.position = Vector3(x, 0.135, 0.0)
+		tray.add_child(foot)
+	var board: MeshInstance3D = ShapeKit.box(Vector3(0.92, 0.22, 0.03), ML.plywood(), "PartsSign")
+	# hung behind the tray's back edge: the trace showed the tilted plate
+	# grazing the helmet's rotated box when it sat inside the rim
+	board.position = Vector3(0.0, 0.545, -0.44)
+	board.rotation.x = -0.42
+	tray.add_child(board)
+	baker.apply_baked(board, _spare_parts_spec(), "spare_parts", 0.0, 0.62)
+	# a small painted chevron on the tray's front rail, pointing down at the
+	# parts — the first arrow a visitor sees, before the floating ones
+	for s: int in [-1, 1]:
+		var wing: MeshInstance3D = ShapeKit.box(Vector3(0.11, 0.035, 0.02), ML.paint_yellow(), "Chevron")
+		wing.position = Vector3(0.05 * float(s), 0.345, 0.415)
+		wing.rotation.z = float(s) * 0.785
+		tray.add_child(wing)
+
+
+func _spare_parts_spec() -> Dictionary:
+	## The tray's sign, in the shop's own hand-painted signage style: Bangla
+	## over English, so anyone can read what lives here.
+	return {
+		"size": Vector2i(512, 128), "transparent": false, "bg": "#e8e0cc",
+		"border": {"color": "#8a2a1a", "width": 5.0},
+		"layers": [
+			{"type": "text", "name": "BN", "pos": Vector2(16, 12), "size": 48, "width": 480, "align": "center", "color": "#1b2a3a", "text": "যন্ত্রাংশ", "font": "bangla"},
+			{"type": "text", "name": "EN", "pos": Vector2(16, 78), "size": 28, "width": 480, "align": "center", "color": "#4a4538", "text": "SPARE PARTS", "font": "mono"},
+		],
+	}
 
 
 func _bangladesh_map_spec() -> Dictionary:
