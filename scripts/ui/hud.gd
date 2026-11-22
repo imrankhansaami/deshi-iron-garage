@@ -635,7 +635,7 @@ func _assembly_body(body: HBoxContainer) -> void:
 	pages.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pages.name = "AssemblyPages"
 	body.add_child(pages)
-	_side_nav(body, [["MODULES", "modules"], ["SEQUENCE", "sequence"], ["SLOTS", "slots"]], pages)
+	_side_nav(body, [["MODULES", "modules"], ["ARMOUR", "armour"], ["SEQUENCE", "sequence"], ["SLOTS", "slots"]], pages)
 	# modules: the three slots the player installs
 	var mods := _section(pages, "modules", "Install the salvaged modules")
 	_assembly_slots = VBoxContainer.new()
@@ -667,6 +667,11 @@ func _assembly_body(body: HBoxContainer) -> void:
 		l.add_theme_font_size_override("font_size", 15)
 		l.add_theme_color_override("font_color", GarageTheme.col("ink"))
 		grid.add_child(l)
+	# armour: the four spares test-fitted onto the practice figure (plan A)
+	var arm := _section(pages, "armour", "The armour figure's spares")
+	arm.add_child(_note("Test-fit the spare shells by hand — carry one to the figure, E to seat it — then one more E bolts the kit down, one clack per part. The figure's base ring counts the bolts; the fourth lights the figure."))
+	_armor_slots = VBoxContainer.new()
+	arm.add_child(_armor_slots)
 	# slots
 	var slots := _section(pages, "slots", "Module to part map")
 	for mid: String in ["frame_module", "energy_module", "armour_shell"]:
@@ -685,6 +690,7 @@ func _assembly_body(body: HBoxContainer) -> void:
 
 
 var _assembly_slots: VBoxContainer
+var _armor_slots: VBoxContainer
 var _assembly_status: Label
 
 
@@ -1296,6 +1302,7 @@ func _refresh_panel(name: String) -> void:
 			_update_inventory_states()
 		"assembly":
 			_rebuild_assembly_slots()
+			_rebuild_armor_slots()
 		"diagnostics":
 			_rebuild_diag_rows()
 		"inspect":
@@ -1357,6 +1364,37 @@ func _rebuild_assembly_slots() -> void:
 			GameState.ASSEMBLY_STAGE_NAMES[int(GameState.assembly_stage)],
 			GameState.collected_components.size(),
 		]
+
+
+func _rebuild_armor_slots() -> void:
+	## The armour checklist: one line per spare, read live from the assembly
+	## module — at its place, seated, or bolted down.
+	if _armor_slots == null:
+		return
+	for c: Node in _armor_slots.get_children():
+		c.queue_free()
+	if runtime == null or runtime.armor == null:
+		_armor_slots.add_child(_note("no armour assembly registered"))
+		return
+	var rows: Array = [
+		["ArmorHelmet", "helmet"],
+		["ArmorChestPlate", "chest plate"],
+		["ArmorGauntlet", "gauntlet"],
+		["ArmorBoot", "boot"],
+	]
+	var marks: Array = ["—  at its place", "◐  seated, not bolted", "●  bolted down"]
+	for r: Array in rows:
+		var st: int = int(runtime.armor.part_state(String(r[0])))
+		var l := Label.new()
+		l.text = "%-12s  %s" % [String(r[1]), String(marks[st])]
+		l.add_theme_font_override("font", _font("mono"))
+		l.add_theme_font_size_override("font_size", 17)
+		l.add_theme_color_override("font_color", GarageTheme.col("cyan" if st == 2 else "ink"))
+		_armor_slots.add_child(l)
+	var total: String = "seated %d · bolted %d of 4" % [int(runtime.armor.fitted_count()), int(runtime.armor.locked_count())]
+	if int(runtime.armor.locked_count()) >= 4:
+		total += "   ·   MK-I COMPLETE"
+	_armor_slots.add_child(_note(total))
 
 
 func _rebuild_diag_rows() -> void:

@@ -123,12 +123,14 @@ the flag file.
 | `1`–`9`, `0`, `[` `]` | jump / step through the twenty fixed viewpoints |
 | `\` | return to where you stood |
 
-**For a presentation.** The armour figure's four spare shells can be **test-fitted by
-hand**: carry each one to the figure and press `E` — the part settles into its socket
-with a latch, the figure's lights pulse, and when the fourth seats the figure powers up.
-`R` puts the whole garage back to the morning so the sequence can run again, `T` opens
-the measured claims, and `1`–`0` / `[` `]` jump the camera through the twenty fixed
-viewpoints — press `\` to come back to your spot.
+**For a presentation.** The armour figure's four spare shells are assembled in two
+stages, by hand: **test-fit** — carry each part to the figure and press `E`, it snaps
+into its socket with a latch while the base ring climbs a step — then **bolt the kit
+down** — one more `E` walks all four locks with a cascade of clacks, the ring climbs
+again, and the fourth bolt powers the figure up. `R` puts the whole garage back to the
+morning so the sequence can run again, `T` opens the measured claims (the checklist
+lives in the console, `Tab` → Assembly → Armour), and `1`–`0` / `[` `]` jump the camera
+through the twenty fixed viewpoints — press `\` to come back to your spot.
 
 Just about anything loose can be picked up: tools, tins, tea glasses, stools, tyres,
 drums, crates, chairs, shelves, workbenches, the bicycle, even the holographic table —

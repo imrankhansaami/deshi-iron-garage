@@ -1,17 +1,19 @@
 extends Node
 class_name ArmorAssembly
-## The armour assembly (presentation plan A): the shop's spare plates are
-## test-fitted onto the practice figure by hand. Carry a part to the figure and
-## its station offers the matching socket; the part settles into place with a
-## latch, the figure's own lights pulse, and when all four are seated the figure
-## powers up. E with empty hands at the figure strips them all back to their
-## places, so the sequence can be presented again and again.
+## The armour assembly (presentation plan A), two-stage and by hand. The shop's
+## four spare shells — helmet, chest plate, gauntlet, boot — are TEST-FITTED onto
+## the practice figure first (carry a part to the figure, press E: it snaps into
+## its socket), and then BOLTED DOWN: one more E at the figure walks the whole
+## kit through its locks with a cascade of clacks, punching the scale and the
+## base ring's glow one step per bolt. When the fourth bolt lands, the figure
+## powers up. E once more with everything bolted strips it all back home, so the
+## sequence can be presented again and again.
 ##
 ## State lives here, not on the parts: each part keeps the transform it was
-## authored with (its home), and fitting is a settle tween to a socket offset on
-## the figure. The glow materials of the figure and the spares are duplicated at
-## bind time, so the light ramps stay local to the armour and never touch other
-## props that share the cached LED materials.
+## authored with (its home). The fitting takes the held node over from the carry
+## system (detach_held) and owns the snap animation. Glow materials are duplicated
+## at bind time so every ramp stays local to the armour; the base ring is the
+## progress meter, kept out of the pulse set.
 ##
 ## Deliberately unbranded: the parts are the shop's own spare shells, and the
 ## stations say so. No combat, no weapons — a fitting exercise.
@@ -24,20 +26,28 @@ var figure: Node3D
 ## yaw is applied to the seat rotation, so a rotated figure still fits right.
 const PARTS: Dictionary = {
 	"ArmorHelmet": {"socket": Vector3(0.0, 1.525, 0.0), "yaw": 0.0,
-		"label": "spare helmet", "line": "helmet seated over the practice head"},
+		"label": "spare helmet", "line": "helmet seated over the practice head",
+		"seat_sfx": "latch", "lock_sfx": "metal_tink"},
 	"ArmorChestPlate": {"socket": Vector3(0.0, 1.10, 0.12), "yaw": 0.0,
-		"label": "spare chest plate", "line": "chest plate slipped over the figure's front"},
+		"label": "spare chest plate", "line": "chest plate slipped over the figure's front",
+		"seat_sfx": "metal_thunk", "lock_sfx": "metal_clank"},
 	"ArmorGauntlet": {"socket": Vector3(0.36, 0.585, 0.03), "yaw": 0.0,
-		"label": "spare gauntlet", "line": "gauntlet drawn over the right forearm"},
+		"label": "spare gauntlet", "line": "gauntlet drawn over the right forearm",
+		"seat_sfx": "servo", "lock_sfx": "metal_tink"},
 	"ArmorBoot": {"socket": Vector3(-0.11, 0.0, 0.02), "yaw": 0.0,
-		"label": "spare boot", "line": "boot set on the left foot"},
+		"label": "spare boot", "line": "boot set on the left foot",
+		"seat_sfx": "tool_place", "lock_sfx": "metal_clank"},
 }
 
 var _parts: Dictionary = {}          ## name -> Node3D
 var _homes: Dictionary = {}          ## name -> {position, rotation}
-var _fitted: Dictionary = {}         ## name -> true
-var _glow_mats: Array = []           ## duplicated StandardMaterial3D instances
+var _fitted: Dictionary = {}         ## name -> true (seated, not yet bolted)
+var _locked: Dictionary = {}         ## name -> true (bolted down)
+var _glow_mats: Array = []           ## duplicated emissive materials (pulses)
+var _ring_mat: StandardMaterial3D = null   ## the base ring, the progress meter
+var _ring_base: float = 3.0
 var _orig: Dictionary = {}           ## station -> {title, desc, spec} originals
+var _hinted: bool = false
 var _busy: bool = false
 
 
@@ -55,6 +65,8 @@ func bind(p_runtime: Node, p_carry: Node, dressing: Node3D) -> void:
 		_parts[part_name] = node
 		_homes[part_name] = {"position": node.global_position, "rotation": node.rotation}
 	_duplicate_glow()
+	if _ring_mat != null:
+		_ring_mat.emission_energy_multiplier = _ring_base * 0.5
 	_snapshot_texts()
 
 
@@ -63,12 +75,20 @@ func bind(p_runtime: Node, p_carry: Node, dressing: Node3D) -> void:
 # ===========================================================================
 
 func figure_prompt() -> String:
+	if not _hinted:
+		_hinted = true
+		EventBus.notification_requested.emit("the figure takes the four spares — helmet, chest plate, gauntlet, boot. Bring one and press E to test-fit it", "info")
 	var held: Node3D = carry.held()
 	if held != null:
 		for part_name: String in PARTS:
 			if _parts.get(part_name) == held and not _fitted.has(part_name):
 				return "Press E to test-fit the %s" % String(PARTS[part_name]["label"])
 		return "Press E — that part doesn't socket here"
+	var pending: Array = _pending_locks()
+	if pending.size() == 1:
+		return "Press E to bolt the %s down" % String(PARTS[pending[0]]["label"])
+	if not pending.is_empty():
+		return "Press E to bolt the kit down (%d in reach)" % pending.size()
 	if not _fitted.is_empty():
 		return "Press E to strip the spares back to their places"
 	return "Press E to inspect"
@@ -86,10 +106,14 @@ func figure_action(_player: Node) -> bool:
 				if _fitted.has(part_name):
 					EventBus.notification_requested.emit("%s is already seated" % String(PARTS[part_name]["label"]), "info")
 					return true
-				_fit(part_name)
+				_seat(part_name)
 				return true
 		EventBus.notification_requested.emit("that part doesn't socket here — helmet, chest plate, gauntlet, boot", "warning")
 		AudioBank.play("ui_error", -4.0)
+		return true
+	var pending: Array = _pending_locks()
+	if not pending.is_empty():
+		_bolt_all(pending)
 		return true
 	if not _fitted.is_empty():
 		dismount_all(false)
@@ -97,38 +121,102 @@ func figure_action(_player: Node) -> bool:
 	return false
 
 
-func _fit(part_name: String) -> void:
+# ===========================================================================
+# stage one: the seat
+# ===========================================================================
+
+func _seat(part_name: String) -> void:
 	if _busy:
 		return
 	var node: Node3D = _parts[part_name]
 	var info: Dictionary = PARTS[part_name]
+	var handed: Node3D = carry.detach_held()
+	if handed != node:
+		return
+	_busy = true
+	carry.set_item_enabled(node, false)
+	_fitted[part_name] = true
 	var to_pos: Vector3 = figure.to_global(info["socket"] as Vector3)
 	var to_rot: Vector3 = Vector3(0.0, figure.rotation.y + float(info["yaw"]), 0.0)
-	_busy = true
-	if not bool(carry.settle_held(to_pos, to_rot, "servo")):
-		_busy = false
-		return
-	_fitted[part_name] = true
-	carry.set_item_enabled(node, false)
-	AudioBank.play_at("latch", to_pos, -8.0)
-	_pulse(1.7)
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	# TRANS_BACK overshoots a hair and settles: the snap of a part finding its seat
+	tw.tween_property(node, "global_position", to_pos, 0.42).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(node, "rotation", to_rot, 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	AudioBank.play_at(String(info["seat_sfx"]), to_pos, -7.0)
+	_pulse(1.35)
 	_update_texts()
 	var n: int = _fitted.size()
-	EventBus.notification_requested.emit("%s — %d of 4 fitted" % [String(info["line"]), n], "success")
-	if runtime != null:
-		runtime.sys_log("ARMOUR FIT: %s (%d/4)" % [part_name.to_upper(), n])
-	var tw: Tween = create_tween()
-	tw.tween_interval(0.5)
-	tw.tween_callback(func() -> void: _busy = false)
 	if n >= PARTS.size():
-		var tw2: Tween = create_tween()
-		tw2.tween_interval(0.75)
-		tw2.tween_callback(_powerup)
+		EventBus.notification_requested.emit("%s — all four seated. One more E bolts the kit down" % String(info["line"]), "success")
+	else:
+		EventBus.notification_requested.emit("%s — %d of 4 seated" % [String(info["line"]), n], "success")
+	if runtime != null:
+		runtime.sys_log("ARMOUR SEAT: %s (%d/4)" % [part_name.to_upper(), n])
+	var tw2: Tween = create_tween()
+	tw2.tween_interval(0.45)
+	tw2.tween_callback(func() -> void: _busy = false)
+
+
+# ===========================================================================
+# stage two: bolt the kit down, one clack at a time
+# ===========================================================================
+
+func _pending_locks() -> Array:
+	var pending: Array = []
+	for part_name: String in PARTS:
+		if _fitted.has(part_name) and not _locked.has(part_name):
+			pending.append(part_name)
+	return pending
+
+
+func _bolt_all(pending: Array) -> void:
+	var delay: float = 0.0
+	for part_name: String in pending:
+		_bolt_one(part_name, delay)
+		delay += 0.28
+	var watch: Tween = create_tween()
+	watch.tween_interval(delay + 0.15)
+	watch.tween_callback(_after_bolts)
+
+
+func _bolt_one(part_name: String, delay: float) -> void:
+	var node: Node3D = _parts[part_name]
+	var info: Dictionary = PARTS[part_name]
+	var tw: Tween = create_tween()
+	tw.tween_interval(delay)
+	tw.tween_callback(func() -> void:
+		_locked[part_name] = true
+		AudioBank.play_at(String(info["lock_sfx"]), node.global_position, -6.0)
+		# the part takes the torque: a quick pump of scale
+		var pump: Tween = create_tween()
+		pump.tween_property(node, "scale", Vector3.ONE * 1.04, 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		pump.tween_property(node, "scale", Vector3.ONE, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_ring_step()
+		_pulse(1.5)
+		_update_texts()
+		if runtime != null:
+			runtime.sys_log("ARMOUR BOLT: %s (%d/4)" % [part_name.to_upper(), _locked.size()])
+	)
+
+
+func _after_bolts() -> void:
+	if _locked.size() >= PARTS.size():
+		_powerup()
+	else:
+		EventBus.notification_requested.emit("%d of 4 bolted — seat the rest, then E again" % _locked.size(), "info")
+
+
+func _ring_step() -> void:
+	if _ring_mat == null:
+		return
+	var target: float = _ring_base * (0.5 + 0.25 * float(_locked.size()))
+	var tw: Tween = create_tween()
+	tw.tween_property(_ring_mat, "emission_energy_multiplier", target, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 func dismount_all(instant: bool = false) -> void:
-	## Strip every fitted spare back to its authored home. Instant is for the
-	## demo reset; the animated form is what the figure's station offers.
+	## Strip every fitted spare back to its authored home — seated or bolted.
 	if _fitted.is_empty():
 		if not instant:
 			EventBus.notification_requested.emit("no spares are fitted", "info")
@@ -137,6 +225,7 @@ func dismount_all(instant: bool = false) -> void:
 		var node: Node3D = _parts[part_name]
 		var home: Dictionary = _homes[part_name]
 		carry.set_item_enabled(node, true)
+		node.scale = Vector3.ONE
 		if instant:
 			node.global_position = home["position"] as Vector3
 			node.rotation = home["rotation"] as Vector3
@@ -148,6 +237,7 @@ func dismount_all(instant: bool = false) -> void:
 			tw.tween_property(node, "rotation", home["rotation"] as Vector3, 0.55)
 		AudioBank.play_at("tool_place", node.global_position, -8.0)
 	_fitted.clear()
+	_locked.clear()
 	for m: StandardMaterial3D in _glow_mats:
 		if not is_instance_valid(m):
 			continue
@@ -157,6 +247,13 @@ func dismount_all(instant: bool = false) -> void:
 		else:
 			var tw2: Tween = create_tween()
 			tw2.tween_property(m, "emission_energy_multiplier", base, 0.5)
+	if _ring_mat != null:
+		var target: float = _ring_base * 0.5
+		if instant:
+			_ring_mat.emission_energy_multiplier = target
+		else:
+			var tw3: Tween = create_tween()
+			tw3.tween_property(_ring_mat, "emission_energy_multiplier", target, 0.5)
 	_update_texts()
 	if not instant:
 		EventBus.notification_requested.emit("spares stripped back — the figure stands as it was", "info")
@@ -166,7 +263,7 @@ func dismount_all(instant: bool = false) -> void:
 
 func fit_all_instant() -> void:
 	## Used by the capture harness so the finished-garage shots show the armour
-	## complete, and by the demo reset's inverse if it ever needs one.
+	## complete — seated, bolted and lit.
 	for part_name: String in PARTS:
 		var node: Node3D = _parts.get(part_name, null) as Node3D
 		if node == null or _fitted.has(part_name):
@@ -176,9 +273,12 @@ func fit_all_instant() -> void:
 		node.global_position = figure.to_global(info["socket"] as Vector3)
 		node.rotation = Vector3(0.0, figure.rotation.y + float(info["yaw"]), 0.0)
 		_fitted[part_name] = true
+		_locked[part_name] = true
 	for m: StandardMaterial3D in _glow_mats:
 		if is_instance_valid(m):
 			m.emission_energy_multiplier = float(m.get_meta("base_energy", 2.0)) * 1.55
+	if _ring_mat != null:
+		_ring_mat.emission_energy_multiplier = _ring_base * 1.7
 	_update_texts()
 
 
@@ -203,7 +303,12 @@ func _snatch_glow(node: Node) -> void:
 					var dup: StandardMaterial3D = src.duplicate() as StandardMaterial3D
 					dup.set_meta("base_energy", dup.emission_energy_multiplier)
 					mi.material_override = dup
-					_glow_mats.append(dup)
+					if nm.begins_with("GlowRing"):
+						# the base ring is the progress meter, not a pulse target
+						_ring_mat = dup
+						_ring_base = dup.emission_energy_multiplier
+					else:
+						_glow_mats.append(dup)
 		_snatch_glow(child)
 
 
@@ -229,8 +334,13 @@ func _powerup() -> void:
 		tw.tween_property(m, "emission_energy_multiplier", base * 2.1, 0.5) \
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		tw.chain().tween_property(m, "emission_energy_multiplier", base * 1.55, 0.9)
+	if _ring_mat != null:
+		var ring_tw: Tween = create_tween()
+		ring_tw.tween_property(_ring_mat, "emission_energy_multiplier", _ring_base * 2.4, 0.4) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		ring_tw.tween_property(_ring_mat, "emission_energy_multiplier", _ring_base * 1.7, 0.8)
 	AudioBank.play_at("core_charge", figure.global_position, -6.0)
-	EventBus.notification_requested.emit("ARMOUR MK-I — COMPLETE — all four spares test-fitted", "success")
+	EventBus.notification_requested.emit("ARMOUR MK-I — COMPLETE — all four spares test-fitted and bolted", "success")
 	if runtime != null:
 		runtime.sys_log("ARMOUR MK-I COMPLETE")
 	_update_texts()
@@ -254,26 +364,29 @@ func _update_texts() -> void:
 	var fig_st: Node = _station_of(figure)
 	if fig_st != null and _orig.has(fig_st):
 		var o: Dictionary = _orig[fig_st]
-		if _fitted.size() >= PARTS.size():
+		if _locked.size() >= PARTS.size():
 			fig_st.display_name = "The shop's armour — complete"
-			fig_st.description = "All four spare shells are test-fitted onto the figure: helmet over the head, chest plate over the front, gauntlet on the right forearm, boot on the left foot. The core lens and the eye slits are burning brighter — the fit checks out."
-			fig_st.spec_rows = [["spares fitted", "4 of 4"], ["palette", "red over gold over alloy"], ["state", "fit checked, standing test"]]
+			fig_st.description = "All four spare shells are test-fitted and bolted down: helmet over the head, chest plate over the front, gauntlet on the right forearm, boot on the left foot. The core lens and the eye slits are burning brighter, the base ring stands at full — the fit checks out."
+			fig_st.spec_rows = [["spares bolted", "4 of 4"], ["palette", "red over gold over alloy"], ["state", "fit checked, standing test"]]
 		elif _fitted.is_empty():
 			fig_st.display_name = String(o["title"])
 			fig_st.description = String(o["desc"])
 			fig_st.spec_rows = (o["spec"] as Array).duplicate()
 		else:
-			fig_st.display_name = "The shop's armour — %d of 4 fitted" % _fitted.size()
-			fig_st.description = "The spare shells are being test-fitted onto the figure. %d seated so far." % _fitted.size()
-			fig_st.spec_rows = [["spares fitted", "%d of 4" % _fitted.size()], ["palette", "red over gold over alloy"], ["state", "fitting in progress"]]
+			fig_st.display_name = "The shop's armour — %d seated, %d bolted" % [_fitted.size(), _locked.size()]
+			fig_st.description = "The spare shells are being test-fitted onto the figure: %d seated, %d already bolted down. One more E at the figure walks the rest through their locks." % [_fitted.size(), _locked.size()]
+			fig_st.spec_rows = [["spares seated", "%d of 4" % _fitted.size()], ["spares bolted", "%d of 4" % _locked.size()], ["palette", "red over gold over alloy"]]
 	for part_name: String in _parts:
 		var st: Node = _station_of(_parts[part_name])
 		if st == null or not _orig.has(st):
 			continue
 		var o2: Dictionary = _orig[st]
-		if _fitted.has(part_name):
-			st.display_name = String(o2["title"]) + " — fitted"
-			st.description = String(o2["desc"]) + " Right now it is seated on the figure."
+		if _locked.has(part_name):
+			st.display_name = String(o2["title"]) + " — bolted"
+			st.description = String(o2["desc"]) + " Right now it is seated on the figure and bolted down."
+		elif _fitted.has(part_name):
+			st.display_name = String(o2["title"]) + " — seated"
+			st.description = String(o2["desc"]) + " Right now it is seated on the figure, waiting for the bolt-down."
 		else:
 			st.display_name = String(o2["title"])
 			st.description = String(o2["desc"])
@@ -291,3 +404,17 @@ func _station_of(node: Node) -> Node:
 
 func fitted_count() -> int:
 	return _fitted.size()
+
+
+func locked_count() -> int:
+	return _locked.size()
+
+
+func part_state(part_name: String) -> int:
+	## 0 at its place · 1 seated (test-fitted) · 2 bolted down. Read by the
+	## console's armour checklist.
+	if _locked.has(part_name):
+		return 2
+	if _fitted.has(part_name):
+		return 1
+	return 0

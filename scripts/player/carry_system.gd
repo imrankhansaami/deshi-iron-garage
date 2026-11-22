@@ -428,6 +428,22 @@ func settle_held(to_position: Vector3, to_rotation: Vector3, sfx: String = "serv
 	return true
 
 
+func detach_held() -> Node3D:
+	## The fitting interaction takes the held node over: the carry state clears
+	## immediately and the caller owns the node's animation from here.
+	if _state != State.CARRYING or _held == null:
+		return null
+	var node: Node3D = _held
+	_held = null
+	_state = State.FREE
+	for cs: CollisionShape3D in _freed_station_shapes:
+		if is_instance_valid(cs):
+			cs.set_deferred("disabled", false)
+	_freed_station_shapes.clear()
+	_set_hint("")
+	return node
+
+
 func set_item_enabled(node: Node3D, enabled: bool) -> void:
 	## Fitted furniture stays in the room but off the pick list: the armour
 	## assembly disables a spare once it is seated and re-enables it on dismount.

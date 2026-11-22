@@ -76,7 +76,16 @@ func _run() -> void:
 			carry.set("_state", 0)
 			wrong.global_position = boot_home
 			wrong.rotation = Vector3.ZERO
-	# 3. the power-up: the glow materials ride brighter than their base
+	# 3. stage two: one empty-handed press bolts the whole kit down in a cascade
+	print("ARMOR: seated=%d locked=%d %s" % [
+		int(armor.fitted_count()), int(armor.locked_count()),
+		"OK" if int(armor.fitted_count()) == 4 and int(armor.locked_count()) == 0 else "FAIL"])
+	var handled_bolt: bool = armor.figure_action(null)
+	await _wait(2.2)
+	print("ARMOR: bolt cascade handled=%s locked=%d/4 %s" % [
+		str(handled_bolt), int(armor.locked_count()),
+		"OK" if handled_bolt and int(armor.locked_count()) == 4 else "FAIL"])
+	# 4. the power-up: the glow materials ride brighter than their base
 	var glow_ok: bool = false
 	for child: Node in dressing.get_node_or_null("ArmorFigure").get_children():
 		if child is MeshInstance3D and String(child.name).begins_with("Core"):
