@@ -148,7 +148,10 @@ func _seat(part_name: String) -> void:
 	_update_texts()
 	var n: int = _fitted.size()
 	if n >= PARTS.size():
-		EventBus.notification_requested.emit("%s — all four seated. One more E bolts the kit down" % String(info["line"]), "success")
+		EventBus.notification_requested.emit("%s — all four seated. The core is catching — press E again to bolt the kit down and seal the fit" % String(info["line"]), "success")
+		var catch_tw: Tween = create_tween()
+		catch_tw.tween_interval(0.4)
+		catch_tw.tween_callback(_power_on_moment)
 	else:
 		EventBus.notification_requested.emit("%s — %d of 4 seated" % [String(info["line"]), n], "success")
 	if runtime != null:
@@ -202,7 +205,7 @@ func _bolt_one(part_name: String, delay: float) -> void:
 
 func _after_bolts() -> void:
 	if _locked.size() >= PARTS.size():
-		_powerup()
+		_seal()
 	else:
 		EventBus.notification_requested.emit("%d of 4 bolted — seat the rest, then E again" % _locked.size(), "info")
 
@@ -276,9 +279,9 @@ func fit_all_instant() -> void:
 		_locked[part_name] = true
 	for m: StandardMaterial3D in _glow_mats:
 		if is_instance_valid(m):
-			m.emission_energy_multiplier = float(m.get_meta("base_energy", 2.0)) * 1.55
+			m.emission_energy_multiplier = float(m.get_meta("base_energy", 2.0)) * 1.9
 	if _ring_mat != null:
-		_ring_mat.emission_energy_multiplier = _ring_base * 1.7
+		_ring_mat.emission_energy_multiplier = _ring_base * 2.1
 	_update_texts()
 
 
@@ -324,26 +327,47 @@ func _pulse(mult: float) -> void:
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
-func _powerup() -> void:
-	for m: StandardMaterial3D in _glow_mats:
-		if not is_instance_valid(m):
-			continue
-		var base: float = float(m.get_meta("base_energy", 2.0))
-		var tw: Tween = create_tween()
-		tw.set_parallel(true)
-		tw.tween_property(m, "emission_energy_multiplier", base * 2.1, 0.5) \
-			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tw.chain().tween_property(m, "emission_energy_multiplier", base * 1.55, 0.9)
+func _power_on_moment() -> void:
+	## The last part seats and the core catches: the lights ramp up for the first
+	## time — the power-up the sequence promised. The bolt-down then seals it.
+	_ramp_glows(2.1, 1.55)
 	if _ring_mat != null:
 		var ring_tw: Tween = create_tween()
 		ring_tw.tween_property(_ring_mat, "emission_energy_multiplier", _ring_base * 2.4, 0.4) \
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		ring_tw.tween_property(_ring_mat, "emission_energy_multiplier", _ring_base * 1.7, 0.8)
 	AudioBank.play_at("core_charge", figure.global_position, -6.0)
-	EventBus.notification_requested.emit("ARMOUR MK-I — COMPLETE — all four spares test-fitted and bolted", "success")
 	if runtime != null:
-		runtime.sys_log("ARMOUR MK-I COMPLETE")
+		runtime.sys_log("ARMOUR POWER-ON — FOURTH SEAT")
 	_update_texts()
+
+
+func _seal() -> void:
+	## The fourth bolt: the fit is sealed and certified — a second surge over the
+	## running lights, a touch brighter than the power-on settle.
+	_ramp_glows(2.4, 1.9)
+	if _ring_mat != null:
+		var ring_tw: Tween = create_tween()
+		ring_tw.tween_property(_ring_mat, "emission_energy_multiplier", _ring_base * 2.8, 0.35) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		ring_tw.tween_property(_ring_mat, "emission_energy_multiplier", _ring_base * 2.1, 0.7)
+	AudioBank.play_at("core_charge", figure.global_position, -4.0, 1.15)
+	EventBus.notification_requested.emit("ARMOUR MK-I — COMPLETE — all four spares fitted, bolted and sealed", "success")
+	if runtime != null:
+		runtime.sys_log("ARMOUR MK-I COMPLETE — SEALED")
+	_update_texts()
+
+
+func _ramp_glows(peak: float, settle: float) -> void:
+	for m: StandardMaterial3D in _glow_mats:
+		if not is_instance_valid(m):
+			continue
+		var base: float = float(m.get_meta("base_energy", 2.0))
+		var tw: Tween = create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(m, "emission_energy_multiplier", base * peak, 0.5) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.chain().tween_property(m, "emission_energy_multiplier", base * settle, 0.9)
 
 
 # ===========================================================================

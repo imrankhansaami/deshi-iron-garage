@@ -76,7 +76,15 @@ func _run() -> void:
 			carry.set("_state", 0)
 			wrong.global_position = boot_home
 			wrong.rotation = Vector3.ZERO
-	# 3. stage two: one empty-handed press bolts the whole kit down in a cascade
+	# 3. the fourth seat caught the core: the lights are up BEFORE any bolting
+	var seat_energy: float = 0.0
+	for child: Node in dressing.get_node_or_null("ArmorFigure").get_children():
+		if child is MeshInstance3D and String(child.name).begins_with("Core"):
+			var cm: StandardMaterial3D = (child as MeshInstance3D).material_override as StandardMaterial3D
+			if cm != null:
+				seat_energy = cm.emission_energy_multiplier / maxf(float(cm.get_meta("base_energy", 2.0)), 0.001)
+	print("ARMOR: power-on at fourth seat glow=%.2fx %s" % [seat_energy, "OK" if seat_energy > 1.3 else "FAIL"])
+	# 4. stage two: one empty-handed press bolts the whole kit down in a cascade
 	print("ARMOR: seated=%d locked=%d %s" % [
 		int(armor.fitted_count()), int(armor.locked_count()),
 		"OK" if int(armor.fitted_count()) == 4 and int(armor.locked_count()) == 0 else "FAIL"])
