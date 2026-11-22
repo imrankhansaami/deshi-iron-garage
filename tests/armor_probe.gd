@@ -28,6 +28,15 @@ func _run() -> void:
 		print("ARMOR: setup FAIL — armor=%s carry=%s dressing=%s" % [str(armor), str(carry), str(dressing)])
 		quit()
 		return
+	# 0. the guide is inert until engaged, then points at the helmet with its tag
+	print("ARMOR: guide before engage tracker=%s beacon=%s %s" % [
+		str(armor.tracker_visible()), str(armor.beacon_visible()),
+		"OK" if not armor.tracker_visible() and not armor.beacon_visible() else "FAIL"])
+	armor.engage()
+	await _wait(0.15)
+	print("ARMOR: guide engaged target=%s beacon=%s line=\"%s\" %s" % [
+		String(armor.guide_part()), str(armor.beacon_visible()), String(armor.guide_line()),
+		"OK" if String(armor.guide_part()) == "ArmorHelmet" and armor.beacon_visible() else "FAIL"])
 	var parts: Array = ["ArmorChestPlate", "ArmorHelmet", "ArmorGauntlet", "ArmorBoot"]
 	var homes: Dictionary = {}
 	for part_name: String in parts:
@@ -93,6 +102,8 @@ func _run() -> void:
 	print("ARMOR: bolt cascade handled=%s locked=%d/4 %s" % [
 		str(handled_bolt), int(armor.locked_count()),
 		"OK" if handled_bolt and int(armor.locked_count()) == 4 else "FAIL"])
+	print("ARMOR: guide after seal beacon=%s %s" % [
+		str(armor.beacon_visible()), "OK" if not armor.beacon_visible() else "FAIL"])
 	# 4. the power-up: the glow materials ride brighter than their base
 	var glow_ok: bool = false
 	for child: Node in dressing.get_node_or_null("ArmorFigure").get_children():

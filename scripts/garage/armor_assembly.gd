@@ -21,6 +21,7 @@ class_name ArmorAssembly
 var runtime: Node
 var carry: Node
 var figure: Node3D
+var _player: Node = null
 
 ## name -> socket data. Sockets are in the figure's LOCAL space: the figure's
 ## yaw is applied to the seat rotation, so a rotated figure still fits right.
@@ -49,11 +50,24 @@ var _ring_base: float = 3.0
 var _orig: Dictionary = {}           ## station -> {title, desc, spec} originals
 var _hinted: bool = false
 var _busy: bool = false
+var _engaged: bool = false           ## the guide only exists once the job begins
+var _beacon: Node3D = null           ## the floating tag that marks the next step
+var _beacon_t: float = 0.0
+var _sealed_ms: int = 0
+
+## Where each spare waits, for the tracker's next-step line.
+const LOCATIONS: Dictionary = {
+	"ArmorHelmet": "on the mechanical bench, north end",
+	"ArmorChestPlate": "on the bench's lower shelf",
+	"ArmorGauntlet": "on the store shelf, north-west corner",
+	"ArmorBoot": "on the floor beside the figure",
+}
 
 
-func bind(p_runtime: Node, p_carry: Node, dressing: Node3D) -> void:
+func bind(p_runtime: Node, p_carry: Node, dressing: Node3D, p_player: Node = null) -> void:
 	runtime = p_runtime
 	carry = p_carry
+	_player = p_player
 	figure = dressing.get_node_or_null("ArmorFigure") as Node3D
 	if figure == null:
 		push_warning("ArmorAssembly: no ArmorFigure in the dressing")
@@ -68,6 +82,117 @@ func bind(p_runtime: Node, p_carry: Node, dressing: Node3D) -> void:
 	if _ring_mat != null:
 		_ring_mat.emission_energy_multiplier = _ring_base * 0.5
 	_snapshot_texts()
+	_build_beacon()
+	set_process(true)
+
+
+func _build_beacon() -> void:
+	## The guide tag: a small bobbing diamond in the shop's signal yellow that
+	## marks what to carry and where to bring it. Hidden until the job is engaged,
+	## so the morning room stays clean.
+	var mat: StandardMaterial3D = MaterialLibrary.led(Color("ffd24a"), 1.6)
+	var tag: MeshInstance3D = ShapeKit.box(Vector3(0.065, 0.065, 0.065), mat, "ArmorGuide")
+	tag.rotation = Vector3(PI * 0.25, 0.0, PI * 0.25)
+	tag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(tag)
+	_beacon = tag
+	_beacon.visible = false
+
+
+func engage() -> void:
+	## The job begins: the beacon and the tracker come alive.
+	_engaged = true
+
+
+func _process(delta: float) -> void:
+	if _beacon == null or figure == null:
+		return
+	var held: Node3D = carry.held() if carry != null else null
+	if not _engaged and held != null and _is_part(held):
+		_engaged = true
+	if not _engaged and _player != null:
+		# walking up to the figure is enough: no looking, no clicking to wake it
+		if _player.global_position.distance_to(figure.global_position) < 4.5:
+			_engaged = true
+	var show: bool = _engaged and _locked.size() < PARTS.size()
+	_beacon.visible = show
+	if not show:
+		return
+	_beacon_t += delta
+	var target: Vector3
+	if held != null and _is_part(held) and not _fitted.has(_name_of(held)):
+		# carrying the right part: mark where it goes
+		target = figure.global_position + Vector3.UP * 2.05
+	else:
+		var np: String = guide_part()
+		if np != "":
+			var node: Node3D = _parts[np]
+			target = node.global_position + Vector3.UP * (ShapeKit.node_bounds(node).size.y + 0.25)
+		else:
+			target = figure.global_position + Vector3.UP * 2.05
+	_beacon.global_position = target + Vector3.UP * sin(_beacon_t * 2.4) * 0.045
+	_beacon.rotation.y = _beacon_t * 1.1
+
+
+func beacon_visible() -> bool:
+	return _beacon != null and _beacon.visible
+
+
+func tracker_visible() -> bool:
+	## The HUD tracker lives while the job is open, then lingers a few seconds
+	## past the seal so the completion is seen.
+	if not _engaged:
+		return false
+	if _locked.size() < PARTS.size():
+		return true
+	return Time.get_ticks_msec() - _sealed_ms < 12000
+
+
+func guide_part() -> String:
+	## The nearest spare still at its place — whatever is easiest to reach next,
+	## so anyone can start with the part they happen to be standing by. Falls back
+	## to the story order (head, chest, arm, foot) when no player reference exists.
+	var best: String = ""
+	var best_d: float = 0.0
+	for part_name: String in PARTS:
+		if _fitted.has(part_name):
+			continue
+		if _player == null:
+			return part_name
+		var node: Node3D = _parts.get(part_name, null) as Node3D
+		if node == null:
+			continue
+		var d: float = _player.global_position.distance_to(node.global_position)
+		if best == "" or d < best_d:
+			best = part_name
+			best_d = d
+	return best
+
+
+func guide_line() -> String:
+	## The tracker's one-line instruction, from wherever the player is.
+	var held: Node3D = carry.held() if carry != null else null
+	if held != null and _is_part(held):
+		return "carry it to the figure — E to test-fit"
+	if _locked.size() >= PARTS.size():
+		return "complete — E at the figure strips the kit for a second run"
+	if not _pending_locks().is_empty():
+		return "E at the figure bolts the kit down"
+	var np: String = guide_part()
+	if np != "":
+		return "next: carry the %s — %s" % [String(PARTS[np]["label"]), String(LOCATIONS[np])]
+	return ""
+
+
+func _is_part(node: Node3D) -> bool:
+	return node != null and _parts.values().has(node)
+
+
+func _name_of(node: Node3D) -> String:
+	for part_name: String in _parts:
+		if _parts[part_name] == node:
+			return part_name
+	return ""
 
 
 # ===========================================================================
@@ -77,6 +202,7 @@ func bind(p_runtime: Node, p_carry: Node, dressing: Node3D) -> void:
 func figure_prompt() -> String:
 	if not _hinted:
 		_hinted = true
+		_engaged = true
 		EventBus.notification_requested.emit("the figure takes the four spares — helmet, chest plate, gauntlet, boot. Bring one and press E to test-fit it", "info")
 	var held: Node3D = carry.held()
 	if held != null:
@@ -99,6 +225,7 @@ func figure_action(_player: Node) -> bool:
 	## back to the station's normal inspect behaviour.
 	if figure == null or _parts.is_empty():
 		return false
+	_engaged = true
 	var held: Node3D = carry.held()
 	if held != null:
 		for part_name: String in PARTS:

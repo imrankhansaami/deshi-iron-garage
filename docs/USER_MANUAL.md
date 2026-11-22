@@ -197,6 +197,22 @@ then press **START ASSEMBLY SEQUENCE**.
 
 You can also use the stand itself: `E` on the suit runs the diagnostic pass once it is complete.
 
+### The armour figure
+
+By the north wall, on its service base: a red-and-gold figure and its four spare shells, laid out
+where they are worked on — helmet on the mechanical bench's north end, chest plate on the bench's
+lower shelf, gauntlet on the store shelf, boot on the floor beside the figure. Left-click a spare to
+carry it to the figure, then `E` to test-fit it; it seats with a latch, a servo and a light pulse,
+and the base ring climbs a step. The **fourth seat powers the figure on** — eyes, core and ring light
+up. Step back, empty hands, and `E` once more: the bolts walk through in a clack cascade and the fit
+is sealed. `E` again strips the kit for another run.
+
+It is a guided job: walking up to the figure (or picking up any spare) wakes a **yellow diamond tag**
+that floats over the nearest spare still at its place and moves with you — and the HUD tracker under
+the objective lists the four parts as *at its place / seated / bolted* with the next step spelled out.
+The console keeps the same checklist live (`Tab` → Assembly → Armour), and `R` returns the whole
+garage to the morning so the sequence can be performed again.
+
 ### The diagnostic console
 
 In the testing corner, bordered by a hazard rail. `E` on the console runs a seven-stage diagnostic
@@ -461,7 +477,11 @@ For showing the project in about six minutes, following the sequence in the brie
 12. `E` on the stage. Install three modules. Start the assembly. **Let it run without talking.**
 13. The core ignites, the optics light.
 14. `E` on the console in the testing corner. The diagnostic pass runs.
-15. **F6**. Materials tab: change roughness and metallic live. Hologram tab: switch between the three
+15. Walk to the armour figure by the north wall. The guide wakes as you arrive: a yellow tag floats
+    over the nearest spare, the tracker under the objective spells out the next step. Carry each of
+    the four spares over and `E` to test-fit it — the fourth seat powers the figure on — then one
+    more `E`, empty-handed, bolts the kit down and seals it.
+16. **F6**. Materials tab: change roughness and metallic live. Hologram tab: switch between the three
     variants. Lighting tab: switch to warm-only and back to full rig. Post tab: toggle SDFGI and watch
     the core's wall spill disappear.
-16. Press **F6** again, walk back out through the shutter, and turn around.
+17. Press **F6** again, walk back out through the shutter, and turn around.

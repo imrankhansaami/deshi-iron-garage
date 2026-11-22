@@ -128,7 +128,11 @@ stages, by hand: **test-fit** — carry each part to the figure and press `E`, i
 into its socket with a latch while the base ring climbs a step; the **fourth part
 seats and the figure powers on** — eyes, core and ring light up — then **bolt the kit
 down** with one more `E`: a cascade of clacks walks all four locks and **seals the
-fit** with a second surge. `R` puts the whole garage back to the morning so the
+fit** with a second surge. The job guides itself — walking up to the figure raises
+the HUD tracker (each part *at its place / seated / bolted*, with the next step
+spelled out) and a yellow tag that floats over the nearest spare still at its
+place, so anyone can start with whatever is closest. `R` puts the whole garage
+back to the morning so the
 sequence can run again, `T` opens the measured claims (the checklist lives in the
 console, `Tab` → Assembly → Armour), and `1`–`0` / `[` `]` jump the camera through
 the twenty fixed viewpoints — press `\` to come back to your spot.

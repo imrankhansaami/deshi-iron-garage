@@ -174,7 +174,7 @@ func _build() -> void:
 	armor = (load("res://scripts/garage/armor_assembly.gd") as GDScript).new()
 	armor.name = "ArmorAssembly"
 	add_child(armor)
-	armor.bind(runtime, carry, dressing)
+	armor.bind(runtime, carry, dressing, player)
 	runtime.armor = armor
 	if player != null:
 		player.world = self

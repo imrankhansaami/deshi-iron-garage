@@ -27,6 +27,9 @@ var root: Control
 var objective_panel: PanelContainer
 var objective_label: Label
 var objective_hint: Label
+var _armor_tracker: VBoxContainer
+var _armor_rows: Array = []
+var _armor_next: Label
 var progress_bar: ProgressBar
 var prompt_label: Label
 var prompt_host: Label
@@ -83,6 +86,28 @@ func attach(p: Player, rt: GarageRuntime, dir: ObjectiveDirector, env: GarageEnv
 	props = pr
 	if is_inside_tree():
 		_build_all()
+
+
+func _update_armor_tracker() -> void:
+	## The armour guide, straight on the HUD while the job is open: the four
+	## spares with their state, and the one line that says what to do next. All
+	## state lives in the assembly module; this only renders it.
+	if _armor_tracker == null:
+		return
+	if runtime == null or runtime.armor == null or not bool(runtime.armor.tracker_visible()):
+		_armor_tracker.visible = false
+		return
+	_armor_tracker.visible = true
+	var ids: Array = ["ArmorHelmet", "ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]
+	var names: Array = ["helmet", "chest plate", "gauntlet", "boot"]
+	var marks: Array = ["[ ]", "[~]", "[x]"]
+	var states: Array = ["at its place", "seated", "bolted"]
+	for i: int in range(4):
+		var st: int = int(runtime.armor.part_state(String(ids[i])))
+		var row: Label = _armor_rows[i]
+		row.text = "%s %-11s %s" % [String(marks[st]), String(names[i]), String(states[st])]
+		row.add_theme_color_override("font_color", GarageTheme.col("cyan" if st == 2 else "ink"))
+	_armor_next.text = String(runtime.armor.guide_line())
 
 
 func _build_all() -> void:
@@ -175,6 +200,35 @@ func _build_hud() -> void:
 	progress_bar.custom_minimum_size = Vector2(400, 6)
 	progress_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(progress_bar)
+
+	# --- the armour guide tracker, under the objective --------------------
+	_armor_tracker = VBoxContainer.new()
+	_armor_tracker.name = "ArmorTracker"
+	_armor_tracker.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_armor_tracker.position = Vector2(24, 158)
+	_armor_tracker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_armor_tracker.visible = false
+	root.add_child(_armor_tracker)
+	var atitle := Label.new()
+	atitle.text = "ARMOUR MK-I — GUIDE"
+	atitle.add_theme_font_override("font", _font("mono"))
+	atitle.add_theme_font_size_override("font_size", 13)
+	atitle.add_theme_color_override("font_color", GarageTheme.col("muted"))
+	_armor_tracker.add_child(atitle)
+	for i: int in range(4):
+		var row := Label.new()
+		row.add_theme_font_override("font", _font("mono"))
+		row.add_theme_font_size_override("font_size", 15)
+		row.add_theme_color_override("font_color", GarageTheme.col("ink"))
+		_armor_tracker.add_child(row)
+		_armor_rows.append(row)
+	_armor_next = Label.new()
+	_armor_next.add_theme_font_override("font", _font("mono"))
+	_armor_next.add_theme_font_size_override("font_size", 14)
+	_armor_next.add_theme_color_override("font_color", GarageTheme.col("cyan"))
+	_armor_next.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_armor_next.custom_minimum_size = Vector2(430, 0)
+	_armor_tracker.add_child(_armor_next)
 
 	# --- status, top right ----------------------------------------------
 	status_box = VBoxContainer.new()
@@ -1108,6 +1162,7 @@ func _help_body(body: HBoxContainer) -> void:
 		["F1", "this screen"], ["F6", "graphics bench"], ["F9", "jump to finished garage (demo)"],
 		["T", "thesis panel — the measured claims"], ["R", "reset the demo to morning"],
 		["1-9, 0, [ ]", "viewpoint tour"], ["\\", "return to where you stood"],
+		["GUIDE", "the yellow tag marks the next spare for the armour figure — walk up and follow it"],
 	]
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -1669,6 +1724,7 @@ func _update_inventory_states() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_armor_tracker()
 	# FPS counter, sampled once a second so the number is readable
 	_fps_frames += 1
 	_fps_accum += delta
