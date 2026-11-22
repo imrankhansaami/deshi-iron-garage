@@ -43,8 +43,8 @@ func _run() -> void:
 		String(armor.guide_part()), str(armor.beacon_visible()),
 		String(armor.stage_line()), String(armor.next_line()),
 		"OK" if armor.PARTS.has(String(armor.guide_part())) and armor.beacon_visible()
-			and String(armor.stage_line()).contains("STEP 1 OF 2")
-			and String(armor.next_line()).contains("left-click the spare") else "FAIL"])
+			and String(armor.stage_line()).contains("STEP 1 OF 3")
+			and String(armor.next_line()).contains("left-click the") else "FAIL"])
 	print("ARMOR: beacon built node=%s children=[%s] pos=%s %s" % [
 		str(bcn != null), bch.strip_edges(),
 		str((bcn as Node3D).global_position) if bcn is Node3D else "n/a",
@@ -52,15 +52,15 @@ func _run() -> void:
 	var bp: String = String(armor.guide_part())
 	var av: String = ""
 	var ar_ok: bool = true
-	for p: String in ["ArmorHelmet", "ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]:
+	for p: String in ["ArmorLegs", "ArmorTorso", "ArmorHead"]:
 		var vis: bool = bool(armor.arrow_visible(p))
 		if vis:
 			av += p + " "
 		if vis == (p == bp):
 			ar_ok = false
-	print("ARMOR: spare arrows over=[%s] beacon-part=%s %s" % [
+	print("ARMOR: assembly arrows over=[%s] beacon-part=%s %s" % [
 		av.strip_edges(), bp, "OK" if ar_ok and not av.is_empty() else "FAIL"])
-	var parts: Array = ["ArmorChestPlate", "ArmorHelmet", "ArmorGauntlet", "ArmorBoot"]
+	var parts: Array = ["ArmorLegs", "ArmorTorso", "ArmorHead"]
 	var homes: Dictionary = {}
 	for part_name: String in parts:
 		var n: Node3D = dressing.get_node_or_null(part_name) as Node3D
@@ -69,11 +69,23 @@ func _run() -> void:
 	var staged: bool = true
 	for part_name: String in parts:
 		var h: Vector3 = homes.get(part_name, Vector3.ZERO) as Vector3
-		if h.z < 2.5 or h.y < 0.30 or h.y > 0.45:
+		if h.z < 2.5 or h.y < 0.10 or h.y > 0.15:
 			staged = false
-	print("ARMOR: parts staged on the front tray %s" % ["OK" if staged else "FAIL"])
-	# 1. fit every spare through the interactive path
+	print("ARMOR: assemblies staged on the build pallet %s" % ["OK" if staged else "FAIL"])
+	# 1. the order is enforced — the torso is refused until the legs are on
+	var torso_node: Node3D = dressing.get_node_or_null("ArmorTorso") as Node3D
+	carry.set("_held", torso_node)
+	carry.set("_state", 1)
+	var refused: bool = armor.figure_action(null)
+	await _frames(5)
+	print("ARMOR: wrong-order guard refused=%s fitted=%d/3 %s" % [
+		str(refused), int(armor.fitted_count()),
+		"OK" if refused and int(armor.fitted_count()) == 0 else "FAIL"])
+	carry.set("_held", null)
+	carry.set("_state", 0)
+	# 2. build the figure low to high through the interactive path
 	var expect_fitted: int = 0
+	var fig: Node3D = dressing.get_node_or_null("ArmorBase") as Node3D
 	for part_name: String in parts:
 		var node: Node3D = dressing.get_node_or_null(part_name) as Node3D
 		if node == null:
@@ -86,7 +98,6 @@ func _run() -> void:
 		var handled: bool = armor.figure_action(null)
 		await _wait(0.9)
 		expect_fitted += 1
-		var fig: Node3D = dressing.get_node_or_null("ArmorFigure") as Node3D
 		var socket: Vector3 = fig.to_global(armor.PARTS[part_name]["socket"] as Vector3)
 		var dist: float = node.global_position.distance_to(socket)
 		print("ARMOR: fit %-16s handled=%s socket_dist=%.2f cm fitted=%d/%d %s" % [
@@ -95,58 +106,38 @@ func _run() -> void:
 		print("ARMOR:   node at %s  socket at %s  carry_state=%s" % [
 			str(node.global_position.snapped(Vector3(0.01, 0.01, 0.01))),
 			str(socket.snapped(Vector3(0.01, 0.01, 0.01))), str(carry.get("_state"))])
-		# 2. a mismatched part is refused with a buzz, not a crash
-		if part_name == "ArmorBoot" and expect_fitted >= 4:
-			var wrong: Node3D = dressing.get_node_or_null("ArmorBoot") as Node3D
-			var boot_home: Vector3 = homes["ArmorBoot"] as Vector3
-			carry.set("_held", wrong)
-			carry.set("_state", 1)
-			armor.figure_action(null)
-			await _frames(10)
-			# the carry loop moved the held boot toward the camera, exactly as it
-			# would have; the guard's point is that the SOCKET did not take it
-			var socket_cheat: float = wrong.global_position.distance_to(
-				(dressing.get_node_or_null("ArmorFigure") as Node3D).to_global(armor.PARTS["ArmorBoot"]["socket"] as Vector3))
-			var accepted: bool = socket_cheat < 5.0
-			print("ARMOR: wrong-socket guard boot_still_held=%s %s" % [
-				str(not accepted), "OK" if not accepted else "FAIL"])
-			carry.set("_held", null)
-			carry.set("_state", 0)
-			wrong.global_position = boot_home
-			wrong.rotation = Vector3.ZERO
-	# 3. the fourth seat caught the core: the lights are up BEFORE any bolting
+	# 3. the head seat caught the core: the lights are up BEFORE the seal
 	var seat_energy: float = 0.0
-	for child: Node in dressing.get_node_or_null("ArmorFigure").get_children():
+	for child: Node in dressing.get_node_or_null("ArmorTorso").get_children():
 		if child is MeshInstance3D and String(child.name).begins_with("Core"):
 			var cm: StandardMaterial3D = (child as MeshInstance3D).material_override as StandardMaterial3D
 			if cm != null:
 				seat_energy = cm.emission_energy_multiplier / maxf(float(cm.get_meta("base_energy", 2.0)), 0.001)
-	print("ARMOR: power-on at fourth seat glow=%.2fx %s" % [seat_energy, "OK" if seat_energy > 1.3 else "FAIL"])
-	# 4. stage two: one empty-handed press bolts the whole kit down in a cascade
+	print("ARMOR: power-on at head seat glow=%.2fx %s" % [seat_energy, "OK" if seat_energy > 1.3 else "FAIL"])
+	# 4. stage two: the seal is automatic now
 	print("ARMOR: seated=%d locked=%d %s" % [
 		int(armor.fitted_count()), int(armor.locked_count()),
-		"OK" if int(armor.fitted_count()) == 4 and int(armor.locked_count()) == 0 else "FAIL"])
-	# stage two is automatic: the fourth seat schedules the seal itself
+		"OK" if int(armor.fitted_count()) == 3 and int(armor.locked_count()) == 0 else "FAIL"])
 	await _wait(4.6)
-	print("ARMOR: auto-seal locked=%d/4 %s" % [
-		int(armor.locked_count()), "OK" if int(armor.locked_count()) == 4 else "FAIL"])
+	print("ARMOR: auto-seal locked=%d/3 %s" % [
+		int(armor.locked_count()), "OK" if int(armor.locked_count()) == 3 else "FAIL"])
 	print("ARMOR: guide after seal beacon=%s stage=\"%s\" %s" % [
 		str(armor.beacon_visible()), String(armor.stage_line()),
 		"OK" if not armor.beacon_visible() and String(armor.stage_line()).contains("COMPLETE") else "FAIL"])
 	var any_arrow: bool = false
-	for p: String in ["ArmorHelmet", "ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]:
+	for p: String in ["ArmorLegs", "ArmorTorso", "ArmorHead"]:
 		any_arrow = any_arrow or bool(armor.arrow_visible(p))
-	print("ARMOR: spare arrows after seal any=%s %s" % [str(any_arrow), "OK" if not any_arrow else "FAIL"])
+	print("ARMOR: assembly arrows after seal any=%s %s" % [str(any_arrow), "OK" if not any_arrow else "FAIL"])
 	# 4. the power-up: the glow materials ride brighter than their base
 	var glow_ok: bool = false
-	for child: Node in dressing.get_node_or_null("ArmorFigure").get_children():
+	for child: Node in dressing.get_node_or_null("ArmorTorso").get_children():
 		if child is MeshInstance3D and String(child.name).begins_with("Core"):
 			var m: StandardMaterial3D = (child as MeshInstance3D).material_override as StandardMaterial3D
 			if m != null:
 				var base: float = float(m.get_meta("base_energy", 2.0))
 				glow_ok = m.emission_energy_multiplier > base * 1.2
 	print("ARMOR: power-up glow_boosted=%s %s" % [str(glow_ok), "OK" if glow_ok else "FAIL"])
-	var fig_node: Node3D = dressing.get_node_or_null("ArmorFigure") as Node3D
+	var fig_node: Node3D = dressing.get_node_or_null("ArmorBase") as Node3D
 	var fig_st: Node = null
 	if fig_node != null:
 		for child: Node in fig_node.get_children():
@@ -179,15 +170,15 @@ func _run() -> void:
 		int(gs.collected_components.size()), "OK" if gs.collected_components.size() == 0 else "FAIL"])
 	# 6b. ease: carrying a spare up seats it — no look, no press
 	var pl: Node3D = world.get("player") as Node3D
-	var fig2: Node3D = dressing.get_node_or_null("ArmorFigure") as Node3D
-	var boot2: Node3D = dressing.get_node_or_null("ArmorBoot") as Node3D
+	var fig2: Node3D = dressing.get_node_or_null("ArmorBase") as Node3D
+	var boot2: Node3D = dressing.get_node_or_null("ArmorLegs") as Node3D
 	if pl != null and fig2 != null and boot2 != null:
 		var pl_saved: Vector3 = pl.global_position
 		pl.global_position = fig2.global_position + Vector3(1.1, 0.0, 1.1)
 		carry.set("_held", boot2)
 		carry.set("_state", 1)
 		await _wait(0.8)
-		print("ARMOR: auto-seat by approach fitted=%d/4 %s" % [
+		print("ARMOR: auto-seat by approach fitted=%d/3 %s" % [
 			int(armor.fitted_count()), "OK" if int(armor.fitted_count()) == 1 else "FAIL"])
 		carry.set("_held", null)
 		carry.set("_state", 0)

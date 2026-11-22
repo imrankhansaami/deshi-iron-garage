@@ -206,24 +206,24 @@ console. The board sleeps when the final check is done, and `R` resets the whole
 
 ### The armour figure
 
-By the north wall, on its service base: a red-and-gold figure — and its four spare shells waiting
-together on the **parts tray** just inside the entrance, so the fitting always starts from one place.
-Left-click a spare to carry it back to the figure: walking it up **seats it by itself** (or press `E`
-for the button); it seats with a latch, a servo and a light pulse, and the base ring climbs a step.
-The **fourth seat powers the figure on** — eyes, core and ring light up — and after the beat **the
-bolts walk the fit down on their own**, a clack cascade that seals it with a second surge. `E` with
-empty hands still seals early or strips the kit for another run.
+By the north wall, on its service base: the shop's own build, done the long way — the **figure in
+three parts**. The **legs**, the **torso** and the **head** wait together on the **build pallet** just
+inside the entrance. Left-click an assembly to carry it back to the base: walking it up **seats it by
+itself** (or press `E` for the button) with the snap, the latch and a light pulse, the base ring
+climbing a step. The order is low to high and enforced: legs first, then torso, then head. **The head
+completes the figure and it powers on** — core lens, eye slits and ring light up — and after the beat
+**the bolts seal it on their own**, a clack cascade with a second surge. `E` with empty hands strips
+the figure back to the pallet for another build.
 
-It is a guided job: walking up to the figure (or picking up any spare) wakes the **floating arrows** —
-a big yellow arrow over every spare on the tray, so the whole set is visible at a glance, while the
-next one's arrow rises on a **column of light** and moves with you. Under the objective, the armour's
-**tracker board** lists the four shells — where each one waits, then *seated*, then *bolted* — and one
-line says exactly what to do next (*"NEXT — left-click the spare helmet to pick it up · on the parts
-tray, just inside the entrance · 7 m"*). Wrong moves are answered in **red, with the correction** — a
-hammer carried to the figure, a module installed out of order, the console pressed before the suit is
-built: each says what went wrong and what to do instead. The console keeps the same checklist live
-(`Tab` → Assembly → Armour), and `R` returns the whole garage to the morning so the sequence can be
-performed again.
+It is a guided job: waking at the build pallet, the **floating arrows** stand over every assembly
+still waiting, while the next one's arrow rises on a **column of light** and moves with you. Under
+the objective, the armour's **tracker board** lists the three assemblies — where each waits, then
+*seated*, then *bolted* — and one line says exactly what to do next (*"NEXT — left-click the legs and
+boots off the build pallet · just inside the entrance · 9 m"*). Wrong moves are answered in **red,
+with the correction** — the head carried up before the legs, a hammer carried to the base, a module
+installed out of order, the console pressed before the suit is built: each says what went wrong and
+what to do instead. The console keeps the same checklist live (`Tab` → Assembly → Armour), and `R`
+returns the whole garage to the morning so the build can be presented again.
 
 ### The diagnostic console
 
@@ -306,8 +306,8 @@ more licensed pictures of the streets and the working country. And the room keep
 painted tool outlines on the
 pegboard, chalk notes on the floor, tea rings on the bench top, paper labels on the drawers, a
 grease handprint on the apron, a paint-test board, stickers — and a whole red-and-gold armoured
-figure on a service base by the north wall, its four spare shells waiting together on a parts tray at
-the front.
+base by the north wall where the shop's figure is built — its three assemblies waiting together on the
+build pallet at the front.
 `F` on any of the pictures for the story.
 
 **The weather.** The yard runs a slow rain cycle: rain on the tin, then the after-rain hush while the
@@ -490,10 +490,10 @@ For showing the project in about six minutes, following the sequence in the brie
 12. `E` on the stage. Install three modules. Start the assembly. **Let it run without talking.**
 13. The core ignites, the optics light.
 14. `E` on the console in the testing corner. The diagnostic pass runs.
-15. At the parts tray just inside the entrance: all four spare shells wait together, each under a big
-    yellow arrow. Carry each one to the figure by the north wall — walking it up seats it (or press
-    `E`) — the fourth seat powers the figure on, and the bolts then seal the fit on their own. Wrong
-    moves answer in red and say what to do instead.
+15. At the build pallet just inside the entrance: the figure waits in three assemblies — legs, torso,
+    head — each under a big yellow arrow. Carry each to the base by the north wall, low to high —
+    walking it up seats it (or press `E`) — the head completes the figure, it powers on and the bolts
+    seal it. Wrong moves answer in red and say what to do instead.
 16. **F6**. Materials tab: change roughness and metallic live. Hologram tab: switch between the three
     variants. Lighting tab: switch to warm-only and back to full rig. Post tab: toggle SDFGI and watch
     the core's wall spill disappear.

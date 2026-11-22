@@ -1,43 +1,42 @@
 extends Node
 class_name ArmorAssembly
-## The armour assembly (presentation plan A), two-stage and by hand. The shop's
-## four spare shells — helmet, chest plate, gauntlet, boot — are TEST-FITTED onto
-## the practice figure first (carry a part to the figure, press E: it snaps into
-## its socket), and then BOLTED DOWN: one more E at the figure walks the whole
-## kit through its locks with a cascade of clacks, punching the scale and the
-## base ring's glow one step per bolt. When the fourth bolt lands, the figure
-## powers up. E once more with everything bolted strips it all back home, so the
-## sequence can be presented again and again.
+## The figure build: the shop's armour, assembled from THREE parts, low to
+## high. The service base waits by the north wall and the legs, torso and head
+## wait together on the build pallet at the front. Carry an assembly to the
+## base — walking it up seats it (the snap, the latch, the light pulse, the base
+## ring climbing a step) — legs first, then torso, then head; the order is
+## enforced with a red correction. When the head seats, the whole figure powers
+## up and the bolts walk the fit down on their own and seal it. E with the seal
+## done strips the figure back to the pallet, so the build can be presented
+## again.
 ##
-## State lives here, not on the parts: each part keeps the transform it was
-## authored with (its home). The fitting takes the held node over from the carry
-## system (detach_held) and owns the snap animation. Glow materials are duplicated
-## at bind time so every ramp stays local to the armour; the base ring is the
-## progress meter, kept out of the pulse set.
+## State lives here, not on the assemblies: each keeps the transform it was
+## authored with (its home). Seating takes the held node over from the carry
+## system (detach_held) and owns the snap animation. Glow materials are
+## duplicated at bind time so every ramp stays local to the figure; the base
+## ring is the progress meter, kept out of the pulse set.
 ##
-## Deliberately unbranded: the parts are the shop's own spare shells, and the
-## stations say so. No combat, no weapons — a fitting exercise.
+## Deliberately unbranded: an homage in the reference palette, the shop's own
+## build. No combat, no weapons — a fitting exercise.
 
 var runtime: Node
 var carry: Node
 var figure: Node3D
 var _player: Node = null
 
-## name -> socket data. Sockets are in the figure's LOCAL space: the figure's
-## yaw is applied to the seat rotation, so a rotated figure still fits right.
+## The figure, in three assemblies, low to high. Sockets are in the service
+## base's LOCAL space: the base's yaw is applied to the seat rotation, so a
+## rotated base still builds right. Dictionary order IS the build order.
 const PARTS: Dictionary = {
-	"ArmorHelmet": {"socket": Vector3(0.0, 1.525, 0.0), "yaw": 0.0,
-		"label": "spare helmet", "line": "helmet seated over the practice head",
-		"seat_sfx": "latch", "lock_sfx": "metal_tink"},
-	"ArmorChestPlate": {"socket": Vector3(0.0, 1.10, 0.12), "yaw": 0.0,
-		"label": "spare chest plate", "line": "chest plate slipped over the figure's front",
+	"ArmorLegs": {"socket": Vector3(0.0, 0.05, 0.0), "yaw": 0.0,
+		"label": "the legs and boots", "line": "the legs and boots stand on the base",
 		"seat_sfx": "metal_thunk", "lock_sfx": "metal_clank"},
-	"ArmorGauntlet": {"socket": Vector3(0.36, 0.585, 0.03), "yaw": 0.0,
-		"label": "spare gauntlet", "line": "gauntlet drawn over the right forearm",
-		"seat_sfx": "servo", "lock_sfx": "metal_tink"},
-	"ArmorBoot": {"socket": Vector3(-0.11, 0.0, 0.02), "yaw": 0.0,
-		"label": "spare boot", "line": "boot set on the left foot",
-		"seat_sfx": "tool_place", "lock_sfx": "metal_clank"},
+	"ArmorTorso": {"socket": Vector3(0.0, 0.62, 0.0), "yaw": 0.0,
+		"label": "the torso and arms", "line": "the torso and arms drop onto the waist",
+		"seat_sfx": "metal_clank", "lock_sfx": "metal_clank"},
+	"ArmorHead": {"socket": Vector3(0.0, 1.52, 0.0), "yaw": 0.0,
+		"label": "the head", "line": "the head closes the figure",
+		"seat_sfx": "latch", "lock_sfx": "metal_tink"},
 }
 
 var _parts: Dictionary = {}          ## name -> Node3D
@@ -55,22 +54,21 @@ var _engaged: bool = false           ## the guide only exists once the job begin
 var _beacon: Node3D = null           ## the shared beacon that marks the next step
 var _arrows: Dictionary = {}         ## part name -> that spare's own floating arrow
 var _sealed_ms: int = 0
+var _last_wrong: Node = null         ## the wrong-order part already announced
 
-## Where each spare waits, for the tracker's next-step line. All four live
-## together on the parts tray at the front of the garage (plan P).
+## Where each assembly waits, for the tracker's next-step line. All three live
+## together on the build pallet at the front of the garage (plan P).
 const LOCATIONS: Dictionary = {
-	"ArmorHelmet": "on the parts tray, just inside the entrance",
-	"ArmorChestPlate": "on the parts tray, just inside the entrance",
-	"ArmorGauntlet": "on the parts tray, just inside the entrance",
-	"ArmorBoot": "on the parts tray, just inside the entrance",
+	"ArmorLegs": "on the build pallet, just inside the entrance",
+	"ArmorTorso": "on the build pallet, just inside the entrance",
+	"ArmorHead": "on the build pallet, just inside the entrance",
 }
 
 ## The same place, short enough for the HUD rows.
 const LOC_SHORT: Dictionary = {
-	"ArmorHelmet": "the parts tray at the front",
-	"ArmorChestPlate": "the parts tray at the front",
-	"ArmorGauntlet": "the parts tray at the front",
-	"ArmorBoot": "the parts tray at the front",
+	"ArmorLegs": "the build pallet at the front",
+	"ArmorTorso": "the build pallet at the front",
+	"ArmorHead": "the build pallet at the front",
 }
 
 
@@ -78,9 +76,9 @@ func bind(p_runtime: Node, p_carry: Node, dressing: Node3D, p_player: Node = nul
 	runtime = p_runtime
 	carry = p_carry
 	_player = p_player
-	figure = dressing.get_node_or_null("ArmorFigure") as Node3D
+	figure = dressing.get_node_or_null("ArmorBase") as Node3D
 	if figure == null:
-		push_warning("ArmorAssembly: no ArmorFigure in the dressing")
+		push_warning("ArmorAssembly: no ArmorBase in the dressing")
 		return
 	for part_name: String in PARTS:
 		var node: Node3D = dressing.get_node_or_null(part_name) as Node3D
@@ -130,6 +128,8 @@ func _process(_delta: float) -> void:
 	if _beacon == null or figure == null:
 		return
 	var held: Node3D = carry.held() if carry != null else null
+	if held != _last_wrong:
+		_last_wrong = null
 	if not _engaged and held != null and _is_part(held):
 		_engaged = true
 	if not _engaged and _player != null:
@@ -203,33 +203,24 @@ func tracker_visible() -> bool:
 
 
 func guide_part() -> String:
-	## The nearest spare still at its place — whatever is easiest to reach next,
-	## so anyone can start with the part they happen to be standing by. Falls back
-	## to the story order (head, chest, arm, foot) when no player reference exists.
-	var best: String = ""
-	var best_d: float = 0.0
+	## The next assembly in build order — the figure goes up low to high, so the
+	## beacon always names legs, then torso, then head. The order is enforced, so
+	## "nearest" would only lie.
 	for part_name: String in PARTS:
-		if _fitted.has(part_name):
-			continue
-		if _player == null:
+		if not _fitted.has(part_name):
 			return part_name
-		var node: Node3D = _parts.get(part_name, null) as Node3D
-		if node == null:
-			continue
-		var d: float = _player.global_position.distance_to(node.global_position)
-		if best == "" or d < best_d:
-			best = part_name
-			best_d = d
-	return best
+	return ""
 
 
 func stage_line() -> String:
-	## The tracker's step banner: which half of the two-stage fit is live.
+	## The tracker's step banner: three assemblies, low to high.
 	if _locked.size() >= PARTS.size():
-		return "COMPLETE · FITTED, BOLTED AND SEALED"
+		return "COMPLETE · THE WHOLE FIGURE, SEALED AND STANDING"
 	if _fitted.size() >= PARTS.size():
-		return "STEP 2 OF 2 · THE BOLTS SEAL THE FIT"
-	return "STEP 1 OF 2 · TEST-FIT THE FOUR SPARE SHELLS"
+		return "STEP 3 OF 3 · THE WHOLE FIGURE POWERS UP"
+	var n: int = _fitted.size()
+	var line: String = ["THE LEGS GO ON FIRST", "THE TORSO ON TOP", "THE HEAD COMPLETES THE FIGURE"][n]
+	return "STEP %d OF 3 · %s" % [n + 1, line]
 
 
 func part_detail(part_name: String) -> String:
@@ -243,7 +234,7 @@ func part_detail(part_name: String) -> String:
 	var home: Dictionary = _homes.get(part_name, {})
 	if node != null and not home.is_empty():
 		if node.global_position.distance_to(home["position"] as Vector3) > 1.2:
-			return "moved off the tray"
+			return "moved off the pallet"
 	return String(LOC_SHORT.get(part_name, ""))
 
 
@@ -252,17 +243,21 @@ func next_line() -> String:
 	## and a live distance, so anyone can follow it without knowing the room.
 	var held: Node3D = carry.held() if carry != null else null
 	if held != null and _is_part(held):
-		return "NEXT — carry it to the figure — the shop's armour on the NORTH WALL — and press E to test-fit%s" % _dist_tail(figure.global_position)
+		if _fitted.has(_name_of(held)):
+			return "that assembly is already on — put it down (right-click) and take the next one"
+		if PARTS.keys().find(_name_of(held)) != _fitted.size():
+			return "not that one yet — the figure builds low to high: legs, then torso, then head"
+		return "NEXT — carry it to the base — the shop's armour on the NORTH WALL — and walk it up%s" % _dist_tail(figure.global_position)
 	if _locked.size() >= PARTS.size():
-		return "DONE — press E at the figure to strip the kit for a second run · R resets the morning"
+		return "DONE — press E at the base to strip the figure back to the pallet · R resets the morning"
 	if _fitted.size() >= PARTS.size():
-		return "the bolts are walking the fit down — let it seal"
+		return "the bolts are sealing the whole figure — let it finish"
 	if not _pending_locks().is_empty():
-		return "seat the remaining spares — the bolts finish the fit after the fourth"
+		return "seat the remaining assemblies — the bolts finish the fit after the head"
 	var np: String = guide_part()
 	if np != "":
-		return "NEXT — left-click the %s to pick it up · %s%s" % [
-			String(PARTS[np]["label"]), String(LOCATIONS[np]), _dist_tail(_parts[np].global_position)]
+		return "NEXT — left-click %s off the build pallet · just inside the entrance%s" % [
+			String(PARTS[np]["label"]), _dist_tail(_parts[np].global_position)]
 	return ""
 
 
@@ -293,25 +288,27 @@ func figure_prompt() -> String:
 	if not _hinted:
 		_hinted = true
 		_engaged = true
-		EventBus.notification_requested.emit("the figure takes the four spares — walk one up and it seats itself; the bolts seal the fit when the last one sits", "info")
+		EventBus.notification_requested.emit("the figure is built here — three assemblies, low to high: walk one up and it seats itself; the head completes it", "info")
 	var held: Node3D = carry.held()
 	if held != null:
 		for part_name: String in PARTS:
-			if _parts.get(part_name) == held and not _fitted.has(part_name):
-				return "Press E to test-fit the %s — or just walk it up" % String(PARTS[part_name]["label"])
-		return "Press E — that part doesn't socket here"
+			if _parts.get(part_name) == held:
+				if _fitted.has(part_name):
+					return "Press E — that assembly is already on the figure"
+				if PARTS.keys().find(part_name) != _fitted.size():
+					return "Press E — wrong order: the legs go first, then the torso, then the head"
+				return "Press E to seat %s — or just walk it up" % String(PARTS[part_name]["label"])
+		return "Press E — that isn't one of the figure's assemblies"
 	var pending: Array = _pending_locks()
-	if pending.size() == 1:
-		return "Press E to bolt the %s down" % String(PARTS[pending[0]]["label"])
 	if not pending.is_empty():
-		return "Press E to bolt the kit down (%d in reach)" % pending.size()
+		return "Press E to seal the fit"
 	if not _fitted.is_empty():
-		return "Press E to strip the spares back to their places"
+		return "Press E to strip the figure back to the pallet"
 	return "Press E to inspect"
 
 
 func figure_action(_player: Node) -> bool:
-	## Returns true when the press concerned the fitting; false hands the press
+	## Returns true when the press concerned the build; false hands the press
 	## back to the station's normal inspect behaviour.
 	if figure == null or _parts.is_empty():
 		return false
@@ -322,14 +319,17 @@ func figure_action(_player: Node) -> bool:
 			if _parts.get(part_name) == held:
 				if _fitted.has(part_name):
 					if _locked.has(part_name):
-						EventBus.notification_requested.emit("the kit is already bolted down and sealed — press E at the figure with empty hands to strip it, or R to reset the morning", "error")
+						EventBus.notification_requested.emit("the figure is already sealed — press E at the base with empty hands to strip it, or R to reset the morning", "error")
 					else:
-						EventBus.notification_requested.emit("%s is already seated — seat the remaining spares, then press E empty-handed to bolt the kit down" % String(PARTS[part_name]["label"]), "error")
+						EventBus.notification_requested.emit("that assembly is already seated — take the next one up (the arrows mark them)", "error")
 					AudioBank.play("ui_error", -6.0)
+					return true
+				if PARTS.keys().find(part_name) != _fitted.size():
+					_announce_order(held)
 					return true
 				_seat(part_name)
 				return true
-		EventBus.notification_requested.emit("wrong part — the figure only takes the four spare shells, and they wait on the parts tray at the front of the garage", "error")
+		EventBus.notification_requested.emit("wrong part — the figure takes only its three assemblies: legs, then torso, then head — from the build pallet at the front", "error")
 		AudioBank.play("ui_error", -4.0)
 		return true
 	var pending: Array = _pending_locks()
@@ -340,6 +340,16 @@ func figure_action(_player: Node) -> bool:
 		dismount_all(false)
 		return true
 	return false
+
+
+func _announce_order(held: Node) -> void:
+	## The wrong build order answers in red once per part in hand, so the
+	## automatic seat-by-walk does not repeat the message every frame.
+	if _last_wrong == held:
+		return
+	_last_wrong = held
+	AudioBank.play("ui_error", -4.0)
+	EventBus.notification_requested.emit("wrong order — the figure builds low to high: the legs first, then the torso, then the head", "error")
 
 
 # ===========================================================================
@@ -369,7 +379,7 @@ func _seat(part_name: String) -> void:
 	_update_texts()
 	var n: int = _fitted.size()
 	if n >= PARTS.size():
-		EventBus.notification_requested.emit("%s — all four seated. The core is catching — stand back, the bolts seal the fit from here" % String(info["line"]), "success")
+		EventBus.notification_requested.emit("%s — the figure is whole. The core is catching — stand back, the bolts seal it from here" % String(info["line"]), "success")
 		var catch_tw: Tween = create_tween()
 		catch_tw.tween_interval(0.4)
 		catch_tw.tween_callback(_power_on_moment)
@@ -435,7 +445,7 @@ func _after_bolts() -> void:
 	if _locked.size() >= PARTS.size():
 		_seal()
 	else:
-		EventBus.notification_requested.emit("%d of 4 bolted — seat the remaining spares (their yellow arrows mark them), then the bolts finish the fit" % _locked.size(), "warning")
+		EventBus.notification_requested.emit("%d of %d bolted — take the remaining assemblies up (their arrows mark them), then the bolts finish the fit" % [_locked.size(), PARTS.size()], "warning")
 
 
 func _auto_bolt() -> void:
@@ -580,7 +590,7 @@ func _power_on_moment() -> void:
 		ring_tw.tween_property(_ring_mat, "emission_energy_multiplier", _ring_base * 1.7, 0.8)
 	AudioBank.play_at("core_charge", figure.global_position, -6.0)
 	if runtime != null:
-		runtime.sys_log("ARMOUR POWER-ON — FOURTH SEAT")
+		runtime.sys_log("THE FIGURE POWER-ON — HEAD SEAT")
 	_update_texts()
 
 
@@ -594,9 +604,9 @@ func _seal() -> void:
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		ring_tw.tween_property(_ring_mat, "emission_energy_multiplier", _ring_base * 2.1, 0.7)
 	AudioBank.play_at("core_charge", figure.global_position, -4.0, 1.15)
-	EventBus.notification_requested.emit("ARMOUR MK-I — COMPLETE — all four spares fitted, bolted and sealed", "success")
+	EventBus.notification_requested.emit("THE FIGURE — COMPLETE — legs, torso and head, sealed and standing", "success")
 	if runtime != null:
-		runtime.sys_log("ARMOUR MK-I COMPLETE — SEALED")
+		runtime.sys_log("THE FIGURE COMPLETE — SEALED")
 	_update_texts()
 
 
@@ -632,15 +642,15 @@ func _update_texts() -> void:
 		var o: Dictionary = _orig[fig_st]
 		if _locked.size() >= PARTS.size():
 			fig_st.display_name = "The shop's armour — complete"
-			fig_st.description = "All four spare shells are test-fitted and bolted down: helmet over the head, chest plate over the front, gauntlet on the right forearm, boot on the left foot. The core lens and the eye slits are burning brighter, the base ring stands at full — the fit checks out."
+			fig_st.description = "The whole figure stands here, built from its three assemblies: legs and boots on the base, torso and arms above, the head on top. The core lens and the eye slits are burning brighter, the base ring stands at full — the build checks out."
 			fig_st.spec_rows = [["spares bolted", "4 of 4"], ["palette", "red over gold over alloy"], ["state", "fit checked, standing test"]]
 		elif _fitted.is_empty():
 			fig_st.display_name = String(o["title"])
 			fig_st.description = String(o["desc"])
 			fig_st.spec_rows = (o["spec"] as Array).duplicate()
 		else:
-			fig_st.display_name = "The shop's armour — %d seated, %d bolted" % [_fitted.size(), _locked.size()]
-			fig_st.description = "The spare shells are being test-fitted onto the figure: %d seated, %d already bolted down. The bolts seal the fit when the last one sits." % [_fitted.size(), _locked.size()]
+			fig_st.display_name = "The shop's armour — %d of 3 on" % _fitted.size()
+			fig_st.description = "The figure is going up low to high: %d of 3 assemblies on, %d bolted. The bolts seal the fit when the head sits." % [_fitted.size(), _locked.size()]
 			fig_st.spec_rows = [["spares seated", "%d of 4" % _fitted.size()], ["spares bolted", "%d of 4" % _locked.size()], ["palette", "red over gold over alloy"]]
 	for part_name: String in _parts:
 		var st: Node = _station_of(_parts[part_name])

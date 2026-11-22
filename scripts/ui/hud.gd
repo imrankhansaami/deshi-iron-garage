@@ -131,9 +131,9 @@ func _update_armor_guide() -> void:
 		return
 	panel.visible = true
 	_set_guide_stage(_armor_blk, String(a.stage_line()), int(a.locked_count()) >= 4)
-	var ids: Array = ["ArmorHelmet", "ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]
-	var names: Array = ["helmet", "chest plate", "gauntlet", "boot"]
-	for i: int in range(4):
+	var ids: Array = ["ArmorLegs", "ArmorTorso", "ArmorHead"]
+	var names: Array = ["legs", "torso", "head"]
+	for i: int in range(3):
 		var st: int = int(a.part_state(String(ids[i])))
 		var row: Label = _armor_blk["rows"][i]
 		row.text = "%s %-11s %s" % [String(MARKS[st]), String(names[i]), String(a.part_detail(String(ids[i])))]
@@ -291,7 +291,7 @@ func _build_hud() -> void:
 	_guide_box.add_theme_constant_override("separation", 10)
 	root.add_child(_guide_box)
 	_suit_blk = _make_guide_block("EXOSUIT MK-I — ASSEMBLY GUIDE", 3)
-	_armor_blk = _make_guide_block("ARMOUR MK-I — ASSEMBLY GUIDE", 4)
+	_armor_blk = _make_guide_block("ARMOUR MK-I — ASSEMBLY GUIDE", 3)
 
 	# --- status, top right ----------------------------------------------
 	status_box = VBoxContainer.new()
@@ -1495,12 +1495,11 @@ func _rebuild_armor_slots() -> void:
 		_armor_slots.add_child(_note("no armour assembly registered"))
 		return
 	var rows: Array = [
-		["ArmorHelmet", "helmet"],
-		["ArmorChestPlate", "chest plate"],
-		["ArmorGauntlet", "gauntlet"],
-		["ArmorBoot", "boot"],
+		["ArmorLegs", "legs"],
+		["ArmorTorso", "torso"],
+		["ArmorHead", "head"],
 	]
-	var marks: Array = ["—  at its place", "◐  seated, not bolted", "●  bolted down"]
+	var marks: Array = ["—  on the build pallet", "◐  seated, not bolted", "●  bolted down"]
 	for r: Array in rows:
 		var st: int = int(runtime.armor.part_state(String(r[0])))
 		var l := Label.new()
@@ -1509,9 +1508,12 @@ func _rebuild_armor_slots() -> void:
 		l.add_theme_font_size_override("font_size", 17)
 		l.add_theme_color_override("font_color", GarageTheme.col("cyan" if st == 2 else "ink"))
 		_armor_slots.add_child(l)
-	var total: String = "seated %d · bolted %d of 4" % [int(runtime.armor.fitted_count()), int(runtime.armor.locked_count())]
-	if int(runtime.armor.locked_count()) >= 4:
-		total += "   ·   MK-I COMPLETE"
+	var total: String = "seated %d · bolted %d of %d" % [
+		int(runtime.armor.fitted_count()), int(runtime.armor.locked_count()),
+		int(runtime.armor.PARTS.size()),
+	]
+	if int(runtime.armor.locked_count()) >= int(runtime.armor.PARTS.size()):
+		total += "   ·   THE FIGURE COMPLETE"
 	_armor_slots.add_child(_note(total))
 
 

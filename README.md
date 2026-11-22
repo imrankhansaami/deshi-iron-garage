@@ -123,20 +123,19 @@ the flag file.
 | `1`–`9`, `0`, `[` `]` | jump / step through the twenty fixed viewpoints |
 | `\` | return to where you stood |
 
-**For a presentation.** The armour figure's four spare shells are assembled in two
-stages, by hand: **test-fit** — carry each part to the figure; walking it up seats it
-(or press `E`), it snaps into its socket with a latch while the base ring climbs a
-step; the **fourth part seats and the figure powers on** — eyes, core and ring light
-up — and after the beat **the bolts walk the fit down on their own**: a cascade of
-clacks walks all four locks and **seals the fit** with a second surge. Both
-assemblies guide themselves: a **big yellow
-arrow** floats over every part still waiting its turn — the armour's four
-shells, waiting together on a parts tray just inside the entrance, and the
-suit's three module crates — and the next step's arrow rises on a **column of
-light**, while a **tracker board** under the objective lists every step in
+**For a presentation.** The shop's armour is built — the whole figure, in three
+parts, low to high: the legs, the torso and the head wait together on a build
+pallet just inside the entrance, and the service base waits by the north wall.
+Carry each assembly over — walking it up **seats it by itself** (or press `E`),
+the base ring climbing a step — legs first, then torso, then head, and the
+order is enforced in red if you try the head early. **The head completes the
+figure and it powers on** — eyes, core and ring light up — and after the beat
+**the bolts seal it on their own**. Both assemblies guide themselves: a **big
+yellow arrow** floats over every assembly still on the pallet and every module
+crate, and the next step's arrow rises on a **column of light**, while a
+**tracker board** under the objective lists every step in
 plain words with live distances. Wrong moves answer in red and say what to do
-instead, and the armour's arrows wake by walking up to the figure, so anyone
-can start with whatever is closest. `R` puts
+instead. `R` puts
 the whole garage back to the morning so the
 sequence can run again, `T` opens the measured claims (the checklist lives in the
 console, `Tab` → Assembly → Armour), and `1`–`0` / `[` `]` jump the camera through
