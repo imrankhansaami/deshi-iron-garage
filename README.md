@@ -128,12 +128,12 @@ stages, by hand: **test-fit** — carry each part to the figure and press `E`, i
 into its socket with a latch while the base ring climbs a step; the **fourth part
 seats and the figure powers on** — eyes, core and ring light up — then **bolt the kit
 down** with one more `E`: a cascade of clacks walks all four locks and **seals the
-fit** with a second surge. Both assemblies guide themselves: a **yellow beacon** (a
-diamond over a soft column of light) stands over the next thing to touch, and a
-**tracker board** under the objective lists every step in plain words with live
-distances — the armour's four shells (woken by walking up to the figure, always
-pointing at the nearest spare, so anyone can start with whatever is closest), and
-the suit's whole journey from the three module crates to the final check. `R` puts
+fit** with a second surge. Both assemblies guide themselves: a **big yellow
+arrow** floats over every part still waiting its turn — the armour's four shells
+and the suit's three module crates — and the next step's arrow rises on a
+**column of light**, while a **tracker board** under the objective lists every
+step in plain words with live distances. The armour's arrows wake by walking up
+to the figure, so anyone can start with whatever part is closest. `R` puts
 the whole garage back to the morning so the
 sequence can run again, `T` opens the measured claims (the checklist lives in the
 console, `Tab` → Assembly → Armour), and `1`–`0` / `[` `]` jump the camera through

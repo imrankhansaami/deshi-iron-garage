@@ -27,6 +27,7 @@ const MODULES: Array = [
 var runtime: Node
 var _player: Node = null
 var _beacon: Node3D = null
+var _crate_arrows: Array = []
 var _done_ms: int = 0
 var _suppressed: bool = false
 var _crate_kinds: Array = []
@@ -40,10 +41,19 @@ func bind(p_runtime: Node, p_player: Node = null) -> void:
 		Station.Kind.MODULE_ENERGY,
 		Station.Kind.MODULE_SHELL,
 	]
-	_beacon = (load("res://scripts/garage/guide_beacon.gd") as GDScript).new()
+	var script: GDScript = load("res://scripts/garage/guide_beacon.gd")
+	_beacon = script.new()
 	_beacon.name = "SuitGuideBeacon"
 	add_child(_beacon)
+	_beacon.call("setup", true)
 	_beacon.visible = false
+	for i: int in range(3):
+		var arrow: Node3D = script.new()
+		arrow.name = "CrateArrow_%d" % i
+		add_child(arrow)
+		arrow.call("setup", false)
+		arrow.visible = false
+		_crate_arrows.append(arrow)
 	set_process(true)
 
 
@@ -145,6 +155,23 @@ func _process(_delta: float) -> void:
 	_beacon.visible = show
 	if show:
 		_beacon.call("place", target as Vector3)
+	# every un-recovered crate carries its own big floating arrow while the
+	# suit's marks are live; the beacon's crate is skipped (no double mark),
+	# and the armour figure's job takes priority when it is being worked
+	var beacon_crate: int = _nearest_uncollected() if _collected() < MODULES.size() else -1
+	for i: int in range(_crate_arrows.size()):
+		var arrow: Node3D = _crate_arrows[i]
+		var vis: bool = show and not GameState.has_component(String(MODULES[i]["id"])) and i != beacon_crate
+		if vis:
+			var pos: Variant = _station_pos(int(_crate_kinds[i]), 0.45)
+			vis = pos != null
+			if vis:
+				arrow.call("place", pos as Vector3)
+		arrow.visible = vis
+
+
+func crate_arrow_visible(i: int) -> bool:
+	return i < _crate_arrows.size() and bool((_crate_arrows[i] as Node3D).visible)
 
 
 func _beacon_target() -> Variant:

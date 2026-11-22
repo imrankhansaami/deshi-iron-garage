@@ -52,6 +52,7 @@ var _hinted: bool = false
 var _busy: bool = false
 var _engaged: bool = false           ## the guide only exists once the job begins
 var _beacon: Node3D = null           ## the shared beacon that marks the next step
+var _arrows: Dictionary = {}         ## part name -> that spare's own floating arrow
 var _sealed_ms: int = 0
 
 ## Where each spare waits, for the tracker's next-step line.
@@ -90,17 +91,32 @@ func bind(p_runtime: Node, p_carry: Node, dressing: Node3D, p_player: Node = nul
 		_ring_mat.emission_energy_multiplier = _ring_base * 0.5
 	_snapshot_texts()
 	_build_beacon()
+	_build_arrows()
 	set_process(true)
 
 
 func _build_beacon() -> void:
-	## The guide beacon: the shared signal tag (a yellow diamond over a soft
-	## column of light) that marks what to carry and where to bring it. Hidden
+	## The guide beacon: the shared full mark (a big floating arrow raised on a
+	## column of light) that says what to carry and where to bring it. Hidden
 	## until the job is engaged, so the morning room stays clean.
 	_beacon = (load("res://scripts/garage/guide_beacon.gd") as GDScript).new()
 	_beacon.name = "ArmorGuideBeacon"
 	add_child(_beacon)
+	_beacon.call("setup", true)
 	_beacon.visible = false
+
+
+func _build_arrows() -> void:
+	## Every waiting spare gets its own big floating arrow, so the whole set
+	## reads at a glance — the beacon then walks ahead over whichever is next.
+	var script: GDScript = load("res://scripts/garage/guide_beacon.gd")
+	for part_name: String in _parts:
+		var arrow: Node3D = script.new()
+		arrow.name = "GuideArrow_" + part_name
+		add_child(arrow)
+		arrow.call("setup", false)
+		arrow.visible = false
+		_arrows[part_name] = arrow
 
 
 func engage() -> void:
@@ -119,21 +135,42 @@ func _process(_delta: float) -> void:
 		if _player.global_position.distance_to(figure.global_position) < 4.5:
 			_engaged = true
 	var show: bool = _engaged and _locked.size() < PARTS.size()
-	_beacon.visible = show
-	if not show:
-		return
-	var target: Vector3
-	if held != null and _is_part(held) and not _fitted.has(_name_of(held)):
-		# carrying the right part: mark where it goes
-		target = figure.global_position + Vector3.UP * 1.9
-	else:
-		var np: String = guide_part()
-		if np != "":
-			var node: Node3D = _parts[np]
-			target = node.global_position + Vector3.UP * (ShapeKit.node_bounds(node).size.y + 0.25)
-		else:
+	var target: Vector3 = Vector3.ZERO
+	var beacon_part: String = ""
+	if show:
+		var carry_target: bool = held != null and _is_part(held) and not _fitted.has(_name_of(held))
+		if carry_target:
+			# carrying the right part: mark where it goes
 			target = figure.global_position + Vector3.UP * 1.9
-	_beacon.call("place", target)
+		else:
+			beacon_part = guide_part()
+			target = _marker_pos(beacon_part) if beacon_part != "" else figure.global_position + Vector3.UP * 1.9
+	_beacon.visible = show
+	if show:
+		_beacon.call("place", target)
+	_update_arrows(show, beacon_part, held)
+
+
+func _marker_pos(part_name: String) -> Vector3:
+	var node: Node3D = _parts[part_name]
+	return node.global_position + Vector3.UP * (ShapeKit.node_bounds(node).size.y + 0.25)
+
+
+func _update_arrows(show: bool, beacon_part: String, held: Node3D) -> void:
+	## Every waiting spare carries its own big floating arrow, so the whole set
+	## reads at a glance. The one the beacon already stands over is skipped (no
+	## double mark), and a part in hand keeps its home spot unmarked.
+	for part_name: String in _arrows:
+		var arrow: Node3D = _arrows[part_name]
+		var vis: bool = show and not _fitted.has(part_name) and part_name != beacon_part \
+			and (held == null or held != _parts.get(part_name, null))
+		arrow.visible = vis
+		if vis:
+			arrow.call("place", _marker_pos(part_name))
+
+
+func arrow_visible(part_name: String) -> bool:
+	return _arrows.has(part_name) and bool((_arrows[part_name] as Node3D).visible)
 
 
 func beacon_visible() -> bool:

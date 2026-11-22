@@ -48,7 +48,15 @@ func _run() -> void:
 	print("ARMOR: beacon built node=%s children=[%s] pos=%s %s" % [
 		str(bcn != null), bch.strip_edges(),
 		str((bcn as Node3D).global_position) if bcn is Node3D else "n/a",
-		"OK" if bcn is Node3D and bch.contains("Diamond") and bch.contains("Beam") and bch.contains("Filament") else "FAIL"])
+		"OK" if bcn is Node3D and bch.contains("Arrow") and bch.contains("Beam") and bch.contains("Filament") else "FAIL"])
+	var av: String = ""
+	for p: String in ["ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]:
+		if armor.arrow_visible(p):
+			av += p + " "
+	var hv: bool = bool(armor.arrow_visible("ArmorHelmet"))
+	print("ARMOR: spare arrows over=[%s] helmet=%s %s" % [
+		av.strip_edges(), str(hv),
+		"OK" if av.contains("ChestPlate") and av.contains("Gauntlet") and av.contains("Boot") and not hv else "FAIL"])
 	var parts: Array = ["ArmorChestPlate", "ArmorHelmet", "ArmorGauntlet", "ArmorBoot"]
 	var homes: Dictionary = {}
 	for part_name: String in parts:
@@ -117,6 +125,10 @@ func _run() -> void:
 	print("ARMOR: guide after seal beacon=%s stage=\"%s\" %s" % [
 		str(armor.beacon_visible()), String(armor.stage_line()),
 		"OK" if not armor.beacon_visible() and String(armor.stage_line()).contains("COMPLETE") else "FAIL"])
+	var any_arrow: bool = false
+	for p: String in ["ArmorHelmet", "ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]:
+		any_arrow = any_arrow or bool(armor.arrow_visible(p))
+	print("ARMOR: spare arrows after seal any=%s %s" % [str(any_arrow), "OK" if not any_arrow else "FAIL"])
 	# 4. the power-up: the glow materials ride brighter than their base
 	var glow_ok: bool = false
 	for child: Node in dressing.get_node_or_null("ArmorFigure").get_children():
@@ -174,11 +186,17 @@ func _run() -> void:
 			"OK" if guide.tracker_visible() and guide.beacon_visible()
 				and String(guide.stage_line()).contains("STEP 1 OF 3")
 				and String(guide.next_line()).contains("recover the") else "FAIL"])
+		print("ARMOR: suit crate arrows=%s %s %s %s" % [
+			str(guide.crate_arrow_visible(0)), str(guide.crate_arrow_visible(1)), str(guide.crate_arrow_visible(2)),
+			"OK" if not guide.crate_arrow_visible(0) and guide.crate_arrow_visible(1) and guide.crate_arrow_visible(2) else "FAIL"])
 		gs.collect_component("frame_module")
 		await _frames(2)
 		print("ARMOR: suit guide mid-recovery state0=%d next=\"%s\" %s" % [
 			int(guide.module_state(0)), String(guide.next_line()),
 			"OK" if int(guide.module_state(0)) == 1 and String(guide.next_line()).contains("recover the") else "FAIL"])
+		print("ARMOR: suit crate arrows mid=%s %s %s %s" % [
+			str(guide.crate_arrow_visible(0)), str(guide.crate_arrow_visible(1)), str(guide.crate_arrow_visible(2)),
+			"OK" if not guide.crate_arrow_visible(1) and guide.crate_arrow_visible(2) else "FAIL"])
 		gs.collect_component("energy_module")
 		gs.collect_component("armour_shell")
 		await _frames(2)
@@ -186,6 +204,11 @@ func _run() -> void:
 			String(guide.stage_line()), String(guide.next_line()),
 			"OK" if String(guide.stage_line()).contains("INSTALL")
 				and String(guide.next_line()).contains("install the frame module") else "FAIL"])
+		var any_crate_arrow: bool = false
+		for i: int in range(3):
+			any_crate_arrow = any_crate_arrow or bool(guide.crate_arrow_visible(i))
+		print("ARMOR: suit crate arrows after recovery any=%s %s" % [
+			str(any_crate_arrow), "OK" if not any_crate_arrow else "FAIL"])
 		gs.call("set_assembly_stage", 1)
 		await _frames(2)
 		print("ARMOR: suit guide after frame module0=%d next=\"%s\" %s" % [

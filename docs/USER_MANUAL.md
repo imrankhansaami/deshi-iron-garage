@@ -200,8 +200,9 @@ You can also use the stand itself: `E` on the suit runs the diagnostic pass once
 The suit is guided the same way: once the shop is powered, its **tracker board** appears under the
 objective with the three modules — *at its crate / recovered / installed* — and one line with the next
 instruction (recover the nearest module, install the next slot, start the sequence, run the final
-check), each with a live distance; the **yellow beacon** stands over the next crate, then the stage,
-then the console. The board sleeps when the final check is done, and `R` resets the whole journey.
+check), each with a live distance. Every un-recovered crate carries a **big yellow floating arrow**,
+and the next step's arrow rises on a **column of light** — over the crate, then the stage, then the
+console. The board sleeps when the final check is done, and `R` resets the whole journey.
 
 ### The armour figure
 
@@ -213,9 +214,10 @@ and the base ring climbs a step. The **fourth seat powers the figure on** — ey
 up. Step back, empty hands, and `E` once more: the bolts walk through in a clack cascade and the fit
 is sealed. `E` again strips the kit for another run.
 
-It is a guided job: walking up to the figure (or picking up any spare) wakes a **yellow beacon** — a
-diamond over a soft column of light — that stands over the nearest spare still at its place and moves
-with you. Under the objective, the armour's **tracker board** lists the four shells — where each one
+It is a guided job: walking up to the figure (or picking up any spare) wakes the **floating arrows** —
+a big yellow arrow over every spare still at its place, so the whole set is visible at a glance, while
+the next one's arrow rises on a **column of light** and moves with you. Under the objective, the
+armour's **tracker board** lists the four shells — where each one
 waits, then *seated*, then *bolted* — and one line says exactly what to do next (*"NEXT — left-click
 the spare helmet to pick it up · on the mechanical bench, north end · 7 m"*). The console keeps the
 same checklist live (`Tab` → Assembly → Armour), and `R` returns the whole garage to the morning so
@@ -485,10 +487,11 @@ For showing the project in about six minutes, following the sequence in the brie
 12. `E` on the stage. Install three modules. Start the assembly. **Let it run without talking.**
 13. The core ignites, the optics light.
 14. `E` on the console in the testing corner. The diagnostic pass runs.
-15. Walk to the armour figure by the north wall. The guide wakes as you arrive: a yellow tag floats
-    over the nearest spare, the tracker under the objective spells out the next step. Carry each of
-    the four spares over and `E` to test-fit it — the fourth seat powers the figure on — then one
-    more `E`, empty-handed, bolts the kit down and seals it.
+15. Walk to the armour figure by the north wall. The guide wakes as you arrive: a big yellow arrow
+    floats over every spare still at its place, the next one's on a column of light, and the tracker
+    under the objective spells out the next step. Carry each of the four spares over and `E` to
+    test-fit it — the fourth seat powers the figure on — then one more `E`, empty-handed, bolts the
+    kit down and seals it.
 16. **F6**. Materials tab: change roughness and metallic live. Hologram tab: switch between the three
     variants. Lighting tab: switch to warm-only and back to full rig. Post tab: toggle SDFGI and watch
     the core's wall spill disappear.
