@@ -51,8 +51,7 @@ var _orig: Dictionary = {}           ## station -> {title, desc, spec} originals
 var _hinted: bool = false
 var _busy: bool = false
 var _engaged: bool = false           ## the guide only exists once the job begins
-var _beacon: Node3D = null           ## the floating tag that marks the next step
-var _beacon_t: float = 0.0
+var _beacon: Node3D = null           ## the shared beacon that marks the next step
 var _sealed_ms: int = 0
 
 ## Where each spare waits, for the tracker's next-step line.
@@ -61,6 +60,14 @@ const LOCATIONS: Dictionary = {
 	"ArmorChestPlate": "on the bench's lower shelf",
 	"ArmorGauntlet": "on the store shelf, north-west corner",
 	"ArmorBoot": "on the floor beside the figure",
+}
+
+## The same places, short enough for the HUD rows.
+const LOC_SHORT: Dictionary = {
+	"ArmorHelmet": "mechanical bench, north end",
+	"ArmorChestPlate": "bench lower shelf",
+	"ArmorGauntlet": "store shelf",
+	"ArmorBoot": "floor by the figure",
 }
 
 
@@ -87,15 +94,12 @@ func bind(p_runtime: Node, p_carry: Node, dressing: Node3D, p_player: Node = nul
 
 
 func _build_beacon() -> void:
-	## The guide tag: a small bobbing diamond in the shop's signal yellow that
-	## marks what to carry and where to bring it. Hidden until the job is engaged,
-	## so the morning room stays clean.
-	var mat: StandardMaterial3D = MaterialLibrary.led(Color("ffd24a"), 1.6)
-	var tag: MeshInstance3D = ShapeKit.box(Vector3(0.065, 0.065, 0.065), mat, "ArmorGuide")
-	tag.rotation = Vector3(PI * 0.25, 0.0, PI * 0.25)
-	tag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(tag)
-	_beacon = tag
+	## The guide beacon: the shared signal tag (a yellow diamond over a soft
+	## column of light) that marks what to carry and where to bring it. Hidden
+	## until the job is engaged, so the morning room stays clean.
+	_beacon = (load("res://scripts/garage/guide_beacon.gd") as GDScript).new()
+	_beacon.name = "ArmorGuideBeacon"
+	add_child(_beacon)
 	_beacon.visible = false
 
 
@@ -104,7 +108,7 @@ func engage() -> void:
 	_engaged = true
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if _beacon == null or figure == null:
 		return
 	var held: Node3D = carry.held() if carry != null else null
@@ -118,20 +122,18 @@ func _process(delta: float) -> void:
 	_beacon.visible = show
 	if not show:
 		return
-	_beacon_t += delta
 	var target: Vector3
 	if held != null and _is_part(held) and not _fitted.has(_name_of(held)):
 		# carrying the right part: mark where it goes
-		target = figure.global_position + Vector3.UP * 2.05
+		target = figure.global_position + Vector3.UP * 1.9
 	else:
 		var np: String = guide_part()
 		if np != "":
 			var node: Node3D = _parts[np]
 			target = node.global_position + Vector3.UP * (ShapeKit.node_bounds(node).size.y + 0.25)
 		else:
-			target = figure.global_position + Vector3.UP * 2.05
-	_beacon.global_position = target + Vector3.UP * sin(_beacon_t * 2.4) * 0.045
-	_beacon.rotation.y = _beacon_t * 1.1
+			target = figure.global_position + Vector3.UP * 1.9
+	_beacon.call("place", target)
 
 
 func beacon_visible() -> bool:
@@ -169,19 +171,48 @@ func guide_part() -> String:
 	return best
 
 
-func guide_line() -> String:
-	## The tracker's one-line instruction, from wherever the player is.
+func stage_line() -> String:
+	## The tracker's step banner: which half of the two-stage fit is live.
+	if _locked.size() >= PARTS.size():
+		return "COMPLETE · FITTED, BOLTED AND SEALED"
+	if _fitted.size() >= PARTS.size():
+		return "STEP 2 OF 2 · BOLT THE KIT DOWN"
+	return "STEP 1 OF 2 · TEST-FIT THE FOUR SPARE SHELLS"
+
+
+func part_detail(part_name: String) -> String:
+	## The third column of the tracker row: where it waits, or how far it is.
+	var st: int = part_state(part_name)
+	if st == 2:
+		return "bolted down"
+	if st == 1:
+		return "seated"
+	return String(LOC_SHORT.get(part_name, ""))
+
+
+func next_line() -> String:
+	## The one instruction for right now: an exact verb, the thing, its place
+	## and a live distance, so anyone can follow it without knowing the room.
 	var held: Node3D = carry.held() if carry != null else null
 	if held != null and _is_part(held):
-		return "carry it to the figure — E to test-fit"
+		return "NEXT — carry it to the figure and press E to test-fit%s" % _dist_tail(figure.global_position + Vector3.UP * 1.2)
 	if _locked.size() >= PARTS.size():
-		return "complete — E at the figure strips the kit for a second run"
+		return "DONE — press E at the figure to strip the kit for a second run · R resets the morning"
 	if not _pending_locks().is_empty():
-		return "E at the figure bolts the kit down"
+		return "NEXT — stand at the figure with empty hands and press E — the four bolts walk in and seal the fit"
 	var np: String = guide_part()
 	if np != "":
-		return "next: carry the %s — %s" % [String(PARTS[np]["label"]), String(LOCATIONS[np])]
+		return "NEXT — left-click the %s to pick it up · %s%s" % [
+			String(PARTS[np]["label"]), String(LOCATIONS[np]), _dist_tail(_parts[np].global_position)]
 	return ""
+
+
+func _dist_tail(pos: Vector3) -> String:
+	if _player == null:
+		return ""
+	var d: int = int(round(_player.global_position.distance_to(pos)))
+	# under a metre the player is there — the number would only be noise
+	return "" if d <= 1 else " · %d m" % d
 
 
 func _is_part(node: Node3D) -> bool:
@@ -203,7 +234,7 @@ func figure_prompt() -> String:
 	if not _hinted:
 		_hinted = true
 		_engaged = true
-		EventBus.notification_requested.emit("the figure takes the four spares — helmet, chest plate, gauntlet, boot. Bring one and press E to test-fit it", "info")
+		EventBus.notification_requested.emit("the figure takes the four spares — helmet, chest plate, gauntlet, boot. Follow the yellow beam, bring one and press E to test-fit it", "info")
 	var held: Node3D = carry.held()
 	if held != null:
 		for part_name: String in PARTS:
@@ -368,6 +399,9 @@ func dismount_all(instant: bool = false) -> void:
 		AudioBank.play_at("tool_place", node.global_position, -8.0)
 	_fitted.clear()
 	_locked.clear()
+	# the job is out of the player's hands now: the guide sleeps and wakes
+	# again by approach, by picking a spare up, or at the figure itself
+	_engaged = false
 	for m: StandardMaterial3D in _glow_mats:
 		if not is_instance_valid(m):
 			continue

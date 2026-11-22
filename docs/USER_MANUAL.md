@@ -197,6 +197,12 @@ then press **START ASSEMBLY SEQUENCE**.
 
 You can also use the stand itself: `E` on the suit runs the diagnostic pass once it is complete.
 
+The suit is guided the same way: once the shop is powered, its **tracker board** appears under the
+objective with the three modules — *at its crate / recovered / installed* — and one line with the next
+instruction (recover the nearest module, install the next slot, start the sequence, run the final
+check), each with a live distance; the **yellow beacon** stands over the next crate, then the stage,
+then the console. The board sleeps when the final check is done, and `R` resets the whole journey.
+
 ### The armour figure
 
 By the north wall, on its service base: a red-and-gold figure and its four spare shells, laid out
@@ -207,11 +213,13 @@ and the base ring climbs a step. The **fourth seat powers the figure on** — ey
 up. Step back, empty hands, and `E` once more: the bolts walk through in a clack cascade and the fit
 is sealed. `E` again strips the kit for another run.
 
-It is a guided job: walking up to the figure (or picking up any spare) wakes a **yellow diamond tag**
-that floats over the nearest spare still at its place and moves with you — and the HUD tracker under
-the objective lists the four parts as *at its place / seated / bolted* with the next step spelled out.
-The console keeps the same checklist live (`Tab` → Assembly → Armour), and `R` returns the whole
-garage to the morning so the sequence can be performed again.
+It is a guided job: walking up to the figure (or picking up any spare) wakes a **yellow beacon** — a
+diamond over a soft column of light — that stands over the nearest spare still at its place and moves
+with you. Under the objective, the armour's **tracker board** lists the four shells — where each one
+waits, then *seated*, then *bolted* — and one line says exactly what to do next (*"NEXT — left-click
+the spare helmet to pick it up · on the mechanical bench, north end · 7 m"*). The console keeps the
+same checklist live (`Tab` → Assembly → Armour), and `R` returns the whole garage to the morning so
+the sequence can be performed again.
 
 ### The diagnostic console
 

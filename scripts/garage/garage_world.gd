@@ -42,6 +42,7 @@ var hud: Hud
 var director: ObjectiveDirector
 var carry: CarrySystem
 var armor: Node = null                       # the armour assembly module (plan A)
+var assembly_guide: Node = null              # the suit's assembly guide
 var build_ms: Dictionary = {}
 var build_complete: bool = false
 var _gate_auto_pending: bool = false
@@ -178,6 +179,16 @@ func _build() -> void:
 	runtime.armor = armor
 	if player != null:
 		player.world = self
+
+	# 6e. the assembly guides --------------------------------------------------
+	## The suit's guide (the armour's own lives in its module): step lines, the
+	## module rows, the next instruction with live distances, and the shared
+	## beacon's target. The HUD reads it through the runtime.
+	assembly_guide = (load("res://scripts/garage/assembly_guide.gd") as GDScript).new()
+	assembly_guide.name = "AssemblyGuide"
+	add_child(assembly_guide)
+	assembly_guide.bind(runtime, player)
+	runtime.assembly_guide = assembly_guide
 
 	# 7. interface ---------------------------------------------------------
 	t0 = Time.get_ticks_msec()
@@ -853,6 +864,9 @@ func _cap_progression() -> void:
 		fan["target"] = float(fan.rpm)
 	if armor != null:
 		armor.fit_all_instant()
+	if assembly_guide != null:
+		# the finished-garage frames stay clean of guides
+		assembly_guide.suppress()
 	_cap_lines.append("=== PROGRESSION ===")
 	_cap_lines.append("  stations %d  lights %d  screens %d  fans %d  props %d" % [
 		runtime.station_count(), runtime.lights.size(), runtime.screens.size(),

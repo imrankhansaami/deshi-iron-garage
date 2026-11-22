@@ -45,6 +45,7 @@ var curtain: Node3D
 var slat_nodes: Array[MeshInstance3D] = []
 var holo_volume: Node3D
 var armor: Node = null                       # the armour assembly module (plan A)
+var assembly_guide: Node = null              # the suit's assembly guide (the HUD reads it)
 var dust: GPUParticles3D
 var rain: GPUParticles3D
 var sun: DirectionalLight3D

@@ -34,9 +34,21 @@ func _run() -> void:
 		"OK" if not armor.tracker_visible() and not armor.beacon_visible() else "FAIL"])
 	armor.engage()
 	await _wait(0.15)
-	print("ARMOR: guide engaged target=%s beacon=%s line=\"%s\" %s" % [
-		String(armor.guide_part()), str(armor.beacon_visible()), String(armor.guide_line()),
-		"OK" if String(armor.guide_part()) == "ArmorHelmet" and armor.beacon_visible() else "FAIL"])
+	var bcn: Node = armor.get_node_or_null("ArmorGuideBeacon")
+	var bch: String = ""
+	if bcn != null:
+		for ch: Node in bcn.get_children():
+			bch += String(ch.name) + " "
+	print("ARMOR: guide engaged target=%s beacon=%s stage=\"%s\" next=\"%s\" %s" % [
+		String(armor.guide_part()), str(armor.beacon_visible()),
+		String(armor.stage_line()), String(armor.next_line()),
+		"OK" if String(armor.guide_part()) == "ArmorHelmet" and armor.beacon_visible()
+			and String(armor.stage_line()).contains("STEP 1 OF 2")
+			and String(armor.next_line()).contains("left-click the spare helmet") else "FAIL"])
+	print("ARMOR: beacon built node=%s children=[%s] pos=%s %s" % [
+		str(bcn != null), bch.strip_edges(),
+		str((bcn as Node3D).global_position) if bcn is Node3D else "n/a",
+		"OK" if bcn is Node3D and bch.contains("Diamond") and bch.contains("Beam") and bch.contains("Filament") else "FAIL"])
 	var parts: Array = ["ArmorChestPlate", "ArmorHelmet", "ArmorGauntlet", "ArmorBoot"]
 	var homes: Dictionary = {}
 	for part_name: String in parts:
@@ -102,8 +114,9 @@ func _run() -> void:
 	print("ARMOR: bolt cascade handled=%s locked=%d/4 %s" % [
 		str(handled_bolt), int(armor.locked_count()),
 		"OK" if handled_bolt and int(armor.locked_count()) == 4 else "FAIL"])
-	print("ARMOR: guide after seal beacon=%s %s" % [
-		str(armor.beacon_visible()), "OK" if not armor.beacon_visible() else "FAIL"])
+	print("ARMOR: guide after seal beacon=%s stage=\"%s\" %s" % [
+		str(armor.beacon_visible()), String(armor.stage_line()),
+		"OK" if not armor.beacon_visible() and String(armor.stage_line()).contains("COMPLETE") else "FAIL"])
 	# 4. the power-up: the glow materials ride brighter than their base
 	var glow_ok: bool = false
 	for child: Node in dressing.get_node_or_null("ArmorFigure").get_children():
@@ -132,6 +145,9 @@ func _run() -> void:
 		print("ARMOR: dismount %-16s home_dist=%.2f cm fitted=%d/%d %s" % [
 			part_name, back * 100.0, int(armor.fitted_count()), parts.size(),
 			"OK" if back < 0.02 and int(armor.fitted_count()) == 0 else "FAIL"])
+	print("ARMOR: guide sleeps after strip tracker=%s beacon=%s %s" % [
+		str(armor.tracker_visible()), str(armor.beacon_visible()),
+		"OK" if not armor.tracker_visible() and not armor.beacon_visible() else "FAIL"])
 	# 5. the demo reset end to end
 	world.demo_reset()
 	await _frames(5)
@@ -141,6 +157,71 @@ func _run() -> void:
 		"OK" if not bool(runtime.power_on) and int(runtime.computer_stage) == 0 else "FAIL"])
 	print("ARMOR: reset components collected=%d %s" % [
 		int(gs.collected_components.size()), "OK" if gs.collected_components.size() == 0 else "FAIL"])
+	# 6. the suit guide (the second assembly): quiet in the morning, then every
+	# step of the journey — recover, install, assemble, check — with the beacon
+	var guide: Node = world.get("assembly_guide")
+	if guide == null:
+		print("ARMOR: suit guide present=false FAIL")
+	else:
+		print("ARMOR: suit guide morning tracker=%s beacon=%s %s" % [
+			str(guide.tracker_visible()), str(guide.beacon_visible()),
+			"OK" if not guide.tracker_visible() and not guide.beacon_visible() else "FAIL"])
+		runtime.set_power(true, true)
+		await _frames(4)
+		print("ARMOR: suit guide powered tracker=%s beacon=%s stage=\"%s\" next=\"%s\" %s" % [
+			str(guide.tracker_visible()), str(guide.beacon_visible()),
+			String(guide.stage_line()), String(guide.next_line()),
+			"OK" if guide.tracker_visible() and guide.beacon_visible()
+				and String(guide.stage_line()).contains("STEP 1 OF 3")
+				and String(guide.next_line()).contains("recover the") else "FAIL"])
+		gs.collect_component("frame_module")
+		await _frames(2)
+		print("ARMOR: suit guide mid-recovery state0=%d next=\"%s\" %s" % [
+			int(guide.module_state(0)), String(guide.next_line()),
+			"OK" if int(guide.module_state(0)) == 1 and String(guide.next_line()).contains("recover the") else "FAIL"])
+		gs.collect_component("energy_module")
+		gs.collect_component("armour_shell")
+		await _frames(2)
+		print("ARMOR: suit guide install step stage=\"%s\" next=\"%s\" %s" % [
+			String(guide.stage_line()), String(guide.next_line()),
+			"OK" if String(guide.stage_line()).contains("INSTALL")
+				and String(guide.next_line()).contains("install the frame module") else "FAIL"])
+		gs.call("set_assembly_stage", 1)
+		await _frames(2)
+		print("ARMOR: suit guide after frame module0=%d next=\"%s\" %s" % [
+			int(guide.module_state(0)), String(guide.next_line()),
+			"OK" if int(guide.module_state(0)) == 2
+				and String(guide.next_line()).contains("install the energy module") else "FAIL"])
+		gs.call("set_assembly_stage", 2)
+		await _frames(2)
+		print("ARMOR: suit guide after core module1=%d next=\"%s\" %s" % [
+			int(guide.module_state(1)), String(guide.next_line()),
+			"OK" if int(guide.module_state(1)) == 2
+				and String(guide.next_line()).contains("install the shell module") else "FAIL"])
+		gs.call("set_assembly_stage", 3)
+		await _frames(2)
+		print("ARMOR: suit guide ready next=\"%s\" %s" % [
+			String(guide.next_line()),
+			"OK" if String(guide.next_line()).contains("START ASSEMBLY SEQUENCE") else "FAIL"])
+		gs.call("set_assembly_stage", 4)
+		await _frames(2)
+		print("ARMOR: suit guide assembling next=\"%s\" %s" % [
+			String(guide.next_line()),
+			"OK" if String(guide.next_line()).contains("let the sequence run") else "FAIL"])
+		gs.call("set_assembly_stage", 5)
+		await _frames(2)
+		print("ARMOR: suit guide active next=\"%s\" %s" % [
+			String(guide.next_line()),
+			"OK" if String(guide.next_line()).contains("final check") else "FAIL"])
+		gs.set("diagnostics_run", true)
+		await _frames(2)
+		print("ARMOR: suit guide complete stage=\"%s\" linger=%s %s" % [
+			String(guide.stage_line()), str(guide.tracker_visible()),
+			"OK" if String(guide.stage_line()).contains("COMPLETE") and guide.tracker_visible() else "FAIL"])
+		guide.suppress()
+		print("ARMOR: suit guide suppressed tracker=%s beacon=%s %s" % [
+			str(guide.tracker_visible()), str(guide.beacon_visible()),
+			"OK" if not guide.tracker_visible() and not guide.beacon_visible() else "FAIL"])
 	quit()
 
 

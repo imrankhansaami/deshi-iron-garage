@@ -27,9 +27,13 @@ var root: Control
 var objective_panel: PanelContainer
 var objective_label: Label
 var objective_hint: Label
-var _armor_tracker: VBoxContainer
-var _armor_rows: Array = []
-var _armor_next: Label
+var _guide_box: VBoxContainer
+var _suit_blk: Dictionary = {}
+var _armor_blk: Dictionary = {}
+
+## The guide rows read alike everywhere: [ ] not started / [~] half-way / [x] done.
+const MARKS: Array = ["[ ]", "[~]", "[x]"]
+const ROW_COLS: Array = ["ink", "amber", "green"]
 var progress_bar: ProgressBar
 var prompt_label: Label
 var prompt_host: Label
@@ -88,26 +92,101 @@ func attach(p: Player, rt: GarageRuntime, dir: ObjectiveDirector, env: GarageEnv
 		_build_all()
 
 
-func _update_armor_tracker() -> void:
-	## The armour guide, straight on the HUD while the job is open: the four
-	## spares with their state, and the one line that says what to do next. All
-	## state lives in the assembly module; this only renders it.
-	if _armor_tracker == null:
+func _update_guides() -> void:
+	## The assembly guides, straight on the HUD while each job is open: the
+	## step banner, the rows with their states, and the one line that says
+	## what to do next. All state lives in the guide modules; this renders it.
+	_update_suit_guide()
+	_update_armor_guide()
+
+
+func _update_suit_guide() -> void:
+	## The prototype suit's journey: recover → install → sequence → check.
+	if _suit_blk.is_empty() or runtime == null:
 		return
-	if runtime == null or runtime.armor == null or not bool(runtime.armor.tracker_visible()):
-		_armor_tracker.visible = false
+	var g: Node = runtime.assembly_guide
+	var panel: PanelContainer = _suit_blk.get("panel")
+	if g == null or not bool(g.tracker_visible()):
+		panel.visible = false
 		return
-	_armor_tracker.visible = true
+	panel.visible = true
+	_set_guide_stage(_suit_blk, String(g.stage_line()), bool(g.is_complete()))
+	var names: Array = ["frame module", "energy module", "shell module"]
+	for i: int in range(3):
+		var st: int = int(g.module_state(i))
+		var row: Label = _suit_blk["rows"][i]
+		row.text = "%s %-13s %s" % [String(MARKS[st]), String(names[i]), String(g.module_detail(i))]
+		row.add_theme_color_override("font_color", GarageTheme.col(String(ROW_COLS[st])))
+	_suit_blk["next"].text = String(g.next_line())
+
+
+func _update_armor_guide() -> void:
+	## The armour figure's two-stage hand-fitting.
+	if _armor_blk.is_empty() or runtime == null:
+		return
+	var a: Node = runtime.armor
+	var panel: PanelContainer = _armor_blk.get("panel")
+	if a == null or not bool(a.tracker_visible()):
+		panel.visible = false
+		return
+	panel.visible = true
+	_set_guide_stage(_armor_blk, String(a.stage_line()), int(a.locked_count()) >= 4)
 	var ids: Array = ["ArmorHelmet", "ArmorChestPlate", "ArmorGauntlet", "ArmorBoot"]
 	var names: Array = ["helmet", "chest plate", "gauntlet", "boot"]
-	var marks: Array = ["[ ]", "[~]", "[x]"]
-	var states: Array = ["at its place", "seated", "bolted"]
 	for i: int in range(4):
-		var st: int = int(runtime.armor.part_state(String(ids[i])))
-		var row: Label = _armor_rows[i]
-		row.text = "%s %-11s %s" % [String(marks[st]), String(names[i]), String(states[st])]
-		row.add_theme_color_override("font_color", GarageTheme.col("cyan" if st == 2 else "ink"))
-	_armor_next.text = String(runtime.armor.guide_line())
+		var st: int = int(a.part_state(String(ids[i])))
+		var row: Label = _armor_blk["rows"][i]
+		row.text = "%s %-11s %s" % [String(MARKS[st]), String(names[i]), String(a.part_detail(String(ids[i])))]
+		row.add_theme_color_override("font_color", GarageTheme.col(String(ROW_COLS[st])))
+	_armor_blk["next"].text = String(a.next_line())
+
+
+func _set_guide_stage(blk: Dictionary, line: String, done: bool) -> void:
+	var stage: Label = blk["stage"]
+	stage.text = line
+	stage.add_theme_color_override("font_color", GarageTheme.col("green" if done else "amber"))
+
+
+func _make_guide_block(title: String, row_count: int) -> Dictionary:
+	## One guide panel: title, the step banner, the rows, the next-step line.
+	## Panel-styled like the objective so the corner reads as one column.
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(430, 0)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.visible = false
+	_guide_box.add_child(panel)
+	var vbox := VBoxContainer.new()
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(vbox)
+	var head := Label.new()
+	head.text = title
+	head.add_theme_font_override("font", _font("mono"))
+	head.add_theme_font_size_override("font_size", 13)
+	head.add_theme_color_override("font_color", GarageTheme.col("muted"))
+	vbox.add_child(head)
+	var stage := Label.new()
+	stage.add_theme_font_override("font", _font("mono"))
+	stage.add_theme_font_size_override("font_size", 13)
+	stage.add_theme_color_override("font_color", GarageTheme.col("amber"))
+	stage.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	stage.custom_minimum_size = Vector2(400, 0)
+	vbox.add_child(stage)
+	var rows: Array = []
+	for i: int in range(row_count):
+		var row := Label.new()
+		row.add_theme_font_override("font", _font("mono"))
+		row.add_theme_font_size_override("font_size", 14)
+		row.add_theme_color_override("font_color", GarageTheme.col("ink"))
+		vbox.add_child(row)
+		rows.append(row)
+	var next_label := Label.new()
+	next_label.add_theme_font_override("font", _font("mono"))
+	next_label.add_theme_font_size_override("font_size", 14)
+	next_label.add_theme_color_override("font_color", GarageTheme.col("cyan"))
+	next_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	next_label.custom_minimum_size = Vector2(400, 0)
+	vbox.add_child(next_label)
+	return {"panel": panel, "stage": stage, "rows": rows, "next": next_label}
 
 
 func _build_all() -> void:
@@ -201,34 +280,18 @@ func _build_hud() -> void:
 	progress_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(progress_bar)
 
-	# --- the armour guide tracker, under the objective --------------------
-	_armor_tracker = VBoxContainer.new()
-	_armor_tracker.name = "ArmorTracker"
-	_armor_tracker.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	_armor_tracker.position = Vector2(24, 158)
-	_armor_tracker.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_armor_tracker.visible = false
-	root.add_child(_armor_tracker)
-	var atitle := Label.new()
-	atitle.text = "ARMOUR MK-I — GUIDE"
-	atitle.add_theme_font_override("font", _font("mono"))
-	atitle.add_theme_font_size_override("font_size", 13)
-	atitle.add_theme_color_override("font_color", GarageTheme.col("muted"))
-	_armor_tracker.add_child(atitle)
-	for i: int in range(4):
-		var row := Label.new()
-		row.add_theme_font_override("font", _font("mono"))
-		row.add_theme_font_size_override("font_size", 15)
-		row.add_theme_color_override("font_color", GarageTheme.col("ink"))
-		_armor_tracker.add_child(row)
-		_armor_rows.append(row)
-	_armor_next = Label.new()
-	_armor_next.add_theme_font_override("font", _font("mono"))
-	_armor_next.add_theme_font_size_override("font_size", 14)
-	_armor_next.add_theme_color_override("font_color", GarageTheme.col("cyan"))
-	_armor_next.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_armor_next.custom_minimum_size = Vector2(430, 0)
-	_armor_tracker.add_child(_armor_next)
+	# --- the assembly guides, under the objective -------------------------
+	## Two panels, the suit's and the armour's, stacked in one column: each
+	## appears while its job is open and hides when it is done.
+	_guide_box = VBoxContainer.new()
+	_guide_box.name = "Guides"
+	_guide_box.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_guide_box.position = Vector2(24, 158)
+	_guide_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_guide_box.add_theme_constant_override("separation", 10)
+	root.add_child(_guide_box)
+	_suit_blk = _make_guide_block("EXOSUIT MK-I — ASSEMBLY GUIDE", 3)
+	_armor_blk = _make_guide_block("ARMOUR MK-I — ASSEMBLY GUIDE", 4)
 
 	# --- status, top right ----------------------------------------------
 	status_box = VBoxContainer.new()
@@ -1162,7 +1225,7 @@ func _help_body(body: HBoxContainer) -> void:
 		["F1", "this screen"], ["F6", "graphics bench"], ["F9", "jump to finished garage (demo)"],
 		["T", "thesis panel — the measured claims"], ["R", "reset the demo to morning"],
 		["1-9, 0, [ ]", "viewpoint tour"], ["\\", "return to where you stood"],
-		["GUIDE", "the yellow tag marks the next spare for the armour figure — walk up and follow it"],
+		["GUIDE", "yellow beacons mark the next assembly step — the tracker panels under the objective list them all"],
 	]
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -1724,7 +1787,7 @@ func _update_inventory_states() -> void:
 
 
 func _process(delta: float) -> void:
-	_update_armor_tracker()
+	_update_guides()
 	# FPS counter, sampled once a second so the number is readable
 	_fps_frames += 1
 	_fps_accum += delta
