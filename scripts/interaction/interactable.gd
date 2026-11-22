@@ -155,6 +155,11 @@ func mark_used() -> void:
 	_used_once = true
 
 
+func reset_used() -> void:
+	## The demo reset (plan E) puts a once-only station back in service.
+	_used_once = false
+
+
 func was_used() -> bool:
 	return _used_once
 

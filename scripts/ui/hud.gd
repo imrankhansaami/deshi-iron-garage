@@ -49,6 +49,7 @@ var schematic_panel: Control
 var diagnostics_panel: Control
 var toolbox_panel: Control
 var help_panel: Control
+var thesis_panel: Control
 var benchmark_panel: BenchmarkPanel
 var open_panels: Array[String] = []
 var _notices: Array[Dictionary] = []
@@ -314,6 +315,7 @@ func _build_panels() -> void:
 	diagnostics_panel = _panel_shell("Diagnostics", "DIAGNOSTIC PASS", "E at the console", _diagnostics_body)
 	toolbox_panel = _panel_shell("Toolbox", "TOOLBOX", "E on the bench", _toolbox_body)
 	help_panel = _panel_shell("Help", "CONTROLS", "F1", _help_body)
+	thesis_panel = _panel_shell("Thesis", "THE PROJECT, MEASURED", "T", _thesis_body)
 	pause_menu = _build_pause()
 	benchmark_panel = BenchmarkPanel.new()
 	benchmark_panel.name = "Benchmark"
@@ -1098,6 +1100,8 @@ func _help_body(body: HBoxContainer) -> void:
 		["Mouse", "look"], ["E", "interact"], ["F", "inspect"], ["I", "modules"],
 		["Tab", "engineering console"], ["Esc", "pause / close panel"],
 		["F1", "this screen"], ["F6", "graphics bench"], ["F9", "jump to finished garage (demo)"],
+		["T", "thesis panel — the measured claims"], ["R", "reset the demo to morning"],
+		["1-9, 0, [ ]", "viewpoint tour"], ["\\", "return to where you stood"],
 	]
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -1112,6 +1116,47 @@ func _help_body(body: HBoxContainer) -> void:
 		grid.add_child(l)
 	box.add_child(_hr())
 	box.add_child(_note("The experience is about 10-15 minutes. Everything is revisitable: restore power, read the notebook, recover the three modules, open the assembly interface, then run the diagnostic pass. The graphics bench (F6) holds the four shader and geometry experiments the project claims, with live parameter control and real Performance counters."))
+
+
+func _thesis_body(body: HBoxContainer) -> void:
+	## Plan D: the panel a viva asks for — what the project is, what it measured,
+	## and the keys that drive the presentation. Live counts are read at open
+	## time; the ranged figures are the published measurements from the capture
+	## runs of 21-22 November 2026 (docs/EXPERIMENTS.md).
+	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 10)
+	body.add_child(box)
+	box.add_child(_note("স্বপ্নের গ্যারেজ · DESHI IRON GARAGE — a procedural Bangladeshi repair workshop built entirely from code: no imported art, every texture synthesised at load, every sound a PCM recipe."))
+	box.add_child(_note("The workshop builds a powered exosuit from the machines it repairs — frame, energy and shell modules, tested on a deck with a real boundary and a real emergency stop. A load-bearing demonstration, not a weapon. The armour figure is the shop's own unbranded build, and the stations say so in-world."))
+	box.add_child(_hr())
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 36)
+	box.add_child(grid)
+	var breakdown: Dictionary = dressing.dressing_breakdown()
+	var rows: Array = [
+		["build, full garage", "9.2–18.2 s by machine load (best measured 9 196 ms)"],
+		["surface synthesis", "34 recipes; per-texel pass banded across the worker pool, output bit-identical (MD5)"],
+		["props built", "%d in 140 kinds" % props.props_built],
+		["placements / stations", "%d placed · %d interactable stations" % [int(breakdown.get("total", 0)), runtime.station_count()]],
+		["lights / screens", "%d lights (7 shadow casters) · %d live SubViewports" % [runtime.lights.size(), runtime.screens.size()]],
+		["carriable items", "213 — every loose thing, plus all 14 suit parts, one by one"],
+		["overlap audit", "0 genuine clashes · 3 documented designed contacts"],
+		["capture harness", "20 fixed viewpoints, all healthy, with luminance and perf logged per shot"],
+		["rendering", "Forward+ · SDFGI · SSR · SSAO · volumetric fog · AgX — all live-switchable in the F6 bench"],
+		["drive it with", "E use · F inspect · I modules · TAB console · F6 bench · T this panel · R demo reset"],
+		["the tour", "1-9 and 0 jump to viewpoints · [ ] step through all 20 · \\ returns to your spot"],
+	]
+	for r: Array in rows:
+		var l := Label.new()
+		l.text = "%-22s  %s" % [String(r[0]), String(r[1])]
+		l.add_theme_font_override("font", _font("mono"))
+		l.add_theme_font_size_override("font_size", 16)
+		l.add_theme_color_override("font_color", GarageTheme.col("ink"))
+		grid.add_child(l)
+	box.add_child(_hr())
+	box.add_child(_note("The story of the room — its notebook, crates, walls and stand — is written twice, in English and Bengali: docs/STORY.md and docs/STORY_BN.md. Every photograph in the room is licence-cleared; docs/ASSET_LICENSES.md lists each one."))
 
 
 func _build_pause() -> Control:
@@ -1237,6 +1282,7 @@ func _panel_for(name: String) -> Control:
 		"diagnostics": return diagnostics_panel
 		"toolbox": return toolbox_panel
 		"help": return help_panel
+		"thesis": return thesis_panel
 		"benchmark": return benchmark_panel
 		"pause": return pause_menu
 	return null

@@ -57,6 +57,7 @@ enum Kind {
 	STABILIZER,
 	BATTERY,
 	WELDING,
+	ARMOR,
 }
 
 @export var kind: Kind = Kind.NONE
@@ -116,6 +117,7 @@ func _default_title() -> String:
 		Kind.RADIO: return "Transistor radio"
 		Kind.MIRROR: return "Wall mirror"
 		Kind.WELDING: return "Welding station"
+		Kind.ARMOR: return "The shop's armour"
 		_: return sanitize_node_name(name)
 
 
@@ -141,6 +143,10 @@ func _default_prompt() -> String:
 		Kind.SOCKET, Kind.WALL_SWITCH: return "Press E to flip the switch"
 		Kind.MODULE_FRAME, Kind.MODULE_ENERGY, Kind.MODULE_SHELL:
 			return "Press E to recover the module"
+		Kind.ARMOR:
+			if runtime != null and runtime.armor != null:
+				return runtime.armor.figure_prompt()
+			return "Press E to inspect"
 		_: return "Press E to inspect"
 
 
@@ -244,6 +250,16 @@ func _primary(player: Node) -> void:
 			_collect("armour_shell")
 		Kind.CLOCK:
 			state_on = not state_on
+		Kind.ARMOR:
+			# the fitting interaction lives in the armour module: it owns the
+			# sockets, the state and the texts. Returns true when it handled the
+			# press; otherwise the figure behaves like any inspectable prop.
+			if runtime != null and runtime.armor != null and runtime.armor.figure_action(player):
+				pass
+			elif inspectable:
+				var payload: Dictionary = inspect(player)
+				if not payload.is_empty():
+					EventBus.ui_panel_opened.emit("inspect")
 		_:
 			# every other prop is readable, which is what makes the garage feel
 			# dense: the player can inspect almost anything and get a real answer
@@ -265,6 +281,13 @@ func _collect(component_id: String) -> void:
 	if GameState.collect_component(component_id):
 		mark_used()
 		visible = false
+		# the crate should LOOK emptied — the payload mesh hides with the station,
+		# and the demo reset (plan E) re-shows it
+		var host: Node = get_parent()
+		if host != null:
+			var payload: Node = host.get_node_or_null("Module")
+			if payload is Node3D:
+				(payload as Node3D).visible = false
 		AudioBank.play_at("metal_thunk", global_position, -4.0)
 		runtime.sys_log("MODULE RECOVERED: %s" % GameConfig.component_short(component_id).to_upper())
 

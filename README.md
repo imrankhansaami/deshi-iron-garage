@@ -118,6 +118,17 @@ the flag file.
 | `F1` | controls |
 | `F6` | graphics bench |
 | `F9` | jump the garage to its finished state (demonstration shortcut) |
+| `T` | thesis panel — the project's measured claims |
+| `R` | reset the demo back to the morning |
+| `1`–`9`, `0`, `[` `]` | jump / step through the twenty fixed viewpoints |
+| `\` | return to where you stood |
+
+**For a presentation.** The armour figure's four spare shells can be **test-fitted by
+hand**: carry each one to the figure and press `E` — the part settles into its socket
+with a latch, the figure's lights pulse, and when the fourth seats the figure powers up.
+`R` puts the whole garage back to the morning so the sequence can run again, `T` opens
+the measured claims, and `1`–`0` / `[` `]` jump the camera through the twenty fixed
+viewpoints — press `\` to come back to your spot.
 
 Just about anything loose can be picked up: tools, tins, tea glasses, stools, tyres,
 drums, crates, chairs, shelves, workbenches, the bicycle, even the holographic table —

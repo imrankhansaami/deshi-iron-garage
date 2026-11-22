@@ -230,6 +230,8 @@ func _pick_under_crosshair() -> Node3D:
 	var best_t: float = PICK_RANGE
 	_target_box = AABB()
 	for entry: Dictionary in _items:
+		if not bool(entry.get("enabled", true)):
+			continue
 		var node: Variant = entry.get("node")
 		if not (node is Node3D) or not is_instance_valid(node) or node == _held:
 			continue
@@ -405,6 +407,34 @@ func _set_hint(text: String) -> void:
 		return
 	_hint = text
 	EventBus.carry_hint_changed.emit(text)
+
+
+# ===========================================================================
+# hand-off API — the fitting interactions (the armour assembly)
+# ===========================================================================
+
+func held() -> Node3D:
+	## The node in the player's hands right now, or null. The armour figure reads
+	## this to know which spare is being offered to a socket.
+	return _held if _state == State.CARRYING else null
+
+
+func settle_held(to_position: Vector3, to_rotation: Vector3, sfx: String = "servo") -> bool:
+	## The caller owns the destination — an assembly socket — and the held item
+	## rides the same settle tween a place/put-back would use.
+	if _state != State.CARRYING or _held == null:
+		return false
+	_begin_settle(_held, to_position, to_rotation, sfx, 0.05)
+	return true
+
+
+func set_item_enabled(node: Node3D, enabled: bool) -> void:
+	## Fitted furniture stays in the room but off the pick list: the armour
+	## assembly disables a spare once it is seated and re-enables it on dismount.
+	for entry: Dictionary in _items:
+		if entry.get("node") == node:
+			entry["enabled"] = enabled
+			return
 
 
 static func _ray_box(origin: Vector3, dir: Vector3, box: AABB) -> float:

@@ -44,6 +44,7 @@ var shutter_node: Node3D
 var curtain: Node3D
 var slat_nodes: Array[MeshInstance3D] = []
 var holo_volume: Node3D
+var armor: Node = null                       # the armour assembly module (plan A)
 var dust: GPUParticles3D
 var rain: GPUParticles3D
 var sun: DirectionalLight3D
@@ -729,6 +730,26 @@ func _install_moduleImmediate(module_id: String) -> void:
 		n.position = n.get_meta("home_position") as Vector3
 		n.rotation = Vector3.ZERO
 		n.scale = Vector3.ONE
+
+
+func reset_assembly() -> void:
+	## The demo reset's assembly half (plan E): every suit part back to hidden,
+	## the stage dormant, the core cold and the suit lights out, so the build
+	## sequence can be played again in front of an audience.
+	if suit_root == null:
+		return
+	for id: String in suit_parts:
+		var n: Node3D = suit_parts.get(id, null) as Node3D
+		if n == null:
+			continue
+		n.visible = false
+		_set_part_alpha(n, 0.0)
+		n.position = n.get_meta("home_position", n.position) as Vector3
+		n.rotation = Vector3.ZERO
+		n.scale = Vector3.ONE
+	GameState.set_assembly_stage(GameState.AssemblyStage.DORMANT)
+	set_core_active(false, true)
+	_light_suit(false)
 
 
 func install_module(module_id: String) -> void:

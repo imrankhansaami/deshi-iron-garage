@@ -43,6 +43,7 @@ const BOB_AMOUNT: float = 0.021
 var target: Interactable = null
 var ui_locked: bool = false                 # true while any panel owns input
 var paused: bool = false
+var world: Node = null                      # the GarageWorld, for the demo reset
 var _velocity_y: float = 0.0
 var _bob_phase: float = 0.0
 var _travelled: float = 0.0
@@ -155,6 +156,11 @@ func route_action(_keycode: int, physical: int) -> void:
 			# developer shortcut: skip straight to the finished garage, used by
 			# the screenshot harness and the demonstration sequence
 			_debug_complete()
+		KEY_T:
+			_toggle_panel("thesis")
+		KEY_R:
+			if not ui_locked and not paused and world != null:
+				world.demo_reset()
 
 
 func _toggle_panel(name: String) -> void:

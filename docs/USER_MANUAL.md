@@ -54,6 +54,11 @@ written to `user://captures/build.log`.
 | **F1** | controls reference |
 | **F6** | graphics bench |
 | **F9** | jump the garage to its finished state (demonstration shortcut) |
+| **T** | thesis panel — the project's measured claims |
+| **R** | reset the demo back to the morning |
+| **1–9, 0** | jump to a fixed viewpoint |
+| **`[` `]`** | step through all twenty viewpoints |
+| **Backslash** | return to where you stood |
 
 The mouse is captured while you are in the garage. Press **Esc** to release it.
 

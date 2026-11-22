@@ -221,7 +221,17 @@ and the room's ambience, and the assembly depends on all of them being in a know
 stations plus one owner of the truth.
 
 **`garage_environment.gd`** — `WorldEnvironment`, four lighting circuits, dust and rain particle
-systems, and the coupling of shutter position to daylight shafts and fog density.
+systems, the weather machine (rain → after-rain → dry → drizzle, with the shared concrete slab
+wetting and drying as one uniform), and the coupling of shutter position to daylight shafts and fog
+density.
+
+**`armor_assembly.gd`** — the presentation arm of the dressing: the shop's four spare armour shells
+can be test-fitted by hand onto the practice figure. It owns the sockets (figure-local offsets), the
+fitted state, the duplicated glow materials so the light ramps stay local, and the station texts;
+the figure's station (kind `ARMOR`) delegates to it, and the carry system hands the held part over
+through `settle_held()`. `garage_world.demo_reset()` uses its `dismount_all(instant)` together with
+`runtime.reset_assembly()` to return the whole demo to the morning, and the viewpoint tour is a thin
+reuse of the capture harness's own `_cap_place()`.
 
 **`screen_content.gd`** — builds the spec for every display in the garage from a single `_snapshot()`
 of the simulation, so no screen can disagree with another and no separate data path has to be kept in

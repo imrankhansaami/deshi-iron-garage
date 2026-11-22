@@ -41,6 +41,7 @@ var player: Player
 var hud: Hud
 var director: ObjectiveDirector
 var carry: CarrySystem
+var armor: Node = null                       # the armour assembly module (plan A)
 var build_ms: Dictionary = {}
 var build_complete: bool = false
 var _gate_auto_pending: bool = false
@@ -165,6 +166,18 @@ func _build() -> void:
 	carry.name = "Carry"
 	add_child(carry)
 	carry.setup(player, dressing, structure)
+
+	# 6d. the armour assembly (presentation plan A) ---------------------------
+	## The spare shells can be test-fitted onto the practice figure by hand; the
+	## module owns the sockets, the ramp of the figure's lights and the texts.
+	## Loaded by path: a -s script compiles before global classes are rescanned.
+	armor = (load("res://scripts/garage/armor_assembly.gd") as GDScript).new()
+	armor.name = "ArmorAssembly"
+	add_child(armor)
+	armor.bind(runtime, carry, dressing)
+	runtime.armor = armor
+	if player != null:
+		player.world = self
 
 	# 7. interface ---------------------------------------------------------
 	t0 = Time.get_ticks_msec()
@@ -838,10 +851,110 @@ func _cap_progression() -> void:
 	GameState.diagnostics_run = true
 	for fan: Dictionary in runtime.fans:
 		fan["target"] = float(fan.rpm)
+	if armor != null:
+		armor.fit_all_instant()
 	_cap_lines.append("=== PROGRESSION ===")
 	_cap_lines.append("  stations %d  lights %d  screens %d  fans %d  props %d" % [
 		runtime.station_count(), runtime.lights.size(), runtime.screens.size(),
 		runtime.fans.size(), props.props_built])
+
+
+# ===========================================================================
+# presentation tools (plans B, D, E) — the viewpoint tour and the demo reset
+# ===========================================================================
+
+var _tour_index: int = -1
+var _tour_saved: Dictionary = {}
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	## Plan B: the zoned tour for the viva. Digits 1-0 jump to the first ten
+	## capture viewpoints, [ and ] walk the whole set, backslash returns you to
+	## where you were standing. Nothing fires while a panel or the capture
+	## harness owns the session.
+	if _capturing or player == null or player.ui_locked or player.paused:
+		return
+	var key_ev: InputEventKey = event as InputEventKey
+	if key_ev == null or not key_ev.pressed or key_ev.echo:
+		return
+	var kc: int = key_ev.physical_keycode
+	match kc:
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
+			var idx: int = (9 if kc == KEY_0 else kc - KEY_1)
+			_tour_goto(idx)
+			get_viewport().set_input_as_handled()
+		KEY_BRACKETLEFT:
+			_tour_goto(posmod(_tour_index - 1, CAP_SHOTS.size()))
+			get_viewport().set_input_as_handled()
+		KEY_BRACKETRIGHT:
+			_tour_goto(posmod(_tour_index + 1, CAP_SHOTS.size()))
+			get_viewport().set_input_as_handled()
+		KEY_BACKSLASH:
+			_tour_return()
+			get_viewport().set_input_as_handled()
+
+
+func _tour_goto(idx: int) -> void:
+	if idx < 0 or idx >= CAP_SHOTS.size():
+		return
+	if _tour_saved.is_empty():
+		_tour_saved = {
+			"pos": player.global_position,
+			"rot": player.rotation,
+			"cam_pos": player.camera.global_position,
+			"cam_rot": player.camera.rotation,
+		}
+	_tour_index = idx
+	_cap_place(CAP_SHOTS[idx])
+	var shot: Dictionary = CAP_SHOTS[idx]
+	EventBus.notification_requested.emit("view %d/%d — %s" % [idx + 1, CAP_SHOTS.size(), String(shot.name)], "info")
+
+
+func _tour_return() -> void:
+	if _tour_saved.is_empty():
+		EventBus.notification_requested.emit("already at your spot", "info")
+		return
+	player.global_position = _tour_saved["pos"] as Vector3
+	player.rotation = _tour_saved["rot"] as Vector3
+	player.camera.global_position = _tour_saved["cam_pos"] as Vector3
+	player.camera.rotation = _tour_saved["cam_rot"] as Vector3
+	_tour_saved.clear()
+	_tour_index = -1
+	EventBus.notification_requested.emit("back at your spot", "info")
+
+
+func demo_reset() -> void:
+	## Plan E: back to the morning without a relaunch — flags, power, shutter,
+	## computer, hologram, modules, core, crates and the armour spares, so the
+	## presentation can run twice. Anything in the player's hands must go down
+	## first; the hint says so.
+	if runtime == null:
+		return
+	if carry != null and carry.held() != null:
+		EventBus.notification_requested.emit("put that down first — right click returns it", "warning")
+		return
+	GameState.reset_run()
+	runtime.animate_shutter(false)
+	runtime.set_power(false, true)
+	runtime.computer_stage = 0
+	runtime.set_hologram_visible(false, 0.01)
+	runtime.reset_assembly()
+	for st: Variant in runtime.stations.values():
+		if st is Station:
+			(st as Station).state_on = false
+	for child: Node in dressing.get_children():
+		if not String(child.name).begins_with("ComponentCrate"):
+			continue
+		for sub: Node in child.get_children():
+			if sub is Station:
+				(sub as Station).visible = true
+				(sub as Interactable).reset_used()
+			if sub is Node3D and String(sub.name) == "Module":
+				(sub as Node3D).visible = true
+	if armor != null:
+		armor.dismount_all(true)
+	runtime.sys_log("DEMO RESET — THE GARAGE IS BACK TO MORNING")
+	EventBus.notification_requested.emit("demo reset — the garage is back to the morning; work the switchboard to begin", "success")
 
 
 func _cap_place(shot: Dictionary) -> void:

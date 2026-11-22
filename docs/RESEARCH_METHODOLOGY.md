@@ -171,6 +171,9 @@ Not a research question, but necessary for the others to mean anything:
   collar seated inside its pit, the cradle and head yoke gripping the suit, and the suit's lower legs
   inside the reactor pedestal — each listed with its reason in the audit's `DESIGNED` block rather
   than left implicit.
+- **Presentation-interaction checks:** `tests/armor_probe.gd` drives the armour fitting through the
+  real carry hand-off — the same path a mouse pick takes — and asserts every socket distance, the
+  wrong-part guard, the completion glow, the dismount homes and the demo reset end to end.
 - **Full run:** the capture harness boots the real renderer, applies the whole twelve-step progression,
   and confirms every subsystem reached its end state, because a "successful" build that never powered
   the lights would otherwise pass a compile check.
