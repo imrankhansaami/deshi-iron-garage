@@ -52,6 +52,7 @@ var _busy: bool = false
 var _bolting: bool = false           ## the seal cascade is running
 var _engaged: bool = false           ## the guide only exists once the job begins
 var _beacon: Node3D = null           ## the shared beacon that marks the next step
+var _ghost: Node3D = null            ## the hologram target over the base
 var _arrows: Dictionary = {}         ## part name -> that spare's own floating arrow
 var _sealed_ms: int = 0
 var _last_wrong: Node = null         ## the wrong-order part already announced
@@ -80,6 +81,7 @@ func bind(p_runtime: Node, p_carry: Node, dressing: Node3D, p_player: Node = nul
 	if figure == null:
 		push_warning("ArmorAssembly: no ArmorBase in the dressing")
 		return
+	_ghost = dressing.get_node_or_null("ArmorGhost") as Node3D
 	for part_name: String in PARTS:
 		var node: Node3D = dressing.get_node_or_null(part_name) as Node3D
 		if node == null:
@@ -147,7 +149,7 @@ func _process(_delta: float) -> void:
 					break
 	# ease: carrying a spare and walking it up is enough — it seats itself
 	if not _busy and held != null and _is_part(held) and _player != null:
-		if not _fitted.has(_name_of(held)) and _player.global_position.distance_to(figure.global_position) < 2.4:
+		if not _fitted.has(_name_of(held)) and _player.global_position.distance_to(figure.global_position) < 1.6:
 			figure_action(null)
 	var show: bool = _engaged and _locked.size() < PARTS.size()
 	var target: Vector3 = Vector3.ZERO
@@ -389,7 +391,7 @@ func _seat(part_name: String) -> void:
 		seal_tw.tween_interval(2.6)
 		seal_tw.tween_callback(_auto_bolt)
 	else:
-		EventBus.notification_requested.emit("%s — %d of 4 seated" % [String(info["line"]), n], "success")
+		EventBus.notification_requested.emit("%s — %d of %d seated" % [String(info["line"]), n, PARTS.size()], "success")
 	if runtime != null:
 		runtime.sys_log("ARMOUR SEAT: %s (%d/4)" % [part_name.to_upper(), n])
 	var tw2: Tween = create_tween()
@@ -667,6 +669,19 @@ func _update_texts() -> void:
 			st.display_name = String(o2["title"])
 			st.description = String(o2["desc"])
 		st.spec_rows = (o2["spec"] as Array).duplicate()
+	_update_ghosts()
+
+
+func _update_ghosts() -> void:
+	## The hologram target: each ghost piece hides as its real assembly seats,
+	## so the base's outline becomes the figure, piece by piece.
+	if _ghost == null:
+		return
+	var map: Dictionary = {"ArmorLegs": "GhostLegs", "ArmorTorso": "GhostTorso", "ArmorHead": "GhostHead"}
+	for part_name: String in map:
+		var g: Node3D = _ghost.get_node_or_null(String(map[part_name])) as Node3D
+		if g != null:
+			g.visible = not _fitted.has(part_name)
 
 
 func _station_of(node: Node) -> Node:

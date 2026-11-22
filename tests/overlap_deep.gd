@@ -47,7 +47,7 @@ func _run() -> void:
 		if not (child is Node3D):
 			continue
 		var item_name: String = String(child.name)
-		if item_name.begins_with("Grime") or item_name.begins_with("Cable") or item_name.begins_with("@") or item_name.begins_with("Lane") or item_name.begins_with("Joint") or item_name.begins_with("Drain") or item_name.begins_with("Course"):
+		if item_name.begins_with("Grime") or item_name.begins_with("Cable") or item_name.begins_with("@") or item_name.begins_with("Lane") or item_name.begins_with("Joint") or item_name.begins_with("Drain") or item_name.begins_with("Course") or item_name.begins_with("ArmorGhost"):
 			continue
 		var meshes: Array = []
 		_collect(child, meshes)

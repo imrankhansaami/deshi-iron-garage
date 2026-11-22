@@ -43,7 +43,7 @@ const MAX_CARRY_SIZE: float = 3.1        # largest dimension a thing may have
 ## gate is animated and frames the doorway, the windows sit in wall openings, the
 ## flag mast is 5.8 m of pole for a flag at its top, and the prototype suit is
 ## mid-animation content whose parts home to the stand.
-const CARRY_EXCLUDE_PREFIXES: Array[String] = ["Shutter", "Window", "FlagPole", "PrototypeExosuit"]
+const CARRY_EXCLUDE_PREFIXES: Array[String] = ["Shutter", "Window", "FlagPole", "PrototypeExosuit", "ArmorGhost"]
 const HOLD_CLEARANCE: float = 0.22       # how far below the camera's aim it floats
 const FOLLOW_RATE: float = 14.0          # exponential smoothing rate
 const ROTATE_STEP: float = PI / 12.0     # one wheel notch

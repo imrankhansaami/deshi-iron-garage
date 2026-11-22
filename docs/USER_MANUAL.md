@@ -208,12 +208,13 @@ console. The board sleeps when the final check is done, and `R` resets the whole
 
 By the north wall, on its service base: the shop's own build, done the long way — the **figure in
 three parts**. The **legs**, the **torso** and the **head** wait together on the **build pallet** just
-inside the entrance. Left-click an assembly to carry it back to the base: walking it up **seats it by
-itself** (or press `E` for the button) with the snap, the latch and a light pulse, the base ring
-climbing a step. The order is low to high and enforced: legs first, then torso, then head. **The head
-completes the figure and it powers on** — core lens, eye slits and ring light up — and after the beat
-**the bolts seal it on their own**, a clack cascade with a second surge. `E` with empty hands strips
-the figure back to the pallet for another build.
+inside the entrance, and a cyan **hologram of the whole figure** hovers over the base until the real
+parts replace it, piece by piece. Left-click an assembly to carry it back to the base: walking it up
+**seats it by itself** (or press `E` for the button) with the snap, the latch and a light pulse, the
+base ring climbing a step. The order is low to high and enforced: legs first, then torso, then head.
+**The head completes the figure and it powers on** — core lens, eye slits and ring light up — and
+after the beat **the bolts seal it on their own**, a clack cascade with a second surge. `E` with empty
+hands strips the figure back to the pallet for another build.
 
 It is a guided job: waking at the build pallet, the **floating arrows** stand over every assembly
 still waiting, while the next one's arrow rises on a **column of light** and moves with you. Under

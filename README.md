@@ -125,7 +125,9 @@ the flag file.
 
 **For a presentation.** The shop's armour is built — the whole figure, in three
 parts, low to high: the legs, the torso and the head wait together on a build
-pallet just inside the entrance, and the service base waits by the north wall.
+pallet just inside the entrance, and the service base waits by the north wall —
+a cyan **hologram of the whole figure** hovering over it until the real parts
+replace it, piece by piece.
 Carry each assembly over — walking it up **seats it by itself** (or press `E`),
 the base ring climbing a step — legs first, then torso, then head, and the
 order is enforced in red if you try the head early. **The head completes the

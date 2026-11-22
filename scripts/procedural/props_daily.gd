@@ -32,6 +32,7 @@ static func register(f: PropFactory) -> void:
 	f.generators["photo_wall"] = photo_wall
 	f.generators["armor_figure"] = armor_figure
 	f.generators["armor_base"] = armor_base
+	f.generators["armor_ghost"] = armor_ghost
 	f.generators["armor_legs"] = armor_legs
 	f.generators["armor_torso"] = armor_torso
 	f.generators["armor_head"] = armor_head
@@ -1146,6 +1147,38 @@ static func armor_base(f: PropFactory, _o: Dictionary) -> Node3D:
 	glow_ring.position = Vector3(0.0, 0.052, 0.0)
 	glow_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(glow_ring)
+	return root
+
+
+static func armor_ghost(f: PropFactory, _o: Dictionary) -> Node3D:
+	## The build target made visible: a cyan hologram of the whole figure over the
+	## service base, in its three pieces. Each ghost piece hides as the real
+	## assembly seats, so the empty base reads "this is what you are building"
+	## from across the room. Purely for the eye: excluded from carrying and from
+	## the overlap audit.
+	var ghost := StandardMaterial3D.new()
+	ghost.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ghost.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	ghost.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ghost.albedo_color = Color(0.32, 0.80, 1.0, 0.30)
+	ghost.emission_enabled = true
+	ghost.emission = Color(0.30, 0.78, 1.0)
+	ghost.emission_energy_multiplier = 2.2
+	var root := Node3D.new()
+	root.name = "ArmorGhost"
+	var groups: Array = [
+		{"name": "GhostLegs", "node": armor_legs(f, {}), "y": 0.05},
+		{"name": "GhostTorso", "node": armor_torso(f, {}), "y": 0.62},
+		{"name": "GhostHead", "node": armor_head(f, {}), "y": 1.52},
+	]
+	for g: Dictionary in groups:
+		var part: Node3D = g["node"]
+		part.name = String(g["name"])
+		part.position = Vector3(0.0, float(g["y"]), 0.0)
+		root.add_child(part)
+	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
+		mi.material_override = ghost
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return root
 
 
