@@ -124,11 +124,12 @@ the flag file.
 | `\` | return to where you stood |
 
 **For a presentation.** The armour figure's four spare shells are assembled in two
-stages, by hand: **test-fit** — carry each part to the figure and press `E`, it snaps
-into its socket with a latch while the base ring climbs a step; the **fourth part
-seats and the figure powers on** — eyes, core and ring light up — then **bolt the kit
-down** with one more `E`: a cascade of clacks walks all four locks and **seals the
-fit** with a second surge. Both assemblies guide themselves: a **big yellow
+stages, by hand: **test-fit** — carry each part to the figure; walking it up seats it
+(or press `E`), it snaps into its socket with a latch while the base ring climbs a
+step; the **fourth part seats and the figure powers on** — eyes, core and ring light
+up — and after the beat **the bolts walk the fit down on their own**: a cascade of
+clacks walks all four locks and **seals the fit** with a second surge. Both
+assemblies guide themselves: a **big yellow
 arrow** floats over every part still waiting its turn — the armour's four
 shells, waiting together on a parts tray just inside the entrance, and the
 suit's three module crates — and the next step's arrow rises on a **column of

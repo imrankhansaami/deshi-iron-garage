@@ -126,11 +126,10 @@ func _run() -> void:
 	print("ARMOR: seated=%d locked=%d %s" % [
 		int(armor.fitted_count()), int(armor.locked_count()),
 		"OK" if int(armor.fitted_count()) == 4 and int(armor.locked_count()) == 0 else "FAIL"])
-	var handled_bolt: bool = armor.figure_action(null)
-	await _wait(2.2)
-	print("ARMOR: bolt cascade handled=%s locked=%d/4 %s" % [
-		str(handled_bolt), int(armor.locked_count()),
-		"OK" if handled_bolt and int(armor.locked_count()) == 4 else "FAIL"])
+	# stage two is automatic: the fourth seat schedules the seal itself
+	await _wait(4.6)
+	print("ARMOR: auto-seal locked=%d/4 %s" % [
+		int(armor.locked_count()), "OK" if int(armor.locked_count()) == 4 else "FAIL"])
 	print("ARMOR: guide after seal beacon=%s stage=\"%s\" %s" % [
 		str(armor.beacon_visible()), String(armor.stage_line()),
 		"OK" if not armor.beacon_visible() and String(armor.stage_line()).contains("COMPLETE") else "FAIL"])
@@ -178,6 +177,24 @@ func _run() -> void:
 		"OK" if not bool(runtime.power_on) and int(runtime.computer_stage) == 0 else "FAIL"])
 	print("ARMOR: reset components collected=%d %s" % [
 		int(gs.collected_components.size()), "OK" if gs.collected_components.size() == 0 else "FAIL"])
+	# 6b. ease: carrying a spare up seats it — no look, no press
+	var pl: Node3D = world.get("player") as Node3D
+	var fig2: Node3D = dressing.get_node_or_null("ArmorFigure") as Node3D
+	var boot2: Node3D = dressing.get_node_or_null("ArmorBoot") as Node3D
+	if pl != null and fig2 != null and boot2 != null:
+		var pl_saved: Vector3 = pl.global_position
+		pl.global_position = fig2.global_position + Vector3(1.1, 0.0, 1.1)
+		carry.set("_held", boot2)
+		carry.set("_state", 1)
+		await _wait(0.8)
+		print("ARMOR: auto-seat by approach fitted=%d/4 %s" % [
+			int(armor.fitted_count()), "OK" if int(armor.fitted_count()) == 1 else "FAIL"])
+		carry.set("_held", null)
+		carry.set("_state", 0)
+		armor.dismount_all(true)
+		pl.global_position = pl_saved
+	else:
+		print("ARMOR: auto-seat by approach FAIL — nodes missing")
 	# 6. the suit guide (the second assembly): quiet in the morning, then every
 	# step of the journey — recover, install, assemble, check — with the beacon
 	var guide: Node = world.get("assembly_guide")

@@ -208,10 +208,11 @@ console. The board sleeps when the final check is done, and `R` resets the whole
 
 By the north wall, on its service base: a red-and-gold figure — and its four spare shells waiting
 together on the **parts tray** just inside the entrance, so the fitting always starts from one place.
-Left-click a spare to carry it back to the figure, then `E` to test-fit it; it seats with a latch, a
-servo and a light pulse, and the base ring climbs a step. The **fourth seat powers the figure on** —
-eyes, core and ring light up. Step back, empty hands, and `E` once more: the bolts walk through in a
-clack cascade and the fit is sealed. `E` again strips the kit for another run.
+Left-click a spare to carry it back to the figure: walking it up **seats it by itself** (or press `E`
+for the button); it seats with a latch, a servo and a light pulse, and the base ring climbs a step.
+The **fourth seat powers the figure on** — eyes, core and ring light up — and after the beat **the
+bolts walk the fit down on their own**, a clack cascade that seals it with a second surge. `E` with
+empty hands still seals early or strips the kit for another run.
 
 It is a guided job: walking up to the figure (or picking up any spare) wakes the **floating arrows** —
 a big yellow arrow over every spare on the tray, so the whole set is visible at a glance, while the
@@ -490,9 +491,9 @@ For showing the project in about six minutes, following the sequence in the brie
 13. The core ignites, the optics light.
 14. `E` on the console in the testing corner. The diagnostic pass runs.
 15. At the parts tray just inside the entrance: all four spare shells wait together, each under a big
-    yellow arrow. Carry each one to the figure by the north wall and `E` to test-fit it — the fourth
-    seat powers the figure on — then one more `E`, empty-handed, bolts the kit down and seals it.
-    Wrong moves answer in red and say what to do instead.
+    yellow arrow. Carry each one to the figure by the north wall — walking it up seats it (or press
+    `E`) — the fourth seat powers the figure on, and the bolts then seal the fit on their own. Wrong
+    moves answer in red and say what to do instead.
 16. **F6**. Materials tab: change roughness and metallic live. Hologram tab: switch between the three
     variants. Lighting tab: switch to warm-only and back to full rig. Post tab: toggle SDFGI and watch
     the core's wall spill disappear.

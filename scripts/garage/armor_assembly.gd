@@ -50,6 +50,7 @@ var _ring_base: float = 3.0
 var _orig: Dictionary = {}           ## station -> {title, desc, spec} originals
 var _hinted: bool = false
 var _busy: bool = false
+var _bolting: bool = false           ## the seal cascade is running
 var _engaged: bool = false           ## the guide only exists once the job begins
 var _beacon: Node3D = null           ## the shared beacon that marks the next step
 var _arrows: Dictionary = {}         ## part name -> that spare's own floating arrow
@@ -144,6 +145,10 @@ func _process(_delta: float) -> void:
 				if _player.global_position.distance_to((_parts[part_name] as Node3D).global_position) < 3.5:
 					_engaged = true
 					break
+	# ease: carrying a spare and walking it up is enough — it seats itself
+	if not _busy and held != null and _is_part(held) and _player != null:
+		if not _fitted.has(_name_of(held)) and _player.global_position.distance_to(figure.global_position) < 2.4:
+			figure_action(null)
 	var show: bool = _engaged and _locked.size() < PARTS.size()
 	var target: Vector3 = Vector3.ZERO
 	var beacon_part: String = ""
@@ -223,7 +228,7 @@ func stage_line() -> String:
 	if _locked.size() >= PARTS.size():
 		return "COMPLETE · FITTED, BOLTED AND SEALED"
 	if _fitted.size() >= PARTS.size():
-		return "STEP 2 OF 2 · BOLT THE KIT DOWN"
+		return "STEP 2 OF 2 · THE BOLTS SEAL THE FIT"
 	return "STEP 1 OF 2 · TEST-FIT THE FOUR SPARE SHELLS"
 
 
@@ -250,8 +255,10 @@ func next_line() -> String:
 		return "NEXT — carry it to the figure — the shop's armour on the NORTH WALL — and press E to test-fit%s" % _dist_tail(figure.global_position)
 	if _locked.size() >= PARTS.size():
 		return "DONE — press E at the figure to strip the kit for a second run · R resets the morning"
+	if _fitted.size() >= PARTS.size():
+		return "the bolts are walking the fit down — let it seal"
 	if not _pending_locks().is_empty():
-		return "NEXT — stand at the figure with empty hands and press E — the four bolts walk in and seal the fit"
+		return "seat the remaining spares — the bolts finish the fit after the fourth"
 	var np: String = guide_part()
 	if np != "":
 		return "NEXT — left-click the %s to pick it up · %s%s" % [
@@ -286,12 +293,12 @@ func figure_prompt() -> String:
 	if not _hinted:
 		_hinted = true
 		_engaged = true
-		EventBus.notification_requested.emit("the figure takes the four spares — helmet, chest plate, gauntlet, boot. Follow the yellow beam, bring one and press E to test-fit it", "info")
+		EventBus.notification_requested.emit("the figure takes the four spares — walk one up and it seats itself; the bolts seal the fit when the last one sits", "info")
 	var held: Node3D = carry.held()
 	if held != null:
 		for part_name: String in PARTS:
 			if _parts.get(part_name) == held and not _fitted.has(part_name):
-				return "Press E to test-fit the %s" % String(PARTS[part_name]["label"])
+				return "Press E to test-fit the %s — or just walk it up" % String(PARTS[part_name]["label"])
 		return "Press E — that part doesn't socket here"
 	var pending: Array = _pending_locks()
 	if pending.size() == 1:
@@ -362,10 +369,15 @@ func _seat(part_name: String) -> void:
 	_update_texts()
 	var n: int = _fitted.size()
 	if n >= PARTS.size():
-		EventBus.notification_requested.emit("%s — all four seated. The core is catching — press E again to bolt the kit down and seal the fit" % String(info["line"]), "success")
+		EventBus.notification_requested.emit("%s — all four seated. The core is catching — stand back, the bolts seal the fit from here" % String(info["line"]), "success")
 		var catch_tw: Tween = create_tween()
 		catch_tw.tween_interval(0.4)
 		catch_tw.tween_callback(_power_on_moment)
+		# and it finishes itself: the seal walks the locks down after the beat,
+		# so the whole assembly is carry → walk up → (auto seat) ×4, done
+		var seal_tw: Tween = create_tween()
+		seal_tw.tween_interval(2.6)
+		seal_tw.tween_callback(_auto_bolt)
 	else:
 		EventBus.notification_requested.emit("%s — %d of 4 seated" % [String(info["line"]), n], "success")
 	if runtime != null:
@@ -388,6 +400,7 @@ func _pending_locks() -> Array:
 
 
 func _bolt_all(pending: Array) -> void:
+	_bolting = true
 	var delay: float = 0.0
 	for part_name: String in pending:
 		_bolt_one(part_name, delay)
@@ -418,10 +431,22 @@ func _bolt_one(part_name: String, delay: float) -> void:
 
 
 func _after_bolts() -> void:
+	_bolting = false
 	if _locked.size() >= PARTS.size():
 		_seal()
 	else:
-		EventBus.notification_requested.emit("%d of 4 bolted — seat the remaining spares (their yellow arrows mark them), then E again to seal the fit" % _locked.size(), "warning")
+		EventBus.notification_requested.emit("%d of 4 bolted — seat the remaining spares (their yellow arrows mark them), then the bolts finish the fit" % _locked.size(), "warning")
+
+
+func _auto_bolt() -> void:
+	## The automatic finish: after the fourth seat's power-on beat the locks
+	## walk themselves down. A manual press during the beat does it early.
+	if _bolting:
+		return
+	var pending: Array = _pending_locks()
+	if pending.is_empty():
+		return
+	_bolt_all(pending)
 
 
 func _ring_step() -> void:
@@ -615,7 +640,7 @@ func _update_texts() -> void:
 			fig_st.spec_rows = (o["spec"] as Array).duplicate()
 		else:
 			fig_st.display_name = "The shop's armour — %d seated, %d bolted" % [_fitted.size(), _locked.size()]
-			fig_st.description = "The spare shells are being test-fitted onto the figure: %d seated, %d already bolted down. One more E at the figure walks the rest through their locks." % [_fitted.size(), _locked.size()]
+			fig_st.description = "The spare shells are being test-fitted onto the figure: %d seated, %d already bolted down. The bolts seal the fit when the last one sits." % [_fitted.size(), _locked.size()]
 			fig_st.spec_rows = [["spares seated", "%d of 4" % _fitted.size()], ["spares bolted", "%d of 4" % _locked.size()], ["palette", "red over gold over alloy"]]
 	for part_name: String in _parts:
 		var st: Node = _station_of(_parts[part_name])
