@@ -79,6 +79,7 @@ func _run() -> void:
 			sz.x * 100.0, sz.y * 100.0, sz.z * 100.0, h["at"].x, h["at"].y, h["at"].z])
 	for h: Dictionary in designed:
 		print("DESIGNED: %s x %s — %s" % [h["a"], h["b"], _why_designed(String(h["a"]), String(h["b"]))])
+	quit()
 
 
 func _is_designed(a: String, b: String) -> bool:
