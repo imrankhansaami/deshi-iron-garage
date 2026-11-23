@@ -241,10 +241,11 @@ geometry, not asserted in text.
   concrete floor is lightly polished, varnished wood and paint are glossy, bare metal most of all, and
   the SSAO is tuned a touch wider and heavier so contact shadows hold the room together.
 - **A house armour project.** A whole red-and-gold armoured figure on a service base at the front
-  of the shop — core lens and eye slits lit, its plates wearing the CC0 painted-metal photo sets
-  and a realism pass of bolts, panel lines, vents and a studded core bezel. Procedurally built,
-  deliberately unbranded, and every assembly individually pickable with the mouse (as are the
-  prototype suit's own parts, one by one).
+  of the shop — core lens and eye slits lit, finished brand new off the stand: deep flat paint
+  under a tight clearcoat that catches every lamp, over a realism pass of bolts, panel lines,
+  vents, lit slits and a studded core bezel. Procedurally built, deliberately unbranded, and
+  every assembly individually pickable with the mouse (as are the prototype suit's own parts,
+  one by one).
 
 ### Geometry
 

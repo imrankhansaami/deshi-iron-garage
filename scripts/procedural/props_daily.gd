@@ -1215,6 +1215,7 @@ static func armor_legs(f: PropFactory, _o: Dictionary) -> Node3D:
 	var red2: StandardMaterial3D = f.ML.armor_paint(Color("8f1c17"))
 	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
 	var dark: StandardMaterial3D = f.ML.armor_dark()
+	var glow: StandardMaterial3D = f.ML.led(Color("cfe8ff"), 3.0)
 	var root := Node3D.new()
 	root.name = "ArmorLegs"
 	for side: int in [-1, 1]:
@@ -1269,6 +1270,23 @@ static func armor_legs(f: PropFactory, _o: Dictionary) -> Node3D:
 		_armor_seam(root, dark, Vector3(x + 0.048, 0.20, 0.090), Vector3(0.008, 0.24, 0.010), "ShinLine")
 		_armor_seam(root, dark, Vector3(x + 0.098 * float(side), 0.06, 0.05), Vector3(0.012, 0.035, 0.08), "BootVent")
 		_armor_seam(root, dark, Vector3(x, 0.045, -0.158), Vector3(0.09, 0.028, 0.012), "HeelVent")
+		# detail pass two: the big faces get segmentation — a proud thigh panel,
+		# vents down the back of the thigh and behind the calf, a gold lip
+		# around the boot top where the tin folds over
+		_armor_seam(root, red2, Vector3(x, 0.58, 0.105), Vector3(0.11, 0.22, 0.02), "ThighPanel")
+		_armor_seam(root, dark, Vector3(x, 0.53, -0.102), Vector3(0.11, 0.018, 0.012), "ThighVent")
+		_armor_seam(root, dark, Vector3(x, 0.62, -0.102), Vector3(0.11, 0.018, 0.012), "ThighVent")
+		_armor_seam(root, gold, Vector3(x, 0.108, 0.03), Vector3(0.196, 0.014, 0.325), "BootTrim")
+		_armor_seam(root, dark, Vector3(x, 0.18, -0.122), Vector3(0.08, 0.012, 0.012), "CalfVent")
+		_armor_seam(root, dark, Vector3(x, 0.24, -0.122), Vector3(0.08, 0.012, 0.012), "CalfVent")
+		# detail pass three: hinge blocks at the ankle, lit dots on the shin
+		# face, a pod on the outer hip and a greeble box down the thigh back
+		_armor_seam(root, dark, Vector3(x - 0.075, 0.10, 0.0), Vector3(0.03, 0.05, 0.03), "AnkleActuator")
+		_armor_seam(root, dark, Vector3(x + 0.075, 0.10, 0.0), Vector3(0.03, 0.05, 0.03), "AnkleActuator")
+		_armor_seam(root, glow, Vector3(x - 0.035, 0.13, 0.088), Vector3(0.018, 0.018, 0.01), "SlitShin")
+		_armor_seam(root, glow, Vector3(x + 0.035, 0.13, 0.088), Vector3(0.018, 0.018, 0.01), "SlitShin")
+		_armor_seam(root, dark, Vector3(0.255 * float(side), 0.72, 0.06), Vector3(0.03, 0.05, 0.05), "HipPod")
+		_armor_seam(root, dark, Vector3(x, 0.575, -0.11), Vector3(0.05, 0.03, 0.02), "ThighBox")
 	var pelvis: MeshInstance3D = ShapeKit.box(Vector3(0.4, 0.15, 0.26), dark, "Pelvis")
 	pelvis.position = Vector3(0.0, 0.79, 0.0)
 	root.add_child(pelvis)
@@ -1291,6 +1309,10 @@ static func armor_legs(f: PropFactory, _o: Dictionary) -> Node3D:
 		Vector3(0.1, 0.88, 0.147),
 	], Vector3i(0, 0, 1), 0.013, "BeltBolt")
 	_armor_seam(root, dark, Vector3(0.0, 0.77, 0.135), Vector3(0.12, 0.09, 0.02), "GroinGuard")
+	# detail pass three: utility pouches hung under the belt, each with a stud
+	for side_p: int in [-1, 1]:
+		_armor_seam(root, dark, Vector3(0.18 * float(side_p), 0.80, 0.115), Vector3(0.06, 0.08, 0.045), "BeltPouch")
+		_armor_studs(root, gold, [Vector3(0.18 * float(side_p), 0.835, 0.14)], Vector3i(0, 0, 1), 0.015, "PouchStud")
 	return root
 
 
@@ -1317,6 +1339,11 @@ static func armor_torso(f: PropFactory, _o: Dictionary) -> Node3D:
 		var band: MeshInstance3D = ShapeKit.box(Vector3(0.28, 0.02, 0.02), dark, "AbBand")
 		band.position = Vector3(0.0, 0.36 + 0.08 * float(i), 0.125)
 		root.add_child(band)
+	# detail pass two: the abdomen splits into two sub-panels under the band
+	# lines, and a gold waistband caps it over the pelvis
+	for side_ab: int in [-1, 1]:
+		_armor_seam(root, red2, Vector3(0.085 * float(side_ab), 0.40, 0.1225), Vector3(0.12, 0.15, 0.015), "AbPanel")
+	_armor_seam(root, gold, Vector3(0.0, 0.325, 0.0), Vector3(0.345, 0.014, 0.245), "WaistTrim")
 	var chest: MeshInstance3D = ShapeKit.box(Vector3(0.46, 0.3, 0.28), red, "Chest")
 	chest.position = Vector3(0.0, 0.64, 0.0)
 	root.add_child(chest)
@@ -1333,6 +1360,16 @@ static func armor_torso(f: PropFactory, _o: Dictionary) -> Node3D:
 		root.add_child(ridge)
 	for side_back: int in [-1, 1]:
 		_armor_seam(root, dark, Vector3(0.13 * float(side_back), 0.68, -0.186), Vector3(0.10, 0.02, 0.012), "BladeVent")
+		_armor_seam(root, red2, Vector3(0.10 * float(side_back), 0.60, -0.183), Vector3(0.14, 0.24, 0.02), "BackPanel")
+		# detail pass three: a small tank under each back panel, brass valve on top
+		var tank: MeshInstance3D = ShapeKit.cyl(0.028, 0.11, dark, 10, Vector3i(0, 1, 0), "BackTank")
+		tank.position = Vector3(0.11 * float(side_back), 0.50, -0.205)
+		tank.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(tank)
+		var valve: MeshInstance3D = ShapeKit.cyl(0.013, 0.018, gold, 8, Vector3i(0, 1, 0), "TankValve")
+		valve.position = Vector3(0.11 * float(side_back), 0.562, -0.205)
+		valve.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(valve)
 	_armor_seam(root, dark, Vector3(0.0, 0.42, -0.145), Vector3(0.14, 0.09, 0.045), "PowerPack")
 	_armor_seam(root, gold2, Vector3(0.0, 0.466, -0.146), Vector3(0.145, 0.016, 0.048), "PackTrim")
 	_armor_studs(root, dark, [
@@ -1342,6 +1379,14 @@ static func armor_torso(f: PropFactory, _o: Dictionary) -> Node3D:
 	var chest_upper: MeshInstance3D = ShapeKit.box(Vector3(0.42, 0.1, 0.26), gold2, "ChestUpper")
 	chest_upper.position = Vector3(0.0, 0.82, 0.0)
 	root.add_child(chest_upper)
+	for side_cu: int in [-1, 1]:
+		_armor_seam(root, red2, Vector3(0.13 * float(side_cu), 0.82, 0.135), Vector3(0.07, 0.05, 0.02), "CollarInset")
+	_armor_seam(root, gold, Vector3(0.0, 0.872, 0.0), Vector3(0.425, 0.012, 0.267), "CollarLip")
+	# detail pass three: an intake block under each shoulder and a conduit
+	# rising from the collar on each side of the neck
+	for side_ci: int in [-1, 1]:
+		_armor_seam(root, dark, Vector3(0.228 * float(side_ci), 0.70, 0.08), Vector3(0.024, 0.06, 0.05), "ChestIntake")
+		_armor_seam(root, dark, Vector3(0.05 * float(side_ci), 0.888, 0.05), Vector3(0.018, 0.035, 0.018), "NeckPipe")
 	var core_ring: MeshInstance3D = ShapeKit.torus(0.075, 0.014, gold, 20, 6, "CoreRing")
 	core_ring.position = Vector3(0.0, 0.68, 0.15)
 	core_ring.rotation = Vector3(PI * 0.5, 0.0, 0.0)
@@ -1362,7 +1407,7 @@ static func armor_torso(f: PropFactory, _o: Dictionary) -> Node3D:
 	for side4: int in [-1, 1]:
 		_armor_seam(root, dark, Vector3(0.125 * float(side4), 0.51, 0.144), Vector3(0.08, 0.016, 0.014), "ChestVent")
 		_armor_seam(root, dark, Vector3(0.125 * float(side4), 0.555, 0.144), Vector3(0.08, 0.016, 0.014), "ChestVent")
-	_armor_seam(root, dark, Vector3(0.0, 0.55, 0.145), Vector3(0.012, 0.10, 0.012), "SternumLine")
+	_armor_seam(root, gold, Vector3(0.0, 0.55, 0.145), Vector3(0.012, 0.10, 0.012), "SternumLine")
 	for side2: int in [-1, 1]:
 		var sx: float = 0.3 * float(side2)
 		var shoulder: MeshInstance3D = ShapeKit.sphere(0.11, gold, 14, "Shoulder")
@@ -1372,6 +1417,7 @@ static func armor_torso(f: PropFactory, _o: Dictionary) -> Node3D:
 		var cap: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.06, 0.2), gold2, "PauldronCap")
 		cap.position = Vector3(0.33 * float(side2), 0.9, 0.0)
 		root.add_child(cap)
+		_armor_seam(root, red2, Vector3(0.33 * float(side2), 0.932, 0.0), Vector3(0.07, 0.014, 0.11), "PauldronInset")
 		var upper: MeshInstance3D = ShapeKit.box(Vector3(0.13, 0.3, 0.15), red, "UpperArm")
 		upper.position = Vector3(sx + 0.02 * float(side2), 0.58, 0.0)
 		root.add_child(upper)
@@ -1410,6 +1456,12 @@ static func armor_torso(f: PropFactory, _o: Dictionary) -> Node3D:
 			Vector3(sx + 0.03 * float(side2), 0.18, 0.088),
 			Vector3(sx + 0.03 * float(side2), 0.30, 0.088),
 		], Vector3i(0, 0, 1), 0.011, "RidgeBolt")
+		_armor_seam(root, glow, Vector3(sx + 0.03 * float(side2), 0.325, 0.087), Vector3(0.08, 0.012, 0.012), "SlitForearm")
+		# detail pass three: a bolt end-cap on the elbow joint and two strapped
+		# ribs across the upper arm
+		_armor_studs(root, dark, [Vector3(sx + 0.065 * float(side2), 0.40, 0.0)], Vector3i(1, 0, 0), 0.012, "ElbowCap")
+		_armor_seam(root, dark, Vector3(sx + 0.02 * float(side2), 0.50, 0.082), Vector3(0.05, 0.018, 0.015), "ArmRib")
+		_armor_seam(root, dark, Vector3(sx + 0.02 * float(side2), 0.55, 0.082), Vector3(0.05, 0.018, 0.015), "ArmRib")
 		_armor_seam(root, dark, Vector3(sx + 0.03 * float(side2) - 0.025, 0.06, 0.062), Vector3(0.007, 0.07, 0.010), "FingerLine")
 		_armor_seam(root, dark, Vector3(sx + 0.03 * float(side2) + 0.025, 0.06, 0.062), Vector3(0.007, 0.07, 0.010), "FingerLine")
 	return root
@@ -1420,9 +1472,11 @@ static func armor_head(f: PropFactory, _o: Dictionary) -> Node3D:
 	## a brow and crown ridge, the faceted gold faceplate with a mouth slit and
 	## cheek plates, side ear discs, a neck ring, the two lit eye slits, and the
 	## realism pass's hardware: brow bolts, a crest fin, temple nubs, ear hubs,
-	## cheek bolts, mouth guards and rear vents. Rebased so the jaw sits at
-	## y = 0.
+	## cheek bolts, mouth guards, rear vents, a gold brow line, jaw vents,
+	## crown studs, side panels behind the ears and a lit rear antenna. Rebased
+	## so the jaw sits at y = 0.
 	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
+	var red2: StandardMaterial3D = f.ML.armor_paint(Color("8f1c17"))
 	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
 	var dark: StandardMaterial3D = f.ML.armor_dark()
 	var glow: StandardMaterial3D = f.ML.led(Color("cfe8ff"), 3.0)
@@ -1434,6 +1488,9 @@ static func armor_head(f: PropFactory, _o: Dictionary) -> Node3D:
 	var brow: MeshInstance3D = ShapeKit.box(Vector3(0.26, 0.045, 0.27), red, "Brow")
 	brow.position = Vector3(0.0, 0.235, 0.005)
 	root.add_child(brow)
+	# a gold line across the brow top, split so the crown ridge crosses it clean
+	_armor_seam(root, gold, Vector3(-0.0875, 0.2615, 0.005), Vector3(0.075, 0.012, 0.255), "BrowTrim")
+	_armor_seam(root, gold, Vector3(0.0875, 0.2615, 0.005), Vector3(0.075, 0.012, 0.255), "BrowTrim")
 	var crown: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.03, 0.2), red, "CrownRidge")
 	crown.position = Vector3(0.0, 0.265, 0.0)
 	root.add_child(crown)
@@ -1448,6 +1505,11 @@ static func armor_head(f: PropFactory, _o: Dictionary) -> Node3D:
 		Vector3(-0.095, 0.235, 0.142),
 		Vector3(0.095, 0.235, 0.142),
 	], Vector3i(0, 0, 1), 0.009, "BrowBolt")
+	_armor_studs(root, dark, [Vector3(0.0, 0.045, 0.133)], Vector3i(0, 0, 1), 0.008, "ChinBolt")
+	_armor_studs(root, dark, [
+		Vector3(-0.06, 0.03, 0.133),
+		Vector3(0.06, 0.03, 0.133),
+	], Vector3i(0, 0, 1), 0.007, "JawBolt")
 	for side: int in [-1, 1]:
 		var cheek: MeshInstance3D = ShapeKit.box(Vector3(0.04, 0.1, 0.05), gold, "Cheek")
 		cheek.position = Vector3(0.11 * float(side), 0.1, 0.12)
@@ -1461,6 +1523,8 @@ static func armor_head(f: PropFactory, _o: Dictionary) -> Node3D:
 		_armor_studs(root, dark, [Vector3(0.137 * float(side), 0.14, 0.0)], Vector3i(1, 0, 0), 0.017, "EarHub")
 		_armor_studs(root, dark, [Vector3(0.11 * float(side), 0.09, 0.147)], Vector3i(0, 0, 1), 0.008, "CheekBolt")
 		_armor_seam(root, gold, Vector3(0.058 * float(side), 0.075, 0.148), Vector3(0.014, 0.045, 0.018), "MouthGuard")
+		_armor_seam(root, red2, Vector3(0.121 * float(side), 0.15, -0.075), Vector3(0.02, 0.1, 0.08), "HelmPanel")
+		_armor_seam(root, dark, Vector3(0.095 * float(side), 0.03, 0.1), Vector3(0.012, 0.03, 0.02), "JawVent")
 	var jaw: MeshInstance3D = ShapeKit.box(Vector3(0.18, 0.06, 0.1), gold, "Jaw")
 	jaw.position = Vector3(0.0, 0.03, 0.08)
 	root.add_child(jaw)
@@ -1469,6 +1533,19 @@ static func armor_head(f: PropFactory, _o: Dictionary) -> Node3D:
 	root.add_child(neck)
 	_armor_seam(root, dark, Vector3(0.0, 0.13, -0.137), Vector3(0.06, 0.016, 0.014), "RearVent")
 	_armor_seam(root, dark, Vector3(0.0, 0.175, -0.137), Vector3(0.06, 0.016, 0.014), "RearVent")
+	# detail pass three: studs on the crown and a rear antenna with a lit tip
+	_armor_studs(root, dark, [
+		Vector3(-0.035, 0.283, -0.04),
+		Vector3(0.035, 0.283, -0.04),
+	], Vector3i(0, 1, 0), 0.009, "CrownStud")
+	var antenna: MeshInstance3D = ShapeKit.cyl(0.006, 0.09, dark, 6, Vector3i(0, 1, 0), "Antenna")
+	antenna.position = Vector3(0.055, 0.29, -0.09)
+	antenna.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(antenna)
+	var tip: MeshInstance3D = ShapeKit.sphere(0.012, glow, 10, "AntennaTip")
+	tip.position = Vector3(0.055, 0.34, -0.09)
+	tip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(tip)
 	for side2: int in [-1, 1]:
 		var eye: MeshInstance3D = ShapeKit.box(Vector3(0.045, 0.018, 0.012), glow, "Eye")
 		eye.position = Vector3(0.05 * float(side2), 0.16, 0.148)
