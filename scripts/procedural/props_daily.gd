@@ -1183,9 +1183,10 @@ static func armor_ghost(f: PropFactory, _o: Dictionary) -> Node3D:
 
 
 static func armor_legs(f: PropFactory, _o: Dictionary) -> Node3D:
-	## The figure in three parts, one: the lower assembly — pelvis, belt, both
-	## legs and both boots, standing on the pallet. Geometry is the figure's own,
-	## rebased so the soles sit at y = 0 (the figure's 0.05 base gap removed).
+	## The figure in three parts, one: the lower assembly — layered thigh and
+	## shin plates over the red shells, hip plates, belt with buckle, knee caps,
+	## vented shins, boot toe caps and heel blocks. Geometry is the figure's
+	## own, rebased so the soles sit at y = 0.
 	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
 	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
 	var dark: StandardMaterial3D = f.ML.armor_dark()
@@ -1196,38 +1197,86 @@ static func armor_legs(f: PropFactory, _o: Dictionary) -> Node3D:
 		var thigh: MeshInstance3D = ShapeKit.box(Vector3(0.17, 0.36, 0.2), red, "Thigh")
 		thigh.position = Vector3(x, 0.57, 0.0)
 		root.add_child(thigh)
+		# the outer thigh plate over the shell
+		var tplate: MeshInstance3D = ShapeKit.box(Vector3(0.05, 0.3, 0.22), red, "ThighPlate")
+		tplate.position = Vector3(x + 0.1 * float(side), 0.6, 0.0)
+		root.add_child(tplate)
 		var knee: MeshInstance3D = ShapeKit.cyl(0.075, 0.09, gold, 12, Vector3i(1, 0, 0), "Knee")
 		knee.position = Vector3(x, 0.37, 0.0)
 		root.add_child(knee)
+		var kneecap: MeshInstance3D = ShapeKit.box(Vector3(0.12, 0.1, 0.05), gold, "KneeCap")
+		kneecap.position = Vector3(x, 0.4, 0.1)
+		root.add_child(kneecap)
 		var shin: MeshInstance3D = ShapeKit.box(Vector3(0.14, 0.32, 0.17), red, "Shin")
 		shin.position = Vector3(x, 0.20, 0.0)
 		root.add_child(shin)
+		for i: int in range(2):
+			var vent: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.015, 0.02), dark, "ShinVent")
+			vent.position = Vector3(x, 0.16 + 0.05 * float(i), 0.09)
+			root.add_child(vent)
+		var calf: MeshInstance3D = ShapeKit.box(Vector3(0.11, 0.2, 0.04), red, "CalfPlate")
+		calf.position = Vector3(x, 0.22, -0.1)
+		root.add_child(calf)
+		var ankle: MeshInstance3D = ShapeKit.cyl(0.062, 0.03, dark, 12, Vector3i(0, 1, 0), "AnkleRing")
+		ankle.position = Vector3(x, 0.115, 0.0)
+		root.add_child(ankle)
 		var boot: MeshInstance3D = ShapeKit.box(Vector3(0.19, 0.11, 0.32), gold, "Boot")
 		boot.position = Vector3(x, 0.055, 0.03)
 		root.add_child(boot)
+		var toe: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.07, 0.06), gold, "ToeCap")
+		toe.position = Vector3(x, 0.05, 0.19)
+		root.add_child(toe)
+		var heel: MeshInstance3D = ShapeKit.box(Vector3(0.14, 0.08, 0.05), dark, "Heel")
+		heel.position = Vector3(x, 0.04, -0.13)
+		root.add_child(heel)
 	var pelvis: MeshInstance3D = ShapeKit.box(Vector3(0.4, 0.15, 0.26), dark, "Pelvis")
 	pelvis.position = Vector3(0.0, 0.79, 0.0)
 	root.add_child(pelvis)
+	for side2: int in [-1, 1]:
+		var hip: MeshInstance3D = ShapeKit.box(Vector3(0.06, 0.14, 0.2), red, "HipPlate")
+		hip.position = Vector3(0.22 * float(side2), 0.79, 0.0)
+		root.add_child(hip)
 	var belt: MeshInstance3D = ShapeKit.box(Vector3(0.42, 0.06, 0.28), gold, "Belt")
 	belt.position = Vector3(0.0, 0.88, 0.0)
 	root.add_child(belt)
+	var buckle: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.05, 0.03), gold, "Buckle")
+	buckle.position = Vector3(0.0, 0.88, 0.15)
+	root.add_child(buckle)
 	return root
 
 
 static func armor_torso(f: PropFactory, _o: Dictionary) -> Node3D:
-	## The figure in three parts, two: the upper assembly — waist, chest, core
-	## lens, shoulders and both arms — rebased so the hands sit at y = 0.
+	## The figure in three parts, two: the upper assembly — waist with ab bands,
+	## a layered chest with pec plates around the core, back plate and spine
+	## ridges, pauldron caps over the shoulder spheres, arm plates, vents and
+	## wrist bands. Rebased so the hands sit at y = 0.
 	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
 	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
+	var dark: StandardMaterial3D = f.ML.armor_dark()
 	var glow: StandardMaterial3D = f.ML.led(Color("cfe8ff"), 3.0)
 	var root := Node3D.new()
 	root.name = "ArmorTorso"
 	var abdomen: MeshInstance3D = ShapeKit.box(Vector3(0.34, 0.16, 0.24), red, "Abdomen")
 	abdomen.position = Vector3(0.0, 0.40, 0.0)
 	root.add_child(abdomen)
+	for i: int in range(2):
+		var band: MeshInstance3D = ShapeKit.box(Vector3(0.28, 0.02, 0.02), dark, "AbBand")
+		band.position = Vector3(0.0, 0.36 + 0.08 * float(i), 0.125)
+		root.add_child(band)
 	var chest: MeshInstance3D = ShapeKit.box(Vector3(0.46, 0.3, 0.28), red, "Chest")
 	chest.position = Vector3(0.0, 0.64, 0.0)
 	root.add_child(chest)
+	for side: int in [-1, 1]:
+		var pec: MeshInstance3D = ShapeKit.box(Vector3(0.13, 0.16, 0.05), red, "PecPlate")
+		pec.position = Vector3(0.15 * float(side), 0.65, 0.155)
+		root.add_child(pec)
+	var back: MeshInstance3D = ShapeKit.box(Vector3(0.4, 0.36, 0.06), red, "BackPlate")
+	back.position = Vector3(0.0, 0.6, -0.15)
+	root.add_child(back)
+	for i2: int in range(3):
+		var ridge: MeshInstance3D = ShapeKit.box(Vector3(0.06, 0.03, 0.03), dark, "SpineRidge")
+		ridge.position = Vector3(0.0, 0.5 + 0.1 * float(i2), -0.185)
+		root.add_child(ridge)
 	var chest_upper: MeshInstance3D = ShapeKit.box(Vector3(0.42, 0.1, 0.26), gold, "ChestUpper")
 	chest_upper.position = Vector3(0.0, 0.82, 0.0)
 	root.add_child(chest_upper)
@@ -1238,47 +1287,85 @@ static func armor_torso(f: PropFactory, _o: Dictionary) -> Node3D:
 	var core: MeshInstance3D = ShapeKit.cyl(0.06, 0.02, glow, 20, Vector3i(0, 0, 1), "Core")
 	core.position = Vector3(0.0, 0.68, 0.145)
 	root.add_child(core)
-	for side: int in [-1, 1]:
-		var sx: float = 0.3 * float(side)
+	for side2: int in [-1, 1]:
+		var sx: float = 0.3 * float(side2)
 		var shoulder: MeshInstance3D = ShapeKit.sphere(0.11, gold, 14, "Shoulder")
 		shoulder.position = Vector3(sx, 0.80, 0.0)
 		shoulder.scale = Vector3(1.0, 0.8, 1.0)
 		root.add_child(shoulder)
+		var cap: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.06, 0.2), gold, "PauldronCap")
+		cap.position = Vector3(0.33 * float(side2), 0.9, 0.0)
+		root.add_child(cap)
 		var upper: MeshInstance3D = ShapeKit.box(Vector3(0.13, 0.3, 0.15), red, "UpperArm")
-		upper.position = Vector3(sx + 0.02 * float(side), 0.58, 0.0)
+		upper.position = Vector3(sx + 0.02 * float(side2), 0.58, 0.0)
 		root.add_child(upper)
+		var uplate: MeshInstance3D = ShapeKit.box(Vector3(0.04, 0.24, 0.16), red, "ArmPlate")
+		uplate.position = Vector3(sx + 0.095 * float(side2), 0.58, 0.0)
+		root.add_child(uplate)
 		var elbow: MeshInstance3D = ShapeKit.cyl(0.06, 0.08, gold, 12, Vector3i(1, 0, 0), "Elbow")
-		elbow.position = Vector3(sx + 0.02 * float(side), 0.40, 0.0)
+		elbow.position = Vector3(sx + 0.02 * float(side2), 0.40, 0.0)
 		root.add_child(elbow)
 		var forearm: MeshInstance3D = ShapeKit.box(Vector3(0.12, 0.28, 0.14), red, "Forearm")
-		forearm.position = Vector3(sx + 0.03 * float(side), 0.24, 0.0)
+		forearm.position = Vector3(sx + 0.03 * float(side2), 0.24, 0.0)
 		root.add_child(forearm)
+		for i3: int in range(2):
+			var vent: MeshInstance3D = ShapeKit.box(Vector3(0.09, 0.015, 0.02), dark, "ArmVent")
+			vent.position = Vector3(sx + 0.03 * float(side2), 0.2 + 0.06 * float(i3), 0.075)
+			root.add_child(vent)
+		var wrist: MeshInstance3D = ShapeKit.box(Vector3(0.13, 0.03, 0.15), gold, "WristBand")
+		wrist.position = Vector3(sx + 0.03 * float(side2), 0.13, 0.0)
+		root.add_child(wrist)
 		var hand: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.12, 0.12), gold, "Hand")
-		hand.position = Vector3(sx + 0.03 * float(side), 0.06, 0.0)
+		hand.position = Vector3(sx + 0.03 * float(side2), 0.06, 0.0)
 		root.add_child(hand)
+		var knuckle: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.04, 0.03), red, "KnucklePlate")
+		knuckle.position = Vector3(sx + 0.03 * float(side2), 0.1, 0.07)
+		root.add_child(knuckle)
 	return root
 
 
 static func armor_head(f: PropFactory, _o: Dictionary) -> Node3D:
-	## The figure in three parts, three: the head assembly — helmet, faceplate,
-	## jaw and the two lit eye slits — rebased so the jaw sits at y = 0.
+	## The figure in three parts, three: the head assembly — the red helmet with
+	## a brow and crown ridge, the faceted gold faceplate with a mouth slit and
+	## cheek plates, side ear discs, a neck ring, and the two lit eye slits.
+	## Rebased so the jaw sits at y = 0.
 	var red: StandardMaterial3D = f.ML.armor_paint(Color("a51f1b"))
 	var gold: StandardMaterial3D = f.ML.armor_paint(Color("c9992f"))
+	var dark: StandardMaterial3D = f.ML.armor_dark()
 	var glow: StandardMaterial3D = f.ML.led(Color("cfe8ff"), 3.0)
 	var root := Node3D.new()
 	root.name = "ArmorHead"
 	var helmet: MeshInstance3D = ShapeKit.box(Vector3(0.24, 0.22, 0.26), red, "Helmet")
 	helmet.position = Vector3(0.0, 0.14, 0.0)
 	root.add_child(helmet)
+	var brow: MeshInstance3D = ShapeKit.box(Vector3(0.26, 0.045, 0.27), red, "Brow")
+	brow.position = Vector3(0.0, 0.235, 0.005)
+	root.add_child(brow)
+	var crown: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.03, 0.2), red, "CrownRidge")
+	crown.position = Vector3(0.0, 0.265, 0.0)
+	root.add_child(crown)
 	var faceplate: MeshInstance3D = ShapeKit.box(Vector3(0.2, 0.16, 0.06), gold, "Faceplate")
 	faceplate.position = Vector3(0.0, 0.13, 0.12)
 	root.add_child(faceplate)
+	var mouth: MeshInstance3D = ShapeKit.box(Vector3(0.09, 0.012, 0.02), dark, "MouthSlit")
+	mouth.position = Vector3(0.0, 0.075, 0.15)
+	root.add_child(mouth)
+	for side: int in [-1, 1]:
+		var cheek: MeshInstance3D = ShapeKit.box(Vector3(0.04, 0.1, 0.05), gold, "Cheek")
+		cheek.position = Vector3(0.11 * float(side), 0.1, 0.12)
+		root.add_child(cheek)
+		var ear: MeshInstance3D = ShapeKit.cyl(0.038, 0.02, gold, 14, Vector3i(1, 0, 0), "EarDisc")
+		ear.position = Vector3(0.125 * float(side), 0.14, 0.0)
+		root.add_child(ear)
 	var jaw: MeshInstance3D = ShapeKit.box(Vector3(0.18, 0.06, 0.1), gold, "Jaw")
 	jaw.position = Vector3(0.0, 0.03, 0.08)
 	root.add_child(jaw)
-	for side: int in [-1, 1]:
+	var neck: MeshInstance3D = ShapeKit.cyl(0.07, 0.03, dark, 14, Vector3i(0, 1, 0), "NeckRing")
+	neck.position = Vector3(0.0, 0.02, 0.02)
+	root.add_child(neck)
+	for side2: int in [-1, 1]:
 		var eye: MeshInstance3D = ShapeKit.box(Vector3(0.045, 0.018, 0.012), glow, "Eye")
-		eye.position = Vector3(0.05 * float(side), 0.16, 0.148)
+		eye.position = Vector3(0.05 * float(side2), 0.16, 0.148)
 		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(eye)
 	return root
