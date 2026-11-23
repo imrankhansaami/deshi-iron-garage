@@ -36,7 +36,7 @@ is running on.
 ### The garage, in pictures
 
 All frames below are real-time captures taken by the project's own verification harness — the
-twenty-viewpoint camera set documented in `docs/EXPERIMENTS.md`, driven through the full
+twenty-one-viewpoint camera set documented in `docs/EXPERIMENTS.md`, driven through the full
 progression and written with luminance histograms so the build can be checked frame by frame.
 
 |  |  |
@@ -57,6 +57,8 @@ progression and written with luminance histograms so the build can be checked fr
 | Thirteen community-licensed photographs pinned at the entrance | The Sylhet division map beside the door |
 | <img src="screenshots/19_store.jpg" width="420"> | <img src="screenshots/10_final_garage.jpg" width="420"> |
 | The store: shelf, placard and the stock register | The workshop from the lane, roof to floor |
+| <img src="screenshots/20_armor_close.jpg" width="420"> | <img src="screenshots/01_exterior.jpg" width="420"> |
+| The shop's armour figure up close: painted-metal photo textures, bolted plates, lit core | The garage from the courtyard, the sign over the gate |
 
 ---
 
@@ -79,7 +81,7 @@ godot --path . res://scenes/main/main_menu.tscn
 godot --path . res://scenes/main/garage_world.tscn
 ```
 
-The first launch builds the garage: surface synthesis, then the shell, lighting rig, 191 props,
+The first launch builds the garage: surface synthesis, then the shell, lighting rig, 205 props,
 screens and interfaces. On the reference machine (Intel UHD 620, 1600×900) the measured build is
 **≈ 11–12 s** — it moves with machine load — reported on screen step by step and written to a log.
 
@@ -90,7 +92,7 @@ global-illumination features; the Settings panel switches it live.
 ### Capture / verification mode
 
 Dropping an empty file named `capture.flag` next to `project.godot` puts the world into verification
-mode: it drives the whole twelve-step progression, then parks the camera at twenty fixed viewpoints
+mode: it drives the whole twelve-step progression, then parks the camera at twenty-one fixed viewpoints
 and writes a PNG plus a luminance histogram for each, then quits. The files land in `user://captures/`
 (`%APPDATA%\Godot\app_userdata\Deshi Iron Garage\captures\` on Windows), which is how the screenshots
 quoted in `docs/EXPERIMENTS.md` were produced. It is not a shipped feature and has no effect without
@@ -120,7 +122,7 @@ the flag file.
 | `F9` | jump the garage to its finished state (demonstration shortcut) |
 | `T` | thesis panel — the project's measured claims |
 | `R` | reset the demo back to the morning |
-| `1`–`9`, `0`, `[` `]` | jump / step through the twenty fixed viewpoints |
+| `1`–`9`, `0`, `[` `]` | jump / step through the twenty-one fixed viewpoints |
 | `\` | return to where you stood |
 
 **For a presentation.** The shop's armour is built — the whole figure, in three
@@ -147,7 +149,7 @@ instead. `R` puts
 the whole garage back to the morning so the
 sequence can run again, `T` opens the measured claims (the checklist lives in the
 console, `Tab` → Assembly → Armour), and `1`–`0` / `[` `]` jump the camera through
-the twenty fixed viewpoints — press `\` to come back to your spot.
+the twenty-one fixed viewpoints — press `\` to come back to your spot.
 
 Just about anything loose can be picked up: tools, tins, tea glasses, stools, tyres,
 drums, crates, chairs, shelves, workbenches, the bicycle, even the holographic table —
@@ -238,16 +240,18 @@ geometry, not asserted in text.
   gloss is **per material family**, not one global number: masonry and earth stay matte, the sealed
   concrete floor is lightly polished, varnished wood and paint are glossy, bare metal most of all, and
   the SSAO is tuned a touch wider and heavier so contact shadows hold the room together.
-- **A house armour project.** A whole red-and-gold armoured figure on a service base by the north
-  wall — core lens and eye slits lit — with its spare helmet, chest plate, gauntlet and boot laid out
-  where they are worked on. Procedurally built, deliberately unbranded, and every piece individually
-  pickable with the mouse (as are the prototype suit's own parts, one by one).
+- **A house armour project.** A whole red-and-gold armoured figure on a service base at the front
+  of the shop — core lens and eye slits lit, its plates wearing the CC0 painted-metal photo sets
+  and a realism pass of bolts, panel lines, vents and a studded core bezel. Procedurally built,
+  deliberately unbranded, and every assembly individually pickable with the mouse (as are the
+  prototype suit's own parts, one by one).
 
 ### Geometry
 
 - **Procedural geometry throughout.** Boxes, cylinders, lathes, gears from tooth parameters,
   tube sweeps along parallel-transported frames, and compound assemblies — `ShapeKit` and the four
-  prop catalogues build **203 props in 140 distinct kinds** in 4.1 s.
+  prop catalogues build **205 props in 139 distinct kinds** (the dressing step measures 4.4–6.8 s
+  with machine load).
 - **Procedural cable generation.** Catenary-approximated paths swept as tubes with
   parallel-transport framing (so the UV ribbing never twists), with bundling of several wires into
   one `ArrayMesh` — a real draw-call saving, measured in Experiment 4.

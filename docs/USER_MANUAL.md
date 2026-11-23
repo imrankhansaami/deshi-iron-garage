@@ -57,7 +57,7 @@ written to `user://captures/build.log`.
 | **T** | thesis panel — the project's measured claims |
 | **R** | reset the demo back to the morning |
 | **1–9, 0** | jump to a fixed viewpoint |
-| **`[` `]`** | step through all twenty viewpoints |
+| **`[` `]`** | step through all twenty-one viewpoints |
 | **Backslash** | return to where you stood |
 
 The mouse is captured while you are in the garage. Press **Esc** to release it.

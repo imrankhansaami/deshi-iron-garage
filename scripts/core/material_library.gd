@@ -348,56 +348,81 @@ func photo_print(path: String) -> StandardMaterial3D:
 	return m
 
 
-func _armor_map(file: String) -> ImageTexture:
+func _armor_map(file: String, soften: bool = false) -> ImageTexture:
 	## One cached map off disk for the armour textures, resized to 512 and
 	## mipmapped: the plates are small on screen, so 512 is plenty and keeps
 	## VRAM light. A missing file returns null and the caller keeps the flat
-	## material, exactly like banner_print degrades.
-	if _armor_maps.has(file):
-		return _armor_maps[file] as ImageTexture
+	## material, exactly like banner_print degrades. `soften` pulls an albedo
+	## map's contrast toward mid-grey: the raw paint chips are loud at plate
+	## scale and read as camouflage; compressed they read as paint wear.
+	var key: String = file + ("|soft" if soften else "")
+	if _armor_maps.has(key):
+		return _armor_maps[key] as ImageTexture
 	var tex: ImageTexture = null
 	var path: String = "res://assets/textures/armor/" + file
 	if FileAccess.file_exists(path):
 		var img: Image = Image.load_from_file(path)
 		if img != null and not img.is_empty():
 			img.resize(512, 512, Image.INTERPOLATE_LANCZOS)
+			if soften:
+				img.adjust_bcs(1.0, 0.62, 1.0)
 			img.generate_mipmaps()
 			tex = ImageTexture.create_from_image(img)
 	if tex == null:
 		push_warning("armor map missing: %s — the flat material stays" % file)
-	_armor_maps[file] = tex
+	_armor_maps[key] = tex
 	return tex
 
 
 func armor_paint(color: Color) -> StandardMaterial3D:
 	## Painted plate for the shop's armour builds: a CC0 painted-metal set
-	## (ambientCG PaintedMetal009) carries the surface — brushed paint, wear and
-	## normal detail — tinted with the caller's colour; if the files are absent
-	## the flat coloured metal the build shipped with returns. Colours come from
-	## the callers, not from any film.
+	## (ambientCG PaintedMetal009) carries the surface — brushed paint, wear,
+	## occlusion pockets and normal detail — tinted with the caller's colour;
+	## if the files are absent the flat coloured metal the build shipped with
+	## returns. Colours come from the callers, not from any film.
+	##
+	## Physics kept honest in the realism pass: paint is near-dielectric, so
+	## metallic stays low; the roughness map is the authority (a scalar below 1
+	## would gloss it up); the AO map shades the texture's own pockets on UV1
+	## (ao_on_uv2 stays off — the primitives carry no UV2); and a light
+	## clearcoat is the sheen paint itself has. The first build ran 0.55
+	## metallic over 0.58x roughness and read as coloured foil.
 	var key: String = "armor|" + color.to_html()
 	if _materials.has(key):
 		return _materials[key]
 	var m := StandardMaterial3D.new()
 	m.resource_name = "armor_paint"
-	m.metallic = 0.55
+	m.metallic = 0.18
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	var col: ImageTexture = _armor_map("armor_paint_color.jpg")
+	# finer than 1:1 per face: at plate scale the raw set reads as blobs, at
+	# 2.2x it reads as paint wear and the normal map as grain
+	m.uv1_scale = Vector3(2.2, 2.2, 1.0)
+	var col: ImageTexture = _armor_map("armor_paint_color.jpg", true)
 	if col != null:
 		m.albedo_texture = col
 		# the map's mean is a mid grey; lift the tint so the plate reads the
 		# same colour the flat version carried
 		m.albedo_color = Color(minf(color.r * 1.9, 1.0), minf(color.g * 1.9, 1.0), minf(color.b * 1.9, 1.0), 1.0)
-		m.roughness = 0.58
+		m.roughness = 1.0
 		m.roughness_texture = _armor_map("armor_paint_rough.jpg")
 		var nrm: ImageTexture = _armor_map("armor_paint_normal.jpg")
 		if nrm != null:
 			m.normal_enabled = true
 			m.normal_texture = nrm
-			m.normal_scale = 0.55
+			m.normal_scale = 0.7
+		var ao: ImageTexture = _armor_map("armor_paint_ao.jpg")
+		if ao != null:
+			m.ao_enabled = true
+			m.ao_texture = ao
+			# let the pockets touch direct light a little too, or they vanish
+			# under the garage's lamps
+			m.ao_light_affect = 0.2
+		m.clearcoat_enabled = true
+		m.clearcoat = 0.25
+		m.clearcoat_roughness = 0.45
 	else:
 		m.albedo_color = color
-		m.roughness = 0.24
+		m.roughness = 0.4
 	_materials[key] = m
 	return m
 
@@ -405,28 +430,31 @@ func armor_paint(color: Color) -> StandardMaterial3D:
 func armor_dark() -> StandardMaterial3D:
 	## The armour's underlayer: bare worn alloy between the plates — a CC0
 	## scratched-metal set (ambientCG Metal027) tinted down to the dark
-	## underlayer, with the same flat fallback.
+	## underlayer, with the same flat fallback. This one is real metal: full
+	## metallic with the roughness map as the authority, so the wear in the set
+	## actually shows.
 	var key: String = "armor_dark"
 	if _materials.has(key):
 		return _materials[key]
 	var m := StandardMaterial3D.new()
 	m.resource_name = "armor_dark"
-	var col: ImageTexture = _armor_map("armor_metal_color.jpg")
+	m.uv1_scale = Vector3(2.2, 2.2, 1.0)
+	var col: ImageTexture = _armor_map("armor_metal_color.jpg", true)
 	if col != null:
 		m.albedo_texture = col
 		m.albedo_color = Color(0.5, 0.53, 0.58)
-		m.metallic = 0.55
-		m.roughness = 0.8
+		m.metallic = 0.75
+		m.roughness = 1.0
 		m.roughness_texture = _armor_map("armor_metal_rough.jpg")
 		var nrm: ImageTexture = _armor_map("armor_metal_normal.jpg")
 		if nrm != null:
 			m.normal_enabled = true
 			m.normal_texture = nrm
-			m.normal_scale = 0.5
+			m.normal_scale = 0.6
 	else:
 		m.albedo_color = Color("23262b")
-		m.metallic = 0.45
-		m.roughness = 0.42
+		m.metallic = 0.6
+		m.roughness = 0.5
 	_materials[key] = m
 	return m
 

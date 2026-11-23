@@ -225,13 +225,16 @@ systems, the weather machine (rain → after-rain → dry → drizzle, with the 
 wetting and drying as one uniform), and the coupling of shutter position to daylight shafts and fog
 density.
 
-**`armor_assembly.gd`** — the presentation arm of the dressing: the shop's four spare armour shells
-can be test-fitted by hand onto the practice figure. It owns the sockets (figure-local offsets), the
-fitted state, the duplicated glow materials so the light ramps stay local, and the station texts;
-the figure's station (kind `ARMOR`) delegates to it, and the carry system hands the held part over
-through `settle_held()`. `garage_world.demo_reset()` uses its `dismount_all(instant)` together with
-`runtime.reset_assembly()` to return the whole demo to the morning, and the viewpoint tour is a thin
-reuse of the capture harness's own `_cap_place()`.
+**`armor_assembly.gd`** — the presentation arm of the dressing: the shop's armour is built in three
+assemblies (legs, torso, head), carried from the build pallet at the entrance and seated on the
+service base low to high; the finished figure then performs its walk-and-dance show after the bolts
+seal. It owns the sockets (figure-local offsets), the fitted/locked state, the guide (floating
+arrows, the beacon, tracker texts and the red corrections), the auto-seat paths (walk-up, a rested
+look, a place at the base, and the pallet tidy rule), the duplicated glow materials so the light
+ramps stay local, and the station texts; the figure's station (kind `ARMOR`) delegates to it, and
+`garage_world.demo_reset()` uses its `dismount_all(instant)` together with `runtime.reset_assembly()`
+to return the whole demo to the morning. The viewpoint tour is a thin reuse of the capture harness's
+own `_cap_place()`.
 
 **`screen_content.gd`** — builds the spec for every display in the garage from a single `_snapshot()`
 of the simulation, so no screen can disagree with another and no separate data path has to be kept in
@@ -364,7 +367,7 @@ and in the capture harness. The rain, the dust and the footsteps use separate se
 one does not perturb another.
 
 **Fixed capture viewpoints.** The capture harness drives the progression to a known state and parks
-the camera at twenty declared transforms, which is what makes the screenshots in `captures/`
+the camera at twenty-one declared transforms, which is what makes the screenshots in `captures/`
 comparable between code revisions. It also reports a luminance histogram per shot: the check that
 matters most is the `black` percentage, because a lighting rig that renders almost nothing still
 produces a screenshot and would otherwise read as success.

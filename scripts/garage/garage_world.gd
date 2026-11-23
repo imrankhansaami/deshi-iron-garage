@@ -763,6 +763,9 @@ const CAP_SHOTS: Array = [
 	# the store corner: the shelf, its placard and the stock row — the corner the
 	# organisation pass lives in, kept visible to every verification run
 	{"name": "19_store", "pos": Vector3(-1.9, 1.65, -2.9), "look": Vector3(-3.85, 1.05, -4.35)},
+	# the built figure up close: the realism pass's plates, hardware and glow
+	# get a fixed viewpoint of their own, so every verification run shows them
+	{"name": "20_armor_close", "pos": Vector3(-1.9, 1.5, 4.35), "look": Vector3(-3.3, 1.0, 3.75)},
 ]
 
 var _capturing: bool = false

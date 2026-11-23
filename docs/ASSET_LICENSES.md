@@ -16,7 +16,7 @@ imported**; texture images are runtime-synthesised except two CC0 PBR sets on th
 | Photographs (13) | The notice-wall collage, `assets/textures/wall/` | **Wikimedia Commons, CC BY-SA 4.0**, fetched through the Commons API and resized to 480 px | Every file, author and source page is listed below |
 | Photographs (10) | The two smaller boards — the streets and the working country | **Openverse (Flickr originals), CC0 / CC BY 2.0 / CC BY-SA 2.0**, fetched through the Openverse API, licence-filtered, resized to 480 px | Every file, author and source page is listed below |
 | Texture images | 34 surface sets × 3 channels = 102 images | **Synthesised at runtime** by `TextureFactory` | Original work |
-| Texture images (2 sets, 6 maps) | The armour figure's plates and underlayer, `assets/textures/armor/` | **ambientCG, CC0 1.0**, 1K JPGs resized to 512 at load | PaintedMetal009 (paint) and Metal027 (worn metal) — the sets are CC0, no attribution required, credited here anyway |
+| Texture images (2 sets, 7 maps) | The armour figure's plates and underlayer, `assets/textures/armor/` | **ambientCG, CC0 1.0**, 1K JPGs resized to 512 at load | PaintedMetal009 (paint) and Metal027 (worn metal) — the sets are CC0, no attribution required, credited here anyway |
 | Supplied photograph | 1 image (127 KB) | **Provided by the project's author** — the workshop banner hung on the north wall | Author's own work, used with the author's permission |
 | Audio | every clip | **Synthesised at runtime** by `AudioSynth` | Original work; no recorded music and no musical instruments anywhere — the ambience is wind, leaves, sparrows, the street and the rain |
 | Shaders | 6 files | Written for this project | Original work |
@@ -105,7 +105,7 @@ generated meshes are original work.
 
 ### 2.2 Textures
 
-No imported texture exists in `assets/` except the six armour maps in `assets/textures/armor/`
+No imported texture exists in `assets/` except the seven armour maps in `assets/textures/armor/`
 (section 2.2b). Every other surface is synthesised at load by `scripts/procedural/texture_factory.gd`
 from 34 recipes, producing an albedo, an ORM (occlusion/roughness/metallic) and a tangent-space
 normal per surface.
@@ -122,14 +122,19 @@ channels — is original work and is described in `docs/GRAPHICS_ALGORITHMS.md` 
 
 The armour figure's materials are the one place where real photographs are used. Two PBR sets from
 [ambientCG](https://ambientcg.com/) — both released under **CC0 1.0** (public domain, no attribution
-required; credited here anyway) — supply the colour, roughness and normal maps for the plates:
+required; credited here anyway) — supply the colour, roughness, normal and occlusion maps for the
+plates:
 
 | Set | Asset | Maps used | Role on the figure |
 |---|---|---|---|
-| Paint | `PaintedMetal009` — <https://ambientcg.com/view?id=PaintedMetal009> | `armor_paint_color.jpg`, `armor_paint_rough.jpg`, `armor_paint_normal.jpg` | The red painted plating (`armor_paint()`), tinted at load so the paint reads as the figure's red |
+| Paint | `PaintedMetal009` — <https://ambientcg.com/view?id=PaintedMetal009> | `armor_paint_color.jpg`, `armor_paint_rough.jpg`, `armor_paint_normal.jpg`, `armor_paint_ao.jpg` | The red painted plating (`armor_paint()`), tinted at load so the paint reads as the figure's red |
 | Worn metal | `Metal027` — <https://ambientcg.com/view?id=Metal027> | `armor_metal_color.jpg`, `armor_metal_rough.jpg`, `armor_metal_normal.jpg` | The underlayer and exposed machinery (`armor_dark()`) |
 
-The downloads are 1K JPGs; each is resized to 512 px when loaded by `MaterialLibrary._armor_map()`
+The realism pass binds the paint set's occlusion map on the primitives' single UV channel
+(`ao_on_uv2` off, `ao_light_affect` 0.2), keeps metallic and roughness as tuned scalars — the sets'
+metalness maps are uniform (all paint / all metal) and would carry no information — and adds a light
+clearcoat as the paint's own sheen. The downloads are 1K JPGs; each is resized to 512 px when loaded
+by `MaterialLibrary._armor_map()`
 (`Image.load_from_file()` + resize, no import side files — same loading path as the author's own
 photographs). If a file is missing the material falls back to its flat tint and a warning is printed,
 so the figure never renders untextured.

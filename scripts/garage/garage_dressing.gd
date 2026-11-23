@@ -382,7 +382,12 @@ func _area_mechanical() -> void:
 	# the silencer was on the old 3 m bench; here it leans against the wall
 	_place("silencer", Vector3(-half_w + 0.6, 0.0, 3.4), Vector3(0.0, 0.3, 0.0))
 	_place("brake_drum", Vector3(wall + 0.28, 1.583, -1.3))
-	_place("grindstone", Vector3(-half_w + 0.85, 0.0, 3.90), Vector3(0.0, 0.5, 0.0), {"scale": 0.85})
+	# the grindstone stood at (-3.40, 3.90); the armour station that arrived at
+	# (-3.30, 3.75) later grew into its spot — the close-up showed its trough
+	# and wheel crowding the figure's legs, its box overlapping the base's (gap
+	# 0.00 m). It moved by the workbench, where a bench grinder belongs:
+	# 0.11 m clear of the bench, 0.8 m clear of the base
+	_place("grindstone", Vector3(-3.05, 0.0, 2.35), Vector3(0.0, 0.5, 0.0), {"scale": 0.85})
 	_place("biscuit_tin", Vector3(wall + 0.5, 1.583, -1.15))
 	# --- wall fixtures ----------------------------------------------------
 	_place("wall_calendar", Vector3(wall + 0.01, 2.05, 0.75), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.3})
