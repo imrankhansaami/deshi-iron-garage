@@ -2065,14 +2065,14 @@ func _armor() -> void:
 	## entrance. Three carries, low to high, and the whole figure stands. Red
 	## over gold over dark alloy; an homage in the reference palette,
 	## deliberately unbranded, and every piece individually pickable.
-	var base_node: Node3D = _place("armor_base", Vector3(-1.6, 0.0, -4.55), Vector3(0.0, 0.35, 0.0), {})
+	var base_node: Node3D = _place("armor_base", Vector3(-3.3, 0.0, 3.75), Vector3(0.0, 0.35, 0.0), {})
 	# the build target made visible: a cyan hologram of the whole figure over
 	# the base, in its three pieces; each ghost piece hides as its real
 	# assembly seats (the armour module drives that)
-	_place("armor_ghost", Vector3(-1.6, 0.0, -4.55), Vector3(0.0, 0.35, 0.0), {})
+	_place("armor_ghost", Vector3(-3.3, 0.0, 3.75), Vector3(0.0, 0.35, 0.0), {})
 	_station(base_node, Station.Kind.ARMOR, Vector3(0.0, 0.9, 0.1), {
 		"area": "assembly", "title": "The shop's armour",
-		"desc": "The service base the figure is built on — a dark disc, its gold ring the progress meter. The three assemblies wait on the build pallet just inside the entrance: legs, then torso, then head, and the whole figure stands here.",
+		"desc": "The service base the figure is built on — a dark disc, its gold ring the progress meter. It waits at the front of the garage, beside the build pallet, so the finished figure stands where everyone walks in.",
 		"spec": [["height", "1.77 m built"], ["palette", "red over gold over alloy"], ["state", "to build"]],
 		"sfx": "metal_thunk", "distance": 3.4,
 	})

@@ -206,7 +206,7 @@ console. The board sleeps when the final check is done, and `R` resets the whole
 
 ### The armour figure
 
-By the north wall, on its service base: the shop's own build, done the long way — the **figure in
+At the front of the garage, beside the build pallet, on its service base: the shop's own build, done the long way — the **figure in
 three parts**. The **legs**, the **torso** and the **head** wait together on the **build pallet** just
 inside the entrance, and a cyan **hologram of the whole figure** hovers over the base until the real
 parts replace it, piece by piece. Look at an assembly to lift it (left-click also works), point at the
@@ -310,7 +310,7 @@ more licensed pictures of the streets and the working country. And the room keep
 painted tool outlines on the
 pegboard, chalk notes on the floor, tea rings on the bench top, paper labels on the drawers, a
 grease handprint on the apron, a paint-test board, stickers — and a whole red-and-gold armoured
-base by the north wall where the shop's figure is built — its three assemblies waiting together on the
+base at the front of the garage, beside the pallet, where the shop's figure is built — its three assemblies waiting together on the
 build pallet at the front.
 `F` on any of the pictures for the story.
 

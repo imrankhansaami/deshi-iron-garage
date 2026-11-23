@@ -315,7 +315,7 @@ func next_line() -> String:
 			return "that assembly is already on — put it down (right-click) and take the next one"
 		if PARTS.keys().find(_name_of(held)) != _fitted.size():
 			return "not that one yet — the figure builds low to high: legs, then torso, then head"
-		return "NEXT — point at the base — the shop's armour on the NORTH WALL — and it seats itself%s" % _dist_tail(figure.global_position)
+		return "NEXT — point at the base — the shop's armour at the FRONT of the garage, beside the pallet — and it seats itself%s" % _dist_tail(figure.global_position)
 	if _locked.size() >= PARTS.size():
 		return "DONE — press E at the base to strip the figure back to the pallet · R resets the morning"
 	if _fitted.size() >= PARTS.size():
