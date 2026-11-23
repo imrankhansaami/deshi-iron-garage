@@ -164,6 +164,9 @@ func _gather_items(dressing: Node3D, structure: Node3D) -> void:
 
 func _gather_surfaces(host: Node) -> void:
 	for child: Node in host.get_children():
+		# the hologram is not a shelf: nothing stands on a ghost
+		if child is Node3D and String((child as Node3D).name).begins_with("ArmorGhost"):
+			continue
 		_scan_surfaces(child, child)
 
 
@@ -381,8 +384,15 @@ func _finish_settle() -> void:
 func _surface_under(point: Vector3, exclude: Node3D) -> float:
 	var best: float = -1000.0
 	var xz := Vector2(point.x, point.z)
+	# an assembly module never stacks on another armour piece: dropped at the
+	# build it seats (see ArmorAssembly), anywhere else it lands on floor or
+	# bench like any other prop
+	var drop_armor: bool = _held != null and String(_held.name).begins_with("Armor")
 	for s: Dictionary in _surfaces:
-		if s.get("owner") == exclude:
+		var owner: Node = s.get("owner") as Node
+		if owner == exclude:
+			continue
+		if drop_armor and owner != null and String(owner.name).begins_with("Armor"):
 			continue
 		var rect: Rect2 = s.get("rect")
 		if not rect.has_point(xz):

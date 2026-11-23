@@ -56,6 +56,7 @@ var _ghost: Node3D = null            ## the hologram target over the base
 var _arrows: Dictionary = {}         ## part name -> that spare's own floating arrow
 var _sealed_ms: int = 0
 var _last_wrong: Node = null         ## the wrong-order part already announced
+var _watched: Node3D = null          ## the part in hand last frame (release->seat)
 var _aim_dwell: float = 0.0          ## look at the base while carrying -> seat
 var _pick_dwell: float = 0.0         ## look at a waiting assembly -> lift
 
@@ -134,6 +135,17 @@ func _process(delta: float) -> void:
 	var held: Node3D = carry.held() if carry != null else null
 	if held != _last_wrong:
 		_last_wrong = null
+	# a left-click place at the base seats too — the natural gesture
+	if held != null and _is_part(held):
+		_watched = held
+	elif held == null and _watched != null:
+		var nm: String = _name_of(_watched)
+		if nm != "" and not _fitted.has(nm) and _watched.global_position.distance_to(figure.global_position) < 1.3:
+			if PARTS.keys().find(nm) != _fitted.size():
+				_announce_order(_watched)
+			else:
+				_seat(nm)
+		_watched = null
 	if not _engaged and held != null and _is_part(held):
 		_engaged = true
 	if not _engaged and _player != null:
@@ -408,13 +420,17 @@ func _announce_order(held: Node) -> void:
 # ===========================================================================
 
 func _seat(part_name: String) -> void:
+	## Seats a module whether it is still in the player's hand (the walk-up, E
+	## or the pointed look) or was just released at the base (a left-click
+	## place there).
 	if _busy:
 		return
 	var node: Node3D = _parts[part_name]
 	var info: Dictionary = PARTS[part_name]
-	var handed: Node3D = carry.detach_held()
-	if handed != node:
-		return
+	if carry.held() == node:
+		var handed: Node3D = carry.detach_held()
+		if handed != node:
+			return
 	_busy = true
 	carry.set_item_enabled(node, false)
 	_fitted[part_name] = true

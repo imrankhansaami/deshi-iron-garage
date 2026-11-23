@@ -129,8 +129,9 @@ pallet just inside the entrance, and the service base waits by the north wall �
 a cyan **hologram of the whole figure** hovering over it until the real parts
 replace it, piece by piece.
 Look at a waiting assembly and it **lifts for you** (left-click also works);
-point at the base and the part **seats itself** — or just walk it up — the
-base ring climbing a step — legs first, then torso, then head, and the
+point at the base and the part **seats itself** — walk it up, press `E`, or
+simply put it down there: every gesture seats it, the base ring climbing a
+step — legs first, then torso, then head, and the
 order is enforced in red if you try the head early. **The head completes the
 figure and it powers on** — eyes, core and ring light up — and after the beat
 **the bolts seal it on their own**. Both assemblies guide themselves: a **big

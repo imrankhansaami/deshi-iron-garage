@@ -214,6 +214,18 @@ func _run() -> void:
 		carry.set("_held", null)
 		carry.set("_state", 0)
 		armor.dismount_all(true)
+		# releasing the part at the base (left-click place) seats it too
+		pl.global_position = fig2.global_position + Vector3(1.5, 0.0, 0.5)
+		boot2.global_position = fig2.global_position + Vector3(0.8, 0.6, 0.5)
+		carry.set("_held", boot2)
+		carry.set("_state", 1)
+		await _frames(3)
+		carry.set("_held", null)
+		carry.set("_state", 0)
+		await _wait(1.2)
+		print("ARMOR: place-at-base seats fitted=%d/3 %s" % [
+			int(armor.fitted_count()), "OK" if int(armor.fitted_count()) == 1 else "FAIL"])
+		armor.dismount_all(true)
 		pl.global_position = pl_saved
 	else:
 		print("ARMOR: auto-seat by approach FAIL — nodes missing")
