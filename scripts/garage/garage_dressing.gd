@@ -383,7 +383,6 @@ func _area_mechanical() -> void:
 	_place("silencer", Vector3(-half_w + 0.6, 0.0, 3.4), Vector3(0.0, 0.3, 0.0))
 	_place("brake_drum", Vector3(wall + 0.28, 1.583, -1.3))
 	_place("grindstone", Vector3(-half_w + 0.85, 0.0, 3.90), Vector3(0.0, 0.5, 0.0), {"scale": 0.85})
-	_place("plastic_chair", Vector3(-half_w + 1.5, 0.0, 3.55), Vector3(0.0, -0.5, 0.0))
 	_place("biscuit_tin", Vector3(wall + 0.5, 1.583, -1.15))
 	# --- wall fixtures ----------------------------------------------------
 	_place("wall_calendar", Vector3(wall + 0.01, 2.05, 0.75), Vector3(0.0, PI * 0.5, 0.0), {"width": 0.3})
@@ -2102,10 +2101,10 @@ func _armor() -> void:
 
 
 func _build_pallet() -> void:
-	## The build pallet at the front of the garage: a long low platform with a
-	## raised, baked sign — where the three assemblies wait together, in build
-	## order, so the job always starts from one place. Staging only: no collider
-	## of its own; the assemblies keep theirs.
+	## The build pallet at the front of the garage: a long low platform where
+	## the three assemblies wait together, in build order, so the job always
+	## starts from one place. Staging only: no collider of its own; the
+	## assemblies keep theirs.
 	var pallet: Node3D = Node3D.new()
 	pallet.name = "BuildPallet"
 	pallet.position = Vector3(-1.05, 0.0, 3.72)
@@ -2117,35 +2116,6 @@ func _build_pallet() -> void:
 		var foot: MeshInstance3D = ShapeKit.box(Vector3(0.16, 0.07, 0.74), ML.woodgrain_dark(), "Foot")
 		foot.position = Vector3(x, 0.035, 0.0)
 		pallet.add_child(foot)
-	# the sign on a post at the pallet's left end, facing the entrance — raised
-	# above the assemblies (the trace caught the board's edge clipping the belt)
-	var post: MeshInstance3D = ShapeKit.box(Vector3(0.06, 1.3, 0.06), ML.woodgrain_dark(), "SignPost")
-	post.position = Vector3(-1.55, 0.65, -0.3)
-	pallet.add_child(post)
-	var board: MeshInstance3D = ShapeKit.box(Vector3(0.92, 0.24, 0.03), ML.plywood(), "BuildSign")
-	board.position = Vector3(-1.55, 1.32, -0.28)
-	board.rotation.x = -0.3
-	pallet.add_child(board)
-	baker.apply_baked(board, _build_pallet_spec(), "build_pallet", 0.0, 0.62)
-	# a small painted chevron under the sign, pointing down at the assemblies
-	for s: int in [-1, 1]:
-		var wing: MeshInstance3D = ShapeKit.box(Vector3(0.1, 0.032, 0.02), ML.paint_yellow(), "Chevron")
-		wing.position = Vector3(-1.55 + 0.045 * float(s), 1.14, -0.26)
-		wing.rotation.z = float(s) * 0.785
-		pallet.add_child(wing)
-
-
-func _build_pallet_spec() -> Dictionary:
-	## The pallet's sign, in the shop's own hand-painted signage style.
-	return {
-		"size": Vector2i(512, 128), "transparent": false, "bg": "#e8e0cc",
-		"border": {"color": "#8a2a1a", "width": 5.0},
-		"layers": [
-			{"type": "text", "name": "BN", "pos": Vector2(16, 10), "size": 34, "width": 480, "align": "center", "color": "#1b2a3a", "text": "তিন টুকরোয় গড়া", "font": "bangla"},
-			{"type": "line", "from": Vector2(30, 58), "to": Vector2(482, 58), "color": "#8a2a1a", "width": 2.0},
-			{"type": "text", "name": "EN", "pos": Vector2(16, 66), "size": 26, "width": 480, "align": "center", "color": "#4a4538", "text": "THE FIGURE IN THREE PARTS", "font": "mono"},
-		],
-	}
 
 
 func _bangladesh_map_spec() -> Dictionary:
