@@ -135,7 +135,10 @@ simply put it down there: every gesture seats it, the base ring climbing a
 step — legs first, then torso, then head, and the
 order is enforced in red if you try the head early. **The head completes the
 figure and it powers on** — eyes, core and ring light up — and after the beat
-**the bolts seal it on their own**. Both assemblies guide themselves: a **big
+**the bolts seal it on their own** — and a beat later the figure **comes
+alive**: it shuffles a few steps on its feet and dances (the torso sways and
+twists, the head nods, the ring flashing on the beat), then settles back onto
+its seat. Both assemblies guide themselves: a **big
 yellow arrow** floats over every assembly still on the pallet and every module
 crate, and the next step's arrow rises on a **column of light**, while a
 **tracker board** under the objective lists every step in

@@ -139,6 +139,14 @@ func _run() -> void:
 	await _wait(4.6)
 	print("ARMOR: auto-seal locked=%d/3 %s" % [
 		int(armor.locked_count()), "OK" if int(armor.locked_count()) == 3 else "FAIL"])
+	# the figure comes alive after the seal — walk-and-dance, moving on its own
+	await _wait(3.0)
+	var t1: Vector3 = (dressing.get_node_or_null("ArmorTorso") as Node3D).global_position
+	await _wait(0.7)
+	var t2: Vector3 = (dressing.get_node_or_null("ArmorTorso") as Node3D).global_position
+	print("ARMOR: show performing=%s moved=%.1f cm %s" % [
+		str(armor.is_performing()), t1.distance_to(t2) * 100.0,
+		"OK" if armor.is_performing() and t1.distance_to(t2) > 0.005 else "FAIL"])
 	print("ARMOR: guide after seal beacon=%s stage=\"%s\" %s" % [
 		str(armor.beacon_visible()), String(armor.stage_line()),
 		"OK" if not armor.beacon_visible() and String(armor.stage_line()).contains("COMPLETE") else "FAIL"])
@@ -177,6 +185,8 @@ func _run() -> void:
 	print("ARMOR: guide sleeps after strip tracker=%s beacon=%s %s" % [
 		str(armor.tracker_visible()), str(armor.beacon_visible()),
 		"OK" if not armor.tracker_visible() and not armor.beacon_visible() else "FAIL"])
+	print("ARMOR: show cancelled by the strip=%s %s" % [
+		str(not armor.is_performing()), "OK" if not armor.is_performing() else "FAIL"])
 	# 5. the demo reset end to end
 	world.demo_reset()
 	await _frames(5)

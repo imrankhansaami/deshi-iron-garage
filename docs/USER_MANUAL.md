@@ -216,8 +216,11 @@ assembly never stacks on another piece while carried, and one set down among the
 settles back to its own spot. The order is low to high and enforced: legs first, then torso, then
 head.
 **The head completes the figure and it powers on** — core lens, eye slits and ring light up — and
-after the beat **the bolts seal it on their own**, a clack cascade with a second surge. `E` with empty
-hands strips the figure back to the pallet for another build.
+after the beat **the bolts seal it on their own**, a clack cascade with a second surge. A beat later
+the figure **comes alive by itself**: a short shuffling walk on its feet, then a dance — the torso
+sways and twists, the head nods, the body spins, the ring flashing on every beat — and then it
+settles back onto its seat. `E` with empty hands strips the figure back to the pallet (which also
+ends the show) for another build.
 
 It is a guided job: waking at the build pallet, the **floating arrows** stand over every assembly
 still waiting, while the next one's arrow rises on a **column of light** and moves with you. Under
@@ -497,7 +500,8 @@ For showing the project in about six minutes, following the sequence in the brie
 15. At the build pallet just inside the entrance: the figure waits in three assemblies — legs, torso,
     head — each under a big yellow arrow. **Look at a part to lift it; point at the base by the north
     wall to seat it** (walking it up or pressing `E` works too), low to high — the head completes the
-    figure, it powers on and the bolts seal it. Wrong moves answer in red and say what to do instead.
+    figure, it powers on and the bolts seal it; a beat later it **walks and dances by itself**, then
+    settles. Wrong moves answer in red and say what to do instead.
 16. **F6**. Materials tab: change roughness and metallic live. Hologram tab: switch between the three
     variants. Lighting tab: switch to warm-only and back to full rig. Post tab: toggle SDFGI and watch
     the core's wall spill disappear.

@@ -59,6 +59,10 @@ var _last_wrong: Node = null         ## the wrong-order part already announced
 var _watched: Node3D = null          ## the part in hand last frame (release->seat)
 var _aim_dwell: float = 0.0          ## look at the base while carrying -> seat
 var _pick_dwell: float = 0.0         ## look at a waiting assembly -> lift
+var _show_tw: Tween = null           ## the schedule from seal to show
+var _performing: bool = false        ## the walk-and-dance is running
+var _perf_t: float = 0.0             ## show clock (seconds)
+var _perf_beat: int = -1             ## the beat already sounded
 
 ## Where each assembly waits, for the tracker's next-step line. All three live
 ## together on the build pallet at the front of the garage (plan P).
@@ -132,6 +136,8 @@ func engage() -> void:
 func _process(delta: float) -> void:
 	if _beacon == null or figure == null:
 		return
+	if _performing:
+		_perf_tick(delta)
 	var held: Node3D = carry.held() if carry != null else null
 	if held != _last_wrong:
 		_last_wrong = null
@@ -575,6 +581,7 @@ func dismount_all(instant: bool = false) -> void:
 	## The guide sleeps either way: the job is out of the player's hands now and
 	## wakes again by approach, by picking a spare up, or at the base itself.
 	_engaged = false
+	_cancel_show()
 	if _fitted.is_empty():
 		if not instant:
 			EventBus.notification_requested.emit("no spares are fitted", "info")
@@ -712,6 +719,132 @@ func _seal() -> void:
 	if runtime != null:
 		runtime.sys_log("THE FIGURE COMPLETE — SEALED")
 	_update_texts()
+	_schedule_show()
+
+
+func _schedule_show() -> void:
+	## A beat after the seal, the figure comes alive by itself.
+	if _show_tw != null and _show_tw.is_valid():
+		_show_tw.kill()
+	_show_tw = create_tween()
+	_show_tw.tween_interval(2.4)
+	_show_tw.tween_callback(_start_show)
+
+
+func _start_show() -> void:
+	## The walk-and-dance: the whole figure shuffles forward and back on its
+	## feet, then dances — the torso sways and twists, the head nods, the body
+	## spins and bobs, the ring flashes on every beat — and settles back onto
+	## the seat. All procedural; percussive shop sounds only.
+	if _performing or _locked.size() < PARTS.size():
+		return
+	_performing = true
+	_perf_t = 0.0
+	_perf_beat = -1
+	EventBus.notification_requested.emit("the armour stirs — it walks, then it dances", "info")
+	if runtime != null:
+		runtime.sys_log("THE FIGURE MOVES — SHOW STARTED")
+
+
+func is_performing() -> bool:
+	return _performing
+
+
+func _cancel_show() -> void:
+	## Whoever takes the figure back — a strip, a reset — ends the show first.
+	_performing = false
+	if _show_tw != null and _show_tw.is_valid():
+		_show_tw.kill()
+
+
+func _perf_tick(delta: float) -> void:
+	_perf_t += delta
+	var t: float = _perf_t
+	# --- the timeline -------------------------------------------------------
+	var o: Vector3 = Vector3.ZERO       ## whole-figure translation
+	var yaw_w: float = 0.0              ## whole-figure extra yaw
+	var roll_w: float = 0.0
+	var pitch_w: float = 0.0
+	var fy: float = figure.rotation.y
+	var fwd := Vector3(sin(fy), 0.0, cos(fy))
+	if t < 1.6:
+		# wind-up: a straighten and a servo sweep
+		pitch_w = -0.045 * sin(PI * t / 1.6)
+	elif t < 7.6:
+		# walk: six shuffling steps out and back along the facing
+		var s: float = (t - 1.6) / 1.0
+		var si: int = clampi(int(s), 0, 5)
+		var frac: float = clampf(s - float(si), 0.0, 1.0)
+		var path: Array[float] = [0.0, 0.22, 0.44, 0.44, 0.22, 0.0, 0.0]
+		var a: float = path[si]
+		var b: float = path[si + 1]
+		var e: float = frac * frac * (3.0 - 2.0 * frac)
+		o = fwd * (a + (b - a) * e)
+		pitch_w = 0.06 * sin(PI * frac)
+		roll_w = 0.05 * sin(PI * frac) * (1.0 if si % 2 == 0 else -1.0)
+		o.y = 0.025 * sin(PI * frac)
+		var step_n: int = si
+		if step_n != _perf_beat:
+			_perf_beat = step_n
+			AudioBank.play_at("metal_thunk" if step_n % 2 == 0 else "tool_place", figure.global_position, -10.0, 0.9 + 0.05 * float(step_n % 3))
+	elif t < 20.0:
+		# dance: beat at 0.6 s — sway, twist, nod, two spins, crouch and rise
+		var d: float = t - 7.6
+		var beat: int = int(d / 0.6)
+		roll_w = 0.10 * sin(TAU * d / 1.2)
+		o.y = -0.05 * (0.5 - 0.5 * cos(TAU * d / 1.2))
+		o += fwd * (0.06 * sin(TAU * d / 2.4))
+		# two full spins
+		for span: Array in [[2.4, 4.8], [7.4, 9.8]]:
+			var s0: float = float(span[0])
+			var s1: float = float(span[1])
+			if d > s0 and d < s1:
+				var u: float = (d - s0) / (s1 - s0)
+				yaw_w = TAU * (u * u * (3.0 - 2.0 * u))
+		if beat != _perf_beat:
+			_perf_beat = beat
+			AudioBank.play_at("metal_tink" if beat % 2 == 0 else "metal_clank", figure.global_position, -12.0, 0.9 + 0.03 * float(beat % 4))
+			_pulse(1.7)
+		if _ring_mat != null:
+			var bph: float = 0.5 + 0.5 * sin(TAU * d / 0.6)
+			_ring_mat.emission_energy_multiplier = _ring_base * (2.1 + 0.45 * bph)
+	else:
+		# return: glide home and settle
+		var u2: float = clampf((t - 20.0) / 2.4, 0.0, 1.0)
+		var e2: float = u2 * u2 * (3.0 - 2.0 * u2)
+		o = Vector3(0.0, -0.04 * (1.0 - e2), 0.0)
+		roll_w = 0.05 * (1.0 - e2)
+		if u2 >= 1.0:
+			_performing = false
+			if _ring_mat != null:
+				_ring_mat.emission_energy_multiplier = _ring_base * 2.1
+			AudioBank.play_at("tool_place", figure.global_position, -8.0)
+			if runtime != null:
+				runtime.sys_log("THE FIGURE SETTLES")
+	# --- pose the three assemblies from the timeline ------------------------
+	var tor_yaw: float = 0.0
+	var tor_roll: float = 0.0
+	var head_pitch: float = 0.0
+	var head_yaw: float = 0.0
+	if t >= 7.6 and t < 20.0:
+		var d2: float = t - 7.6
+		tor_yaw = 0.30 * sin(TAU * d2 / 2.4)
+		tor_roll = 0.10 * sin(TAU * d2 / 1.2 + PI * 0.5)
+		head_pitch = 0.12 * sin(TAU * d2 / 0.6 + PI * 0.5)
+		head_yaw = 0.28 * sin(TAU * d2 / 2.4 + PI)
+	for part_name: String in PARTS:
+		var node: Node3D = _parts.get(part_name, null) as Node3D
+		if node == null:
+			continue
+		var seat: Vector3 = figure.to_global(PARTS[part_name]["socket"] as Vector3)
+		var extra := Vector3.ZERO
+		match part_name:
+			"ArmorTorso":
+				extra = Vector3(tor_roll, tor_yaw, 0.0)
+			"ArmorHead":
+				extra = Vector3(head_pitch, head_yaw, 0.0)
+		node.global_position = seat + o
+		node.rotation = Vector3(pitch_w + extra.x, fy + yaw_w + extra.y, roll_w + extra.z)
 
 
 func _ramp_glows(peak: float, settle: float) -> void:
