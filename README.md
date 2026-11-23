@@ -128,8 +128,9 @@ parts, low to high: the legs, the torso and the head wait together on a build
 pallet just inside the entrance, and the service base waits by the north wall —
 a cyan **hologram of the whole figure** hovering over it until the real parts
 replace it, piece by piece.
-Carry each assembly over — walking it up **seats it by itself** (or press `E`),
-the base ring climbing a step — legs first, then torso, then head, and the
+Look at a waiting assembly and it **lifts for you** (left-click also works);
+point at the base and the part **seats itself** — or just walk it up — the
+base ring climbing a step — legs first, then torso, then head, and the
 order is enforced in red if you try the head early. **The head completes the
 figure and it powers on** — eyes, core and ring light up — and after the beat
 **the bolts seal it on their own**. Both assemblies guide themselves: a **big

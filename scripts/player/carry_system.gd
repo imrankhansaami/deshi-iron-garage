@@ -319,6 +319,18 @@ func _pick_up(node: Node3D) -> void:
 	AudioBank.play("ui_pick", -9.0)
 
 
+func auto_pick(node: Node3D) -> bool:
+	## A scripted pickup — the armour build's point-to-lift assist. Takes the
+	## same path as a left click once the crosshair has rested on the part.
+	if _state != State.FREE or node == null or not is_instance_valid(node):
+		return false
+	for entry: Dictionary in _items:
+		if entry.get("node") == node and bool(entry.get("enabled", true)):
+			_pick_up(node)
+			return true
+	return false
+
+
 func _place() -> void:
 	var node: Node3D = _held
 	var target_y: float = _surface_under(node.global_position, node)

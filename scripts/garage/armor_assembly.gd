@@ -28,13 +28,13 @@ var _player: Node = null
 ## base's LOCAL space: the base's yaw is applied to the seat rotation, so a
 ## rotated base still builds right. Dictionary order IS the build order.
 const PARTS: Dictionary = {
-	"ArmorLegs": {"socket": Vector3(0.0, 0.05, 0.0), "yaw": 0.0,
+	"ArmorLegs": {"socket": Vector3(0.0, 0.05, 0.0), "yaw": 0.0, "aim": 0.45,
 		"label": "the legs and boots", "line": "the legs and boots stand on the base",
 		"seat_sfx": "metal_thunk", "lock_sfx": "metal_clank"},
-	"ArmorTorso": {"socket": Vector3(0.0, 0.62, 0.0), "yaw": 0.0,
+	"ArmorTorso": {"socket": Vector3(0.0, 0.62, 0.0), "yaw": 0.0, "aim": 0.42,
 		"label": "the torso and arms", "line": "the torso and arms drop onto the waist",
 		"seat_sfx": "metal_clank", "lock_sfx": "metal_clank"},
-	"ArmorHead": {"socket": Vector3(0.0, 1.52, 0.0), "yaw": 0.0,
+	"ArmorHead": {"socket": Vector3(0.0, 1.52, 0.0), "yaw": 0.0, "aim": 0.12,
 		"label": "the head", "line": "the head closes the figure",
 		"seat_sfx": "latch", "lock_sfx": "metal_tink"},
 }
@@ -56,6 +56,8 @@ var _ghost: Node3D = null            ## the hologram target over the base
 var _arrows: Dictionary = {}         ## part name -> that spare's own floating arrow
 var _sealed_ms: int = 0
 var _last_wrong: Node = null         ## the wrong-order part already announced
+var _aim_dwell: float = 0.0          ## look at the base while carrying -> seat
+var _pick_dwell: float = 0.0         ## look at a waiting assembly -> lift
 
 ## Where each assembly waits, for the tracker's next-step line. All three live
 ## together on the build pallet at the front of the garage (plan P).
@@ -126,7 +128,7 @@ func engage() -> void:
 	_engaged = true
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _beacon == null or figure == null:
 		return
 	var held: Node3D = carry.held() if carry != null else null
@@ -151,6 +153,39 @@ func _process(_delta: float) -> void:
 	if not _busy and held != null and _is_part(held) and _player != null:
 		if not _fitted.has(_name_of(held)) and _player.global_position.distance_to(figure.global_position) < 1.6:
 			figure_action(null)
+	# point-to-fit: carrying the right assembly and pointing at the base seats
+	# it after a short rested look (a glance never triggers)
+	if not _busy and held != null and _is_part(held) and _player != null:
+		if not _fitted.has(_name_of(held)) and _aiming_at(figure.global_position + Vector3.UP * 1.1, 8.0, 0.995):
+			_aim_dwell += delta
+			if _aim_dwell >= 0.28:
+				_aim_dwell = 0.0
+				figure_action(null)
+		else:
+			_aim_dwell = 0.0
+	else:
+		_aim_dwell = 0.0
+	# point-to-lift: empty-handed and pointing at a waiting assembly lifts it
+	if held == null and _player != null and carry != null:
+		var aimed: Node3D = null
+		for part_name: String in _parts:
+			if _fitted.has(part_name):
+				continue
+			var node2: Node3D = _parts[part_name]
+			if _player.global_position.distance_to(node2.global_position) > 3.6:
+				continue
+			if _aiming_at(node2.global_position + Vector3.UP * float(PARTS[part_name]["aim"]), 3.8, 0.99):
+				aimed = node2
+				break
+		if aimed != null:
+			_pick_dwell += delta
+			if _pick_dwell >= 0.4:
+				_pick_dwell = 0.0
+				carry.call("auto_pick", aimed)
+		else:
+			_pick_dwell = 0.0
+	else:
+		_pick_dwell = 0.0
 	var show: bool = _engaged and _locked.size() < PARTS.size()
 	var target: Vector3 = Vector3.ZERO
 	var beacon_part: String = ""
@@ -171,6 +206,20 @@ func _process(_delta: float) -> void:
 func _marker_pos(part_name: String) -> Vector3:
 	var node: Node3D = _parts[part_name]
 	return node.global_position + Vector3.UP * (ShapeKit.node_bounds(node).size.y + 0.25)
+
+
+func _aiming_at(point: Vector3, max_dist: float, min_dot: float) -> bool:
+	## Is the player's crosshair close enough to the point? The dwell timers in
+	## _process turn a rested look into the action, so a glance never triggers.
+	if _player == null or _player.camera == null:
+		return false
+	var cam: Node3D = _player.camera
+	var origin: Vector3 = cam.global_position
+	var d: float = origin.distance_to(point)
+	if d > max_dist or d < 0.001:
+		return false
+	var fwd: Vector3 = -cam.global_transform.basis.z
+	return fwd.dot((point - origin).normalized()) >= min_dot
 
 
 func _update_arrows(show: bool, beacon_part: String, held: Node3D) -> void:
@@ -249,7 +298,7 @@ func next_line() -> String:
 			return "that assembly is already on — put it down (right-click) and take the next one"
 		if PARTS.keys().find(_name_of(held)) != _fitted.size():
 			return "not that one yet — the figure builds low to high: legs, then torso, then head"
-		return "NEXT — carry it to the base — the shop's armour on the NORTH WALL — and walk it up%s" % _dist_tail(figure.global_position)
+		return "NEXT — point at the base — the shop's armour on the NORTH WALL — and it seats itself%s" % _dist_tail(figure.global_position)
 	if _locked.size() >= PARTS.size():
 		return "DONE — press E at the base to strip the figure back to the pallet · R resets the morning"
 	if _fitted.size() >= PARTS.size():
@@ -258,7 +307,7 @@ func next_line() -> String:
 		return "seat the remaining assemblies — the bolts finish the fit after the head"
 	var np: String = guide_part()
 	if np != "":
-		return "NEXT — left-click %s off the build pallet · just inside the entrance%s" % [
+		return "NEXT — look at %s on the build pallet — it lifts for you (left-click works too)%s" % [
 			String(PARTS[np]["label"]), _dist_tail(_parts[np].global_position)]
 	return ""
 
@@ -299,7 +348,7 @@ func figure_prompt() -> String:
 					return "Press E — that assembly is already on the figure"
 				if PARTS.keys().find(part_name) != _fitted.size():
 					return "Press E — wrong order: the legs go first, then the torso, then the head"
-				return "Press E to seat %s — or just walk it up" % String(PARTS[part_name]["label"])
+				return "Press E to seat %s — or just point at it" % String(PARTS[part_name]["label"])
 		return "Press E — that isn't one of the figure's assemblies"
 	var pending: Array = _pending_locks()
 	if not pending.is_empty():

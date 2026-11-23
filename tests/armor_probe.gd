@@ -44,7 +44,7 @@ func _run() -> void:
 		String(armor.stage_line()), String(armor.next_line()),
 		"OK" if armor.PARTS.has(String(armor.guide_part())) and armor.beacon_visible()
 			and String(armor.stage_line()).contains("STEP 1 OF 3")
-			and String(armor.next_line()).contains("left-click the") else "FAIL"])
+			and String(armor.next_line()).contains("look at the") else "FAIL"])
 	print("ARMOR: beacon built node=%s children=[%s] pos=%s %s" % [
 		str(bcn != null), bch.strip_edges(),
 		str((bcn as Node3D).global_position) if bcn is Node3D else "n/a",
@@ -72,6 +72,24 @@ func _run() -> void:
 		if h.z < 2.5 or h.y < 0.10 or h.y > 0.15:
 			staged = false
 	print("ARMOR: assemblies staged on the build pallet %s" % ["OK" if staged else "FAIL"])
+	# 1b. point-to-lift: a rested look on a waiting assembly lifts it
+	var pl0: Node3D = world.get("player") as Node3D
+	var cam0: Camera3D = (pl0.get("camera") as Camera3D) if pl0 != null else null
+	if pl0 != null and cam0 != null:
+		var torso3: Node3D = dressing.get_node_or_null("ArmorTorso") as Node3D
+		var saved0: Vector3 = pl0.global_position
+		pl0.global_position = torso3.global_position + Vector3(0.0, 0.0, 1.6)
+		cam0.look_at(torso3.global_position + Vector3.UP * 0.42, Vector3.UP)
+		await _wait(0.9)
+		print("ARMOR: point-to-lift held=%s %s" % [
+			String(carry.held().name) if carry.held() != null else "null",
+			"OK" if carry.held() == torso3 else "FAIL"])
+		carry.set("_held", null)
+		carry.set("_state", 0)
+		torso3.global_position = homes.get("ArmorTorso", torso3.global_position) as Vector3
+		pl0.global_position = saved0
+	else:
+		print("ARMOR: point-to-lift FAIL — nodes missing")
 	# 1. the order is enforced — the torso is refused until the legs are on
 	var torso_node: Node3D = dressing.get_node_or_null("ArmorTorso") as Node3D
 	carry.set("_held", torso_node)
@@ -179,6 +197,19 @@ func _run() -> void:
 		carry.set("_state", 1)
 		await _wait(0.8)
 		print("ARMOR: auto-seat by approach fitted=%d/3 %s" % [
+			int(armor.fitted_count()), "OK" if int(armor.fitted_count()) == 1 else "FAIL"])
+		carry.set("_held", null)
+		carry.set("_state", 0)
+		armor.dismount_all(true)
+		# and from three metres, a rested look on the base seats it too
+		pl.global_position = fig2.global_position + Vector3(3.0, 0.0, 0.0)
+		var cam2: Camera3D = pl.get("camera") as Camera3D
+		if cam2 != null:
+			cam2.look_at(fig2.global_position + Vector3.UP * 1.1, Vector3.UP)
+		carry.set("_held", boot2)
+		carry.set("_state", 1)
+		await _wait(1.2)
+		print("ARMOR: point-to-fit fitted=%d/3 %s" % [
 			int(armor.fitted_count()), "OK" if int(armor.fitted_count()) == 1 else "FAIL"])
 		carry.set("_held", null)
 		carry.set("_state", 0)

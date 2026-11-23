@@ -1225,7 +1225,7 @@ func _help_body(body: HBoxContainer) -> void:
 		["F1", "this screen"], ["F6", "graphics bench"], ["F9", "jump to finished garage (demo)"],
 		["T", "thesis panel — the measured claims"], ["R", "reset the demo to morning"],
 		["1-9, 0, [ ]", "viewpoint tour"], ["\\", "return to where you stood"],
-		["GUIDE", "big yellow arrows mark every assembly part — the next step's arrow rises on a light column"],
+		["GUIDE", "big yellow arrows mark every assembly part — point at one to lift it, point at the base to seat it (clicks work too)"],
 	]
 	var grid := GridContainer.new()
 	grid.columns = 2

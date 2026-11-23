@@ -209,9 +209,10 @@ console. The board sleeps when the final check is done, and `R` resets the whole
 By the north wall, on its service base: the shop's own build, done the long way — the **figure in
 three parts**. The **legs**, the **torso** and the **head** wait together on the **build pallet** just
 inside the entrance, and a cyan **hologram of the whole figure** hovers over the base until the real
-parts replace it, piece by piece. Left-click an assembly to carry it back to the base: walking it up
-**seats it by itself** (or press `E` for the button) with the snap, the latch and a light pulse, the
-base ring climbing a step. The order is low to high and enforced: legs first, then torso, then head.
+parts replace it, piece by piece. Look at an assembly to lift it (left-click also works), point at the
+base and it **seats itself** — or walk it up, or press `E` — with the snap, the latch and a light
+pulse, the base ring climbing a step. The order is low to high and enforced: legs first, then torso,
+then head.
 **The head completes the figure and it powers on** — core lens, eye slits and ring light up — and
 after the beat **the bolts seal it on their own**, a clack cascade with a second surge. `E` with empty
 hands strips the figure back to the pallet for another build.
@@ -219,8 +220,8 @@ hands strips the figure back to the pallet for another build.
 It is a guided job: waking at the build pallet, the **floating arrows** stand over every assembly
 still waiting, while the next one's arrow rises on a **column of light** and moves with you. Under
 the objective, the armour's **tracker board** lists the three assemblies — where each waits, then
-*seated*, then *bolted* — and one line says exactly what to do next (*"NEXT — left-click the legs and
-boots off the build pallet · just inside the entrance · 9 m"*). Wrong moves are answered in **red,
+*seated*, then *bolted* — and one line says exactly what to do next (*"NEXT — look at the legs and
+boots on the build pallet — it lifts for you (left-click works too)"*). Wrong moves are answered in **red,
 with the correction** — the head carried up before the legs, a hammer carried to the base, a module
 installed out of order, the console pressed before the suit is built: each says what went wrong and
 what to do instead. The console keeps the same checklist live (`Tab` → Assembly → Armour), and `R`
@@ -492,9 +493,9 @@ For showing the project in about six minutes, following the sequence in the brie
 13. The core ignites, the optics light.
 14. `E` on the console in the testing corner. The diagnostic pass runs.
 15. At the build pallet just inside the entrance: the figure waits in three assemblies — legs, torso,
-    head — each under a big yellow arrow. Carry each to the base by the north wall, low to high —
-    walking it up seats it (or press `E`) — the head completes the figure, it powers on and the bolts
-    seal it. Wrong moves answer in red and say what to do instead.
+    head — each under a big yellow arrow. **Look at a part to lift it; point at the base by the north
+    wall to seat it** (walking it up or pressing `E` works too), low to high — the head completes the
+    figure, it powers on and the bolts seal it. Wrong moves answer in red and say what to do instead.
 16. **F6**. Materials tab: change roughness and metallic live. Hologram tab: switch between the three
     variants. Lighting tab: switch to warm-only and back to full rig. Post tab: toggle SDFGI and watch
     the core's wall spill disappear.
