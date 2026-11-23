@@ -212,8 +212,9 @@ inside the entrance, and a cyan **hologram of the whole figure** hovers over the
 parts replace it, piece by piece. Look at an assembly to lift it (left-click also works), point at the
 base and it **seats itself** — or walk it up, press `E`, or simply put it down at the base: every
 gesture seats it, with the snap, the latch and a light pulse, the base ring climbing a step. An
-assembly never stacks on another piece while carried. The order is low to high and enforced: legs
-first, then torso, then head.
+assembly never stacks on another piece while carried, and one set down among the others at the pallet
+settles back to its own spot. The order is low to high and enforced: legs first, then torso, then
+head.
 **The head completes the figure and it powers on** — core lens, eye slits and ring light up — and
 after the beat **the bolts seal it on their own**, a clack cascade with a second surge. `E` with empty
 hands strips the figure back to the pallet for another build.

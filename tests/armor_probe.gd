@@ -226,6 +226,23 @@ func _run() -> void:
 		print("ARMOR: place-at-base seats fitted=%d/3 %s" % [
 			int(armor.fitted_count()), "OK" if int(armor.fitted_count()) == 1 else "FAIL"])
 		armor.dismount_all(true)
+		# a part dropped among the others at the pallet tidies back to its spot
+		var head2: Node3D = dressing.get_node_or_null("ArmorHead") as Node3D
+		var head_home: Vector3 = homes.get("ArmorHead", Vector3.ZERO) as Vector3
+		var torso_home: Vector3 = homes.get("ArmorTorso", Vector3.ZERO) as Vector3
+		head2.global_position = torso_home + Vector3(0.3, 0.0, 0.0)
+		carry.set("_held", head2)
+		carry.set("_state", 1)
+		await _frames(3)
+		# the drop spot, set exactly at release (the carry drags it meanwhile)
+		head2.global_position = torso_home + Vector3(0.3, 0.0, 0.0)
+		carry.set("_held", null)
+		carry.set("_state", 0)
+		await _wait(1.0)
+		print("ARMOR: pallet drop tidies home dist=%.2f cm %s" % [
+			head2.global_position.distance_to(head_home) * 100.0,
+			"OK" if head2.global_position.distance_to(head_home) < 0.05 else "FAIL"])
+		armor.dismount_all(true)
 		pl.global_position = pl_saved
 	else:
 		print("ARMOR: auto-seat by approach FAIL — nodes missing")

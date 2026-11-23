@@ -140,11 +140,16 @@ func _process(delta: float) -> void:
 		_watched = held
 	elif held == null and _watched != null:
 		var nm: String = _name_of(_watched)
-		if nm != "" and not _fitted.has(nm) and _watched.global_position.distance_to(figure.global_position) < 1.3:
-			if PARTS.keys().find(nm) != _fitted.size():
-				_announce_order(_watched)
-			else:
-				_seat(nm)
+		if nm != "" and not _fitted.has(nm):
+			if _watched.global_position.distance_to(figure.global_position) < 1.3:
+				if PARTS.keys().find(nm) != _fitted.size():
+					_announce_order(_watched)
+				else:
+					_seat(nm)
+			elif _near_other_home(nm, _watched.global_position):
+				# dropped among the other assemblies at the front: it tidies
+				# itself back to its own spot rather than stacking on a neighbour
+				_return_home(nm)
 		_watched = null
 	if not _engaged and held != null and _is_part(held):
 		_engaged = true
@@ -191,7 +196,7 @@ func _process(delta: float) -> void:
 				break
 		if aimed != null:
 			_pick_dwell += delta
-			if _pick_dwell >= 0.4:
+			if _pick_dwell >= 0.6:
 				_pick_dwell = 0.0
 				carry.call("auto_pick", aimed)
 		else:
@@ -405,6 +410,37 @@ func figure_action(_player: Node) -> bool:
 	return false
 
 
+func _near_other_home(nm: String, pos: Vector3) -> bool:
+	## A module dropped at the front of the room (the pallet's end) near another
+	## assembly's spot goes home instead of stacking on its neighbour.
+	if pos.z < 2.0:
+		return false
+	for part_name: String in _homes:
+		if part_name == nm:
+			continue
+		if pos.distance_to(_homes[part_name]["position"] as Vector3) < 1.6:
+			return true
+	return false
+
+
+func _return_home(part_name: String) -> void:
+	## The tidy-up: the part settles back onto its own pallet spot.
+	if _busy:
+		return
+	var node: Node3D = _parts[part_name]
+	var home: Dictionary = _homes[part_name]
+	_busy = true
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(node, "global_position", home["position"] as Vector3, 0.4) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(node, "rotation", home["rotation"] as Vector3, 0.4)
+	AudioBank.play_at("tool_place", node.global_position, -8.0)
+	var tw2: Tween = create_tween()
+	tw2.tween_interval(0.45)
+	tw2.tween_callback(func() -> void: _busy = false)
+
+
 func _announce_order(held: Node) -> void:
 	## The wrong build order answers in red once per part in hand, so the
 	## automatic seat-by-walk does not repeat the message every frame.
@@ -536,6 +572,9 @@ func _ring_step() -> void:
 
 func dismount_all(instant: bool = false) -> void:
 	## Strip every fitted spare back to its authored home — seated or bolted.
+	## The guide sleeps either way: the job is out of the player's hands now and
+	## wakes again by approach, by picking a spare up, or at the base itself.
+	_engaged = false
 	if _fitted.is_empty():
 		if not instant:
 			EventBus.notification_requested.emit("no spares are fitted", "info")
@@ -557,9 +596,7 @@ func dismount_all(instant: bool = false) -> void:
 		AudioBank.play_at("tool_place", node.global_position, -8.0)
 	_fitted.clear()
 	_locked.clear()
-	# the job is out of the player's hands now: the guide sleeps and wakes
-	# again by approach, by picking a spare up, or at the figure itself
-	_engaged = false
+	# the job is out of the player's hands now (see the top of this function)
 	for m: StandardMaterial3D in _glow_mats:
 		if not is_instance_valid(m):
 			continue
