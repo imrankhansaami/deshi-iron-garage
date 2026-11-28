@@ -5,7 +5,7 @@ extends Control
 ## The backdrop is drawn procedurally in _draw() rather than being a static image:
 ## a perspective floor grid, a rotating reactor ring, a scanline sweep and the
 ## energy-core bloom, all in the project's palette. It costs one canvas item, it
-## animates, and it establishes the two-worlds premise before a single 3D frame
+## animates, and it tells the garage's story in Bangla before a single 3D frame
 ## is rendered — the menu is the garage's identity, not a placeholder behind it.
 ##
 ## Every button is functional. "Continue" is disabled when there is no save, and
@@ -117,17 +117,18 @@ func _build() -> void:
 	pv.add_theme_constant_override("separation", 12)
 	premise.add_child(pv)
 	var head := Label.new()
-	head.text = "WORLD A  +  WORLD B"
-	head.add_theme_font_override("font", _font("mono"))
-	head.add_theme_font_size_override("font_size", 16)
+	head.text = "আমার গল্প"
+	head.add_theme_font_override("font", _font("bangla"))
+	head.add_theme_font_size_override("font_size", 22)
 	head.add_theme_color_override("font_color", GarageTheme.col("amber"))
 	pv.add_child(head)
 	var body := Label.new()
-	body.text = """A tin-roofed repair shop in Bangladesh: a scrapped motorcycle, two dead IPS cells, a computer that has been repaired four times, and a bench that has been scarred for nineteen years.
+	body.text = """বাংলাদেশের এক মেরামতের গ্যারেজ। টিনের চাল। বেঞ্চে উনিশ বছরের দাগ। একটা বাতিল মোটরসাইকেল, দুটো মরা আইপিএস সেল, চারবার সারানো একটা কম্পিউটার।
 
-Into that, one student builds the other half — a holographic design table, a circular assembly stage, four manipulator arms and a powered exosuit prototype that never leaves its stand.
+তার পাশে ছাত্রটা গড়ে বাকি অর্ধেক — হলোগ্রাফিক ডিজাইন টেবিল, গোল অ্যাসেম্বলি স্টেজ, চারটা ম্যানিপুলেটর আর্ম। আর একটা পাওয়ারড এক্সোস্যুট — স্ট্যান্ড ছাড়ে না।
 
-The contrast is the point. You do not need an expensive laboratory to start thinking like an inventor."""
+পার্থক্যটাই আসল কথা। আবিষ্কারকের মতো ভাবতে দামি ল্যাব লাগে না।"""
+	body.add_theme_font_override("font", _font("bangla"))
 	body.add_theme_font_size_override("font_size", 18)
 	body.add_theme_color_override("font_color", GarageTheme.col("ink"))
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
